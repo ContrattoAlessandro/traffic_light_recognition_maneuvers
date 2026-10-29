@@ -1,0 +1,10 @@
+# local data, training outputs and environments (large, and the dataset is non-commercial)
+data/
+runs/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.pth
+*.pt
+*.ckpt

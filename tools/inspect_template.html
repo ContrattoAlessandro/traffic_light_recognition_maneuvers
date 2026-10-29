@@ -1,0 +1,559 @@
+<title>Signal Intent Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky control bar over a single column of frame cards; each card pairs the
+   annotated frame (left) with the direction table, light crops and review (right). */
+:root {
+  --bg: #eef1f3;
+  --surface: #ffffff;
+  --ink: #1b2328;
+  --muted: #5d6a72;
+  --line: #d5dce0;
+  --accent: #0f5f74;
+  --accent-soft: #dcecf0;
+  --bad: #b3261e;
+  --bad-soft: #fbe9e7;
+  --ok: #2e7d4f;
+  --sig-red: #e0332b;
+  --sig-yellow: #e6a700;
+  --sig-green: #1f9d55;
+  --sig-none: #8a969c;
+  --det: #c026d3;
+  --crop-bg: #181a1e;
+  --font-ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --step--1: 0.8125rem;
+  --step-0: 0.9375rem;
+  --step-1: 1.125rem;
+  --step-2: 1.5rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171a; --surface: #1b2226; --ink: #e3e9ec; --muted: #94a3ab; --line: #2e383d;
+    --accent: #5cc0d6; --accent-soft: #173a44; --bad: #ff8a80; --bad-soft: #3a1f1d; --ok: #6fcf97;
+    --sig-red: #ff5a4f; --sig-yellow: #ffc533; --sig-green: #3ccf7a; --sig-none: #8a969c; --det: #e879f9;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171a; --surface: #1b2226; --ink: #e3e9ec; --muted: #94a3ab; --line: #2e383d;
+  --accent: #5cc0d6; --accent-soft: #173a44; --bad: #ff8a80; --bad-soft: #3a1f1d; --ok: #6fcf97;
+  --sig-red: #ff5a4f; --sig-yellow: #ffc533; --sig-green: #3ccf7a; --sig-none: #8a969c; --det: #e879f9;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: var(--step-0); line-height: 1.45; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font-size: var(--step-2); font-weight: 600; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+.intro { padding-block: 24px 16px; display: grid; gap: 12px; }
+.intro p { margin: 0; color: var(--muted); max-width: 70ch; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 20px; font-family: var(--font-data); font-size: var(--step--1); font-variant-numeric: tabular-nums; }
+.stats b { font-weight: 500; color: var(--ink); }
+.stats span { color: var(--muted); }
+.notice { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 10px 12px; font-size: var(--step--1); color: var(--muted); }
+
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+@media (max-width: 760px) { .bar { position: static; } }
+.bar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding-block: 10px; }
+.group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.group-label { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-right: 2px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { font: inherit; font-size: var(--step--1); border: 0; background: transparent; color: var(--ink); padding: 5px 10px; cursor: pointer; border-right: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.seg button .n { opacity: 0.75; margin-left: 4px; }
+.toggle { display: inline-flex; align-items: center; gap: 5px; font-size: var(--step--1); cursor: pointer; }
+.toggle input { accent-color: var(--accent); }
+.btn { font: inherit; font-size: var(--step--1); border: 1px solid var(--accent); color: var(--accent); background: transparent; border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+.btn:hover { background: var(--accent-soft); }
+.progress { margin-left: auto; font-family: var(--font-data); font-size: var(--step--1); color: var(--muted); font-variant-numeric: tabular-nums; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.list { display: grid; gap: 18px; padding-block: 18px 48px; }
+.empty { color: var(--muted); padding: 24px 0; }
+.frame { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; scroll-margin-top: 72px; }
+.frame.has-error { border-left: 4px solid var(--bad); }
+.frame-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.fid { font-family: var(--font-data); font-weight: 500; font-size: var(--step-1); }
+.subset { font-size: var(--step--1); color: var(--muted); }
+.status { font-size: var(--step--1); font-weight: 600; }
+.status.ok { color: var(--ok); }
+.status.bad { color: var(--bad); }
+.pill { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; background: var(--bad-soft); color: var(--bad); }
+.pill.soft { background: var(--accent-soft); color: var(--accent); }
+.src { margin-left: auto; font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); overflow-wrap: anywhere; min-width: 0; }
+
+.frame-body { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+@media (max-width: 860px) { .frame-body { grid-template-columns: minmax(0, 1fr); } }
+.shot { margin: 0; padding: 12px; display: flex; justify-content: center; align-items: flex-start; background: var(--crop-bg); min-width: 0; }
+.shot-box { position: relative; display: inline-block; max-width: 100%; line-height: 0; }
+.shot-box img { display: block; max-width: 100%; width: auto; height: auto; max-height: 78vh; }
+.shot-box svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.shot-box rect { fill: none; vector-effect: non-scaling-stroke; }
+.gt rect { stroke-width: 2; }
+.gt.other rect { stroke-dasharray: 4 3; stroke-width: 1.5; }
+.gt text, .det text { font-family: var(--font-data); paint-order: stroke; stroke: #000; stroke-width: 3px; stroke-linejoin: round; fill: #fff; }
+.det rect { stroke: var(--det); stroke-width: 1.5; stroke-dasharray: 1.5 2.5; }
+.c-red { stroke: var(--sig-red); }
+.c-yellow { stroke: var(--sig-yellow); }
+.c-green { stroke: var(--sig-green); }
+body:not(.show-gt) .gt, body:not(.show-det) .det, body:not(.show-all-det) .det.low { display: none; }
+
+.panel { padding: 12px 14px 14px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.panel h3 { margin: 0 0 6px; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.dirs { width: 100%; border-collapse: collapse; font-size: var(--step--1); }
+.dirs th { text-align: left; font-weight: 500; color: var(--muted); padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.dirs td { padding: 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.dirs tr.wrong td { background: var(--bad-soft); }
+.dirs td.dname { font-weight: 600; white-space: nowrap; }
+.dirs td.mark { text-align: right; white-space: nowrap; }
+.mark .x { color: var(--bad); font-weight: 600; }
+.mark .ok { color: var(--ok); }
+.state { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.dot { width: 11px; height: 11px; border-radius: 50%; flex: none; border: 1px solid rgba(0, 0, 0, 0.25); }
+.dot.red { background: var(--sig-red); }
+.dot.yellow { background: var(--sig-yellow); }
+.dot.green { background: var(--sig-green); }
+.dot.none { background: transparent; border: 1.5px dashed var(--sig-none); }
+.pass { font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); }
+.prob { font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.probs { display: flex; height: 4px; width: 64px; border-radius: 2px; overflow: hidden; margin-top: 3px; background: var(--line); }
+.probs i { display: block; height: 100%; }
+.probs .none { background: var(--sig-none); }
+.probs .red { background: var(--sig-red); }
+.probs .yellow { background: var(--sig-yellow); }
+.probs .green { background: var(--sig-green); }
+
+.crops-scroll { overflow-x: auto; }
+.crops { display: inline-grid; grid-auto-flow: column; }
+.crops img { grid-row: 1; display: block; height: 120px; width: auto; max-width: none; image-rendering: auto; border-radius: 4px; }
+.tiles { display: flex; }
+.tile { width: 72px; flex: none; font-family: var(--font-data); font-size: 0.6875rem; line-height: 1.3; padding: 3px 2px 0; text-align: center; color: var(--muted); }
+.tile b { color: var(--ink); font-weight: 500; }
+.tile.rel b { color: var(--accent); }
+.legend { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+.review { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.verdicts { display: flex; flex-wrap: wrap; gap: 6px; }
+.verdicts label { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; font-size: var(--step--1); cursor: pointer; }
+.verdicts input { position: absolute; opacity: 0; pointer-events: none; }
+.verdicts label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.verdicts label:has(input:disabled) { cursor: not-allowed; opacity: 0.55; }
+textarea { font: inherit; font-size: var(--step--1); width: 100%; min-height: 54px; resize: vertical; border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; background: var(--bg); color: var(--ink); }
+.save-state { font-size: 0.75rem; color: var(--muted); min-height: 1em; }
+.save-state.err { color: var(--bad); }
+@media (prefers-reduced-motion: no-preference) { .frame { transition: border-color 0.15s; } }
+</style>
+
+<div class="wrap intro">
+  <h1>Signal Intent Review</h1>
+  <p id="intro-text">Random validation frames with the direction-aware model's predictions next to the ground truth.</p>
+  <div class="stats" id="stats"></div>
+  <div class="notice" id="db-notice" hidden></div>
+</div>
+
+<div class="bar">
+  <div class="wrap">
+    <div class="group"><span class="group-label">Subset</span><div class="seg" id="f-subset"></div></div>
+    <div class="group"><span class="group-label">Result</span><div class="seg" id="f-result"></div></div>
+    <div class="group"><span class="group-label">Review</span><div class="seg" id="f-review"></div></div>
+    <div class="group">
+      <label class="toggle"><input type="checkbox" id="t-gt" checked> GT lights</label>
+      <label class="toggle"><input type="checkbox" id="t-det" checked> Detector ≥ 0.3</label>
+      <label class="toggle"><input type="checkbox" id="t-all"> All 16 ROI boxes</label>
+    </div>
+    <button class="btn" id="export" type="button" hidden>Download reviews (CSV)</button>
+    <span class="progress" id="progress"></span>
+  </div>
+</div>
+
+<main class="wrap list" id="list"></main>
+
+<script type="application/json" id="inspect-data">__INSPECT_DATA__</script>
+<script>
+(function () {
+  const DATA = JSON.parse(document.getElementById("inspect-data").textContent);
+  const DIRS = ["straight", "left", "right", "uturn"];
+  const DIR_LABEL = { straight: "Straight", left: "Left", right: "Right", uturn: "U-turn" };
+  const COLORS = ["none", "red", "yellow", "green"];
+  const SUBSET_NAME = { A: "subset_A · Argoverse 2", B: "subset_B · nuScenes" };
+  const MOVE_SHORT = { straight: "S", left: "L", right: "R", uturn: "U", generic: "gen" };
+  const VERDICTS = [
+    ["correct", "Looks right"],
+    ["model", "Model error"],
+    ["label", "Label error"],
+    ["unclear", "Unclear"],
+  ];
+  const meta = DATA.meta;
+  const frames = DATA.frames.map((f) => {
+    const wrong = DIRS.filter((d) => {
+      const s = f.directions[d];
+      return s.pred_color !== s.gt_color || s.pred_pass !== s.gt_pass;
+    });
+    const falseGo = DIRS.filter((d) => f.directions[d].gt_pass === "stop" && f.directions[d].pred_pass === "go");
+    const falseStop = DIRS.filter((d) => f.directions[d].gt_pass === "go" && f.directions[d].pred_pass === "stop");
+    return Object.assign({}, f, { wrong, falseGo, falseStop });
+  });
+
+  const state = { subset: "all", result: "all", review: "all", reviews: {}, db: null };
+  const el = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  };
+  const SVG = "http://www.w3.org/2000/svg";
+  const svgEl = (tag, attrs) => {
+    const n = document.createElementNS(SVG, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  };
+  const pct = (v) => Math.round(v * 100) + "%";
+  const f3 = (v) => v.toFixed(3);
+
+  // ---------- intro ----------
+  const sm = meta.sample_metrics, vm = meta.val_metrics;
+  document.getElementById("intro-text").textContent =
+    `${frames.length} random validation frames (${meta.per_subset} from subset_A, ${meta.per_subset} from subset_B, seed ${meta.seed}) ` +
+    `with predictions of the Swin-T direction-aware model at epoch ${meta.epoch}. Boxes on the image: solid = annotated lights the label ` +
+    `builder used, dashed = other annotated lights, dotted magenta = the model's detector. Crops below each table zoom into the annotated lights.`;
+  const stats = document.getElementById("stats");
+  const stat = (label, value) => {
+    const s = el("div");
+    s.append(el("span", null, label + " "), el("b", null, value));
+    stats.append(s);
+  };
+  stat("This sample: TSS", f3(sm.tss));
+  stat("EM", f3(sm.em));
+  stat("frames with an error", String(frames.filter((f) => f.wrong.length).length));
+  stat("frames with a False-Go", String(frames.filter((f) => f.falseGo.length).length));
+  stat("Full A val TSS", f3(vm.A.tss));
+  stat("Full B val TSS", f3(vm.B.tss));
+
+  // ---------- cards ----------
+  const list = document.getElementById("list");
+  const cards = {};
+  for (const f of frames) {
+    const card = el("article", "frame" + (f.wrong.length ? " has-error" : ""));
+    card.id = f.id;
+
+    const head = el("header", "frame-head");
+    head.append(el("span", "fid", f.id), el("span", "subset", SUBSET_NAME[f.subset] || f.subset));
+    head.append(el("span", "status " + (f.wrong.length ? "bad" : "ok"),
+      f.wrong.length ? `${f.wrong.length} of 4 directions wrong` : "All 4 directions correct"));
+    if (f.falseGo.length) head.append(el("span", "pill", "False-Go"));
+    if (f.falseStop.length) head.append(el("span", "pill", "False-Stop"));
+    if (f.crossing) head.append(el("span", "pill soft", "Past stop line"));
+    const src = el("code", "src", f.image);
+    src.title = `segment ${f.segment}, timestamp ${f.timestamp}`;
+    head.append(src);
+    card.append(head);
+
+    const body = el("div", "frame-body");
+    // image + overlay
+    const fig = el("figure", "shot");
+    const box = el("div", "shot-box");
+    const [W, H] = f.size;
+    const img = el("img");
+    img.src = "img/" + f.id + ".jpg";
+    img.alt = `Front camera frame ${f.id}`;
+    img.loading = "lazy";
+    img.width = W; img.height = H;
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none", "aria-hidden": "true" });
+    const fs = Math.max(W, H) / 70;
+    f.dets.forEach((d) => {
+      const g = svgEl("g", { class: "det" + (d.score < 0.3 ? " low" : "") });
+      const [x1, y1, x2, y2] = d.box;
+      g.append(svgEl("rect", { x: x1 * W, y: y1 * H, width: Math.max((x2 - x1) * W, 1), height: Math.max((y2 - y1) * H, 1) }));
+      const t = svgEl("text", { x: x1 * W, y: y2 * H + fs, "font-size": fs * 0.8 });
+      t.textContent = d.color[0].toUpperCase() + " " + d.score.toFixed(2);
+      g.append(t);
+      svg.append(g);
+    });
+    f.gt_boxes.forEach((b, k) => {
+      const g = svgEl("g", { class: "gt " + (b.relevant ? "rel" : "other") });
+      const [x1, y1, x2, y2] = b.box;
+      g.append(svgEl("rect", { class: "c-" + b.color, x: x1 * W, y: y1 * H, width: (x2 - x1) * W, height: (y2 - y1) * H }));
+      const t = svgEl("text", { x: x1 * W, y: y1 * H - fs * 0.3, "font-size": fs });
+      t.textContent = String(k + 1);
+      g.append(t);
+      svg.append(g);
+    });
+    box.append(img, svg);
+    fig.append(box);
+    body.append(fig);
+
+    // panel
+    const panel = el("div", "panel");
+    const tblWrap = el("div");
+    tblWrap.append(el("h3", null, "Directions"));
+    const tbl = el("table", "dirs");
+    const thead = el("thead");
+    const hr = el("tr");
+    ["", "Ground truth", "Prediction", ""].forEach((h) => hr.append(el("th", null, h)));
+    thead.append(hr);
+    tbl.append(thead);
+    const tb = el("tbody");
+    for (const d of DIRS) {
+      const s = f.directions[d];
+      const isWrong = f.wrong.includes(d);
+      const tr = el("tr", isWrong ? "wrong" : "");
+      tr.append(el("td", "dname", DIR_LABEL[d]));
+      const gtd = el("td");
+      const gs = el("span", "state");
+      gs.append(el("span", "dot " + s.gt_color), el("span", null, s.gt_color), el("span", "pass", s.gt_pass));
+      gtd.append(gs);
+      tr.append(gtd);
+      const pd = el("td");
+      const ps = el("span", "state");
+      const top = s.color_probs[COLORS.indexOf(s.pred_color)];
+      ps.append(el("span", "dot " + s.pred_color), el("span", null, s.pred_color), el("span", "pass", s.pred_pass),
+        el("span", "prob", pct(top)));
+      const bar = el("div", "probs");
+      bar.title = COLORS.map((c, i) => `${c} ${pct(s.color_probs[i])}`).join(", ");
+      COLORS.forEach((c, i) => {
+        const seg = el("i", c);
+        seg.style.width = (s.color_probs[i] * 100).toFixed(1) + "%";
+        bar.append(seg);
+      });
+      pd.append(ps, bar);
+      tr.append(pd);
+      const mk = el("td", "mark");
+      if (f.falseGo.includes(d)) mk.append(el("span", "pill", "False-Go"));
+      else if (f.falseStop.includes(d)) mk.append(el("span", "pill", "False-Stop"));
+      else mk.append(el("span", isWrong ? "x" : "ok", isWrong ? "✗" : "✓"));
+      tr.append(mk);
+      tb.append(tr);
+    }
+    tbl.append(tb);
+    tblWrap.append(tbl);
+    panel.append(tblWrap);
+
+    // crops
+    const cw = el("div");
+    cw.append(el("h3", null, f.gt_boxes.length ? "Annotated lights, zoomed" : "No annotated lights"));
+    if (f.gt_boxes.length) {
+      const sc = el("div", "crops-scroll");
+      const cimg = el("img");
+      cimg.src = "crops/" + f.id + ".jpg";
+      cimg.alt = `Zoomed crops of the ${f.gt_boxes.length} annotated lights in ${f.id}`;
+      cimg.loading = "lazy";
+      cimg.style.width = meta.tile[0] * f.gt_boxes.length + "px";
+      const tiles = el("div", "tiles");
+      f.gt_boxes.forEach((b, k) => {
+        const t = el("div", "tile" + (b.relevant ? " rel" : ""));
+        t.append(el("b", null, "#" + (k + 1) + " " + b.color));
+        t.append(el("div", null, b.relevant ? b.moves.map((m) => MOVE_SHORT[m] || m).join(",") : "other"));
+        tiles.append(t);
+      });
+      const crops = el("div");
+      crops.append(cimg, tiles);
+      sc.append(crops);
+      cw.append(sc);
+      cw.append(el("div", "legend", "Second line: maneuvers the light controls (S, L, R, U; gen = whole approach). \"other\" = not used for this frame's label."));
+    }
+    panel.append(cw);
+
+    // review
+    const rv = el("div", "review");
+    rv.append(el("h3", null, "Your review"));
+    const vs = el("div", "verdicts");
+    vs.setAttribute("role", "radiogroup");
+    vs.setAttribute("aria-label", `Verdict for ${f.id}`);
+    for (const [val, label] of VERDICTS) {
+      const lab = el("label");
+      const inp = el("input");
+      inp.type = "radio";
+      inp.name = "verdict-" + f.id;
+      inp.id = `verdict-${f.id}-${val}`;
+      inp.value = val;
+      inp.disabled = true;
+      inp.addEventListener("change", () => setReview(f, { verdict: val }));
+      lab.append(inp, document.createTextNode(label));
+      vs.append(lab);
+    }
+    const note = el("textarea");
+    note.id = "note-" + f.id;
+    note.placeholder = "Note (what is wrong, which light, …)";
+    note.disabled = true;
+    note.setAttribute("aria-label", `Note for ${f.id}`);
+    let timer = null;
+    note.addEventListener("input", () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => setReview(f, { note: note.value }), 700);
+    });
+    const ss = el("div", "save-state");
+    rv.append(vs, note, ss);
+    panel.append(rv);
+
+    body.append(panel);
+    card.append(body);
+    list.append(card);
+    cards[f.id] = { card, radios: vs.querySelectorAll("input"), note, ss };
+  }
+  const empty = el("p", "empty", "No frames match these filters.");
+  empty.hidden = true;
+  list.append(empty);
+
+  // ---------- filters ----------
+  const filterDefs = {
+    subset: [["all", "All", () => true], ["A", "A", (f) => f.subset === "A"], ["B", "B", (f) => f.subset === "B"]],
+    result: [["all", "All", () => true], ["wrong", "With errors", (f) => f.wrong.length > 0],
+      ["falsego", "False-Go", (f) => f.falseGo.length > 0], ["right", "Correct", (f) => f.wrong.length === 0]],
+    review: [["all", "All", () => true], ["todo", "To review", (f) => !(state.reviews[f.id] || {}).verdict],
+      ["done", "Reviewed", (f) => !!(state.reviews[f.id] || {}).verdict],
+      ["label", "Label errors", (f) => (state.reviews[f.id] || {}).verdict === "label"],
+      ["model", "Model errors", (f) => (state.reviews[f.id] || {}).verdict === "model"]],
+  };
+  const segButtons = {};
+  for (const key in filterDefs) {
+    const seg = document.getElementById("f-" + key);
+    segButtons[key] = filterDefs[key].map(([val, label]) => {
+      const b = el("button");
+      b.type = "button";
+      b.dataset.val = val;
+      b.append(document.createTextNode(label), el("span", "n"));
+      b.addEventListener("click", () => {
+        state[key] = val;
+        applyFilters();
+        try { localStorage.setItem("sir-filter-" + key, val); } catch (e) {}
+      });
+      seg.append(b);
+      return b;
+    });
+    try {
+      const saved = localStorage.getItem("sir-filter-" + key);
+      if (saved && filterDefs[key].some(([v]) => v === saved)) state[key] = saved;
+    } catch (e) {}
+  }
+  function passes(f, except) {
+    return Object.keys(filterDefs).every((key) => key === except ||
+      filterDefs[key].find(([v]) => v === state[key])[2](f));
+  }
+  function applyFilters() {
+    let shown = 0;
+    for (const f of frames) {
+      const ok = passes(f);
+      cards[f.id].card.hidden = !ok;
+      if (ok) shown++;
+    }
+    empty.hidden = shown > 0;
+    for (const key in filterDefs) {
+      segButtons[key].forEach((b, i) => {
+        const [val, , pred] = filterDefs[key][i];
+        b.setAttribute("aria-pressed", String(state[key] === val));
+        b.querySelector(".n").textContent = frames.filter((f) => passes(f, key) && pred(f)).length;
+      });
+    }
+    const done = frames.filter((f) => (state.reviews[f.id] || {}).verdict).length;
+    document.getElementById("progress").textContent = `Reviewed ${done} / ${frames.length} · showing ${shown}`;
+  }
+
+  // ---------- overlay toggles ----------
+  const toggles = { "t-gt": "show-gt", "t-det": "show-det", "t-all": "show-all-det" };
+  for (const id in toggles) {
+    const box = document.getElementById(id);
+    try { const v = localStorage.getItem("sir-" + id); if (v !== null) box.checked = v === "1"; } catch (e) {}
+    const sync = () => {
+      document.body.classList.toggle(toggles[id], box.checked);
+      try { localStorage.setItem("sir-" + id, box.checked ? "1" : "0"); } catch (e) {}
+    };
+    box.addEventListener("change", sync);
+    sync();
+  }
+
+  // ---------- reviews (shared db) ----------
+  const writing = {};
+  function renderReview(id) {
+    const r = state.reviews[id] || {};
+    const c = cards[id];
+    c.radios.forEach((inp) => { inp.checked = inp.value === r.verdict; });
+    if (document.activeElement !== c.note && !c.pendingNote) c.note.value = r.note || "";
+  }
+  function setReview(f, patch) {
+    if (!state.db) return;
+    const c = cards[f.id];
+    const next = Object.assign({ verdict: null, note: "" }, state.reviews[f.id] || {}, patch, {
+      subset: f.subset, segment: f.segment, timestamp: f.timestamp, image: f.image,
+      wrong: f.wrong, false_go: f.falseGo, updatedAt: new Date().toISOString(),
+    });
+    state.reviews[f.id] = next;
+    if ("note" in patch) c.pendingNote = true;
+    c.ss.className = "save-state";
+    c.ss.textContent = "Saving…";
+    applyFilters();
+    const ref = state.db.collection("reviews").doc(f.id);
+    writing[f.id] = (writing[f.id] || Promise.resolve()).then(() => ref.set(state.reviews[f.id])).then(() => {
+      c.pendingNote = false;
+      c.ss.textContent = "Saved";
+    }, (e) => {
+      c.pendingNote = false;
+      c.ss.className = "save-state err";
+      c.ss.textContent = e && e.code === "invalid_argument"
+        ? "Not saved: you can view this page but not change its reviews."
+        : "Not saved. Check your connection and choose the verdict again.";
+    });
+  }
+  function dbUnavailable(msg) {
+    const n = document.getElementById("db-notice");
+    n.textContent = msg;
+    n.hidden = false;
+  }
+
+  applyFilters();
+  if (location.hash) {
+    const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (target) target.scrollIntoView();
+  }
+
+  const use = window.claude && window.claude.use;
+  if (!use) {
+    dbUnavailable("Reviews are saved only when this page is opened on claude.ai. Here you can inspect the frames, but verdicts and notes won't be kept.");
+    return;
+  }
+  window.claude.use("db").then((db) => {
+    if (!db) {
+      dbUnavailable("Reviews can't be saved in this view. Sign in to claude.ai to record verdicts and notes.");
+      return;
+    }
+    state.db = db;
+    for (const id in cards) {
+      cards[id].radios.forEach((inp) => { inp.disabled = false; });
+      cards[id].note.disabled = false;
+    }
+    db.collection("reviews").onSnapshot((snap) => {
+      for (const doc of snap.docs) {
+        if (!cards[doc.id]) continue;
+        if (writing[doc.id] && doc.metadata.hasPendingWrites) continue;
+        state.reviews[doc.id] = Object.assign({}, doc.data());
+        renderReview(doc.id);
+      }
+      applyFilters();
+    }, (e) => dbUnavailable("Reviews stopped syncing (" + (e && e.code) + "). Reload the page to reconnect."));
+  });
+  window.claude.use("downloads").then((dl) => {
+    if (!dl) return;
+    const btn = document.getElementById("export");
+    btn.hidden = false;
+    btn.addEventListener("click", () => {
+      const q = (v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+      const cols = ["id", "subset", "segment", "timestamp", "image", "directions_wrong", "false_go", "verdict", "note"];
+      DIRS.forEach((d) => cols.push(d + "_gt", d + "_pred"));
+      const rows = [cols.join(",")];
+      for (const f of frames) {
+        const r = state.reviews[f.id] || {};
+        const row = [f.id, f.subset, f.segment, f.timestamp, f.image, f.wrong.join(" "), f.falseGo.join(" "), r.verdict || "", r.note || ""];
+        DIRS.forEach((d) => row.push(f.directions[d].gt_color, f.directions[d].pred_color));
+        rows.push(row.map(q).join(","));
+      }
+      dl.save({ filename: "signal_intent_reviews.csv", data: rows.join("\n") }).catch((e) => {
+        if (e && e.code !== "declined") btn.textContent = "Download unavailable here";
+      });
+    });
+  });
+})();
+</script>

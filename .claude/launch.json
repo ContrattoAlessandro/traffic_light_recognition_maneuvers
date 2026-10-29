@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "boss-deck",
+      "runtimeExecutable": "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\runs\\boss_deck"],
+      "port": 8765
+    }
+  ]
+}

@@ -1,0 +1,416 @@
+<meta charset="utf-8">
+<title>Reading Traffic Lights</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: one slide at a time on a full-height stage, a slim top bar (deck name, filter, counter)
+   and a bottom bar (prev / progress / next). Example slides pair the annotated photo with the
+   answer table; road-sign condensed type for headings, a high-legibility face for everything read. */
+:root {
+  --bg: #eceeea;
+  --surface: #fafbf8;
+  --ink: #1b211f;
+  --muted: #56615c;
+  --line: #cfd5d1;
+  --accent: #1c58b5;
+  --accent-ink: #f4f7fb;
+  --accent-soft: #dde6f4;
+  --wrong: #b3261e;
+  --wrong-soft: #f7e3e0;
+  --sig-red: #d22d22;
+  --sig-yellow: #c88a00;
+  --sig-green: #1b8a4c;
+  --sig-none: #87928d;
+  --photo-bg: #1a1e1d;
+  --font-display: "Barlow Semi Condensed", "Arial Narrow", Arial, sans-serif;
+  --font-body: "Atkinson Hyperlegible", Verdana, Tahoma, sans-serif;
+  --s-1: 0.8125rem;
+  --s0: 1rem;
+  --s1: 1.25rem;
+  --s2: 1.75rem;
+  --s3: clamp(2rem, 4.2vw, 3.25rem);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121615; --surface: #1b201e; --ink: #e5eae7; --muted: #9ba7a2; --line: #2e3734;
+    --accent: #78a8f0; --accent-ink: #0f1a2c; --accent-soft: #1d2b42; --wrong: #ff8f84; --wrong-soft: #3b1f1c;
+    --sig-red: #ff6a5c; --sig-yellow: #ffc945; --sig-green: #4fcf88; --sig-none: #8f9b96; --photo-bg: #0b0d0c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121615; --surface: #1b201e; --ink: #e5eae7; --muted: #9ba7a2; --line: #2e3734;
+  --accent: #78a8f0; --accent-ink: #0f1a2c; --accent-soft: #1d2b42; --wrong: #ff8f84; --wrong-soft: #3b1f1c;
+  --sig-red: #ff6a5c; --sig-yellow: #ffc945; --sig-green: #4fcf88; --sig-none: #8f9b96; --photo-bg: #0b0d0c;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font: var(--s0)/1.5 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  box-sizing: border-box;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.app { height: 100%; display: flex; flex-direction: column; gap: 12px; padding-block: 12px; max-width: 1500px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; line-height: 1.08; margin: 0; text-wrap: balance; letter-spacing: 0.005em; }
+h1 { font-size: clamp(2.4rem, 6vw, 4.5rem); }
+h2 { font-size: var(--s3); }
+h3 { font-size: var(--s2); font-weight: 600; }
+p { margin: 0; max-width: 66ch; }
+.eyebrow { font-family: var(--font-display); font-weight: 600; font-size: var(--s0); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.muted { color: var(--muted); }
+
+/* top bar */
+.topbar { display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap; font-size: var(--s-1); color: var(--muted); }
+.topbar .name { font-family: var(--font-display); font-weight: 600; font-size: var(--s0); color: var(--ink); letter-spacing: 0.02em; }
+.topbar .spacer { flex: 1; }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font: inherit; font-size: var(--s-1); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.counter { font-variant-numeric: tabular-nums; }
+
+/* stage */
+.stage { flex: 1; min-height: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: auto; }
+.slide { height: 100%; padding: clamp(20px, 4vw, 56px); display: flex; flex-direction: column; gap: clamp(16px, 2.4vw, 32px); }
+.slide.center { justify-content: center; }
+
+/* bottom bar */
+.navbar { display: flex; align-items: center; gap: 14px; }
+.navbtn { font: 600 var(--s0) var(--font-display); letter-spacing: 0.03em; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 8px 18px; cursor: pointer; }
+.navbtn:disabled { opacity: 0.4; cursor: default; }
+.progress { flex: 1; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.progress > div { height: 100%; background: var(--accent); width: 0; transition: width 0.2s; }
+.hint { font-size: var(--s-1); color: var(--muted); white-space: nowrap; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* signal dots and words */
+.sig { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.dot { width: 14px; height: 14px; border-radius: 50%; flex: none; background: var(--sig-none); }
+.dot.red { background: var(--sig-red); } .dot.yellow { background: var(--sig-yellow); } .dot.green { background: var(--sig-green); }
+.dot.none { background: transparent; border: 2px dashed var(--sig-none); }
+.pass { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.06em; font-size: var(--s-1); }
+
+/* title slide */
+.title-meta { display: flex; gap: 28px; flex-wrap: wrap; font-size: var(--s-1); color: var(--muted); }
+.title-meta b { display: block; font-family: var(--font-display); font-size: var(--s2); color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* task slide */
+.dirs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.dir-card { border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 10px; background: var(--bg); }
+.dir-card svg { width: 48px; height: 48px; color: var(--accent); }
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 24px; }
+.rule { display: flex; align-items: center; gap: 12px; font-size: var(--s1); }
+
+/* models slide */
+.models { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.model { border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.model .tag { font-size: var(--s-1); color: var(--muted); }
+.steps { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; counter-reset: step; }
+.steps li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; }
+.steps li::before { counter-increment: step; content: counter(step); font: 700 var(--s0)/30px var(--font-display); text-align: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); }
+.model .key { border-top: 1px solid var(--line); padding-top: 12px; font-weight: 700; }
+
+/* results slide */
+.results { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.mtable-wrap { overflow-x: auto; }
+table.mtable { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.mtable th, .mtable td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: right; }
+.mtable th:first-child, .mtable td:first-child { text-align: left; }
+.mtable th { font-family: var(--font-display); font-weight: 600; font-size: var(--s0); color: var(--muted); }
+.mtable tr.lead td { font-weight: 700; font-size: var(--s1); }
+.mtable .sub { display: block; font-size: var(--s-1); color: var(--muted); font-weight: 400; }
+.verdict-box { border: 2px solid var(--accent); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.ci svg { width: 100%; height: auto; display: block; }
+
+/* example slide */
+.example { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); gap: clamp(16px, 2.4vw, 32px); height: 100%; padding: clamp(16px, 2.4vw, 32px); }
+.photo { min-height: 0; background: var(--photo-bg); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.photo img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+.panel { min-width: 0; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+.outcome { align-self: flex-start; font: 700 var(--s1) var(--font-display); letter-spacing: 0.02em; padding: 5px 14px; border-radius: 8px; border: 2px solid var(--ink); }
+.outcome.both { border-color: var(--sig-green); color: var(--sig-green); }
+.outcome.neither { border-color: var(--wrong); color: var(--wrong); }
+.outcome.swin, .outcome.rfdetr { border-color: var(--accent); color: var(--accent); }
+.where { font-size: var(--s-1); color: var(--muted); }
+.crops { display: flex; flex-direction: column; gap: 6px; }
+.crops img { height: 170px; width: auto; max-width: 100%; object-fit: contain; object-position: left; border-radius: 6px; background: var(--photo-bg); align-self: flex-start; }
+.label { font-family: var(--font-display); font-weight: 600; font-size: var(--s-1); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.answers-wrap { overflow-x: auto; }
+table.answers { border-collapse: separate; border-spacing: 4px; width: 100%; }
+.answers th { font: 600 var(--s-1) var(--font-display); letter-spacing: 0.04em; color: var(--muted); text-align: left; padding: 2px 6px; }
+.answers th svg { width: 18px; height: 18px; vertical-align: -4px; color: var(--ink); }
+.answers td { padding: 8px 8px; border-radius: 8px; vertical-align: top; background: var(--bg); }
+.answers td.who { background: none; font-weight: 700; white-space: nowrap; padding-left: 0; }
+.answers td.who .sub { display: block; font-weight: 400; font-size: var(--s-1); color: var(--muted); }
+.answers tr.truth td:not(.who) { background: var(--accent-soft); }
+.answers td.wrong { background: var(--wrong-soft); outline: 2px solid var(--wrong); }
+.cell { display: flex; flex-direction: column; gap: 3px; font-size: var(--s-1); }
+.cell .mark { font-weight: 700; color: var(--wrong); font-size: var(--s-1); }
+
+/* legend slide */
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+.legend > div { border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.swatch-box { display: inline-block; width: 28px; height: 20px; border: 3px solid var(--sig-red); vertical-align: middle; margin-right: 8px; }
+.swatch-box.thin { border: 1px solid var(--sig-none); }
+.groupbar { display: flex; height: 34px; border-radius: 8px; overflow: hidden; font: 600 var(--s-1)/34px var(--font-display); }
+.groupbar div { text-align: center; white-space: nowrap; overflow: hidden; color: var(--accent-ink); }
+
+/* takeaways */
+.takeaways { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.takeaways > div { border-top: 3px solid var(--accent); padding-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+
+@media (max-width: 860px) {
+  .example { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .photo { max-height: 60vh; }
+  .photo img { max-height: 60vh; }
+  .slide { height: auto; min-height: 100%; }
+  .models, .results, .takeaways { grid-template-columns: minmax(0, 1fr); }
+  .dirs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .progress > div { transition: none; } }
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <span class="name">Reading traffic lights · Swin vs RF-DETR</span>
+    <span class="spacer"></span>
+    <div class="filters" id="filters" hidden></div>
+    <span class="counter" id="counter"></span>
+  </div>
+  <main class="stage" id="stage" tabindex="-1"></main>
+  <div class="navbar">
+    <button class="navbtn" id="prev" type="button">← Back</button>
+    <div class="progress" aria-hidden="true"><div id="bar"></div></div>
+    <span class="hint">Arrow keys to move</span>
+    <button class="navbtn" id="next" type="button">Next →</button>
+  </div>
+</div>
+
+<script>
+const DATA = __DECK_DATA__;
+const M = DATA.meta, FRAMES = DATA.frames, BOOT = M.bootstrap;
+const DIR_NAMES = { straight: "Straight", left: "Left turn", right: "Right turn", uturn: "U-turn" };
+const ARROWS = {
+  straight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V4M6 10l6-6 6 6"/></svg>',
+  left: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-8a4 4 0 0 0-4-4H5M9 5L5 9l4 4"/></svg>',
+  right: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21v-8a4 4 0 0 1 4-4h7M15 5l4 4-4 4"/></svg>',
+  uturn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21V9a5 5 0 0 0-10 0v4M3 10l3 3 3-3"/></svg>',
+};
+const COLOR_WORD = { red: "Red", yellow: "Yellow", green: "Green", none: "No light" };
+const GROUP = {
+  both: { label: "Both correct", short: "Both right" },
+  rfdetr: { label: "Only RF-DETR correct", short: "Only RF-DETR" },
+  swin: { label: "Only Swin correct", short: "Only Swin" },
+  neither: { label: "Both wrong", short: "Both wrong" },
+};
+const pct = (x, d = 1) => (100 * x).toFixed(d) + "%";
+const sig = (c) => `<span class="sig"><span class="dot ${c}"></span>${COLOR_WORD[c]}</span>`;
+const B = BOOT.combined;
+const nFrames = BOOT.n_frames.A + BOOT.n_frames.B;
+
+/* ---------- static slides ---------- */
+function titleSlide() {
+  return `<section class="slide center">
+    <span class="eyebrow">Model comparison · validation data</span>
+    <h1>Can the car go?<br>Two ways to read traffic lights</h1>
+    <p class="muted" style="font-size:var(--s1)">For every camera frame the system must say, for each maneuver, which light applies and whether the car may go.
+    We compare our direction-aware model (Swin) with an off-the-shelf detector (RF-DETR), then walk through 100 real frames.</p>
+    <div class="title-meta">
+      <div><b>${nFrames.toLocaleString("en-US")}</b>frames scored</div>
+      <div><b>${FRAMES.length}</b>frames shown here</div>
+      <div><b>4</b>maneuvers per frame</div>
+    </div>
+  </section>`;
+}
+function taskSlide() {
+  const ex = { straight: ["green", "GO"], left: ["red", "STOP"], right: ["none", "GO"], uturn: ["red", "STOP"] };
+  return `<section class="slide">
+    <span class="eyebrow">The task</span>
+    <h2>One question per maneuver</h2>
+    <p style="font-size:var(--s1)">From the front camera image, the model answers four questions at once: for going straight, turning left, turning right and making a U-turn,
+    <b>what color is the light that controls it</b>, and <b>may the car go?</b></p>
+    <div class="dirs">${M.directions.map((d) => `<div class="dir-card">${ARROWS[d]}<h3>${DIR_NAMES[d]}</h3>
+      <div>${sig(ex[d][0])}</div><span class="pass">${ex[d][1]}</span></div>`).join("")}</div>
+    <p class="muted">Example above: a frame where the through light is green but the left-turn arrow is red, and no light controls right turns.</p>
+    <div class="rules">
+      <div class="rule">${sig("red")} <span class="pass">→ STOP</span></div>
+      <div class="rule">${sig("green")} <span class="pass">→ GO</span></div>
+      <div class="rule">${sig("yellow")} <span class="pass">→ GO (with care)</span></div>
+      <div class="rule">${sig("none")} <span class="pass">→ GO (with care)</span></div>
+    </div>
+  </section>`;
+}
+function modelsSlide() {
+  return `<section class="slide">
+    <span class="eyebrow">The two approaches</span>
+    <h2>Learned reasoning vs a detector plus rules</h2>
+    <div class="models">
+      <div class="model">
+        <h3>Swin · our direction-aware model</h3>
+        <span class="tag">Replication of Zou et al.; trained 15 epochs</span>
+        <ol class="steps">
+          <li><span>Looks at the whole image and finds the traffic lights.</span></li>
+          <li><span>Four learned “direction” slots, one per maneuver, each look at the scene and at all the lights.</span></li>
+          <li><span>Each slot answers its own maneuver: color, and go or stop.</span></li>
+        </ol>
+        <p class="key">The network itself learns which light matters for which maneuver.</p>
+      </div>
+      <div class="model">
+        <h3>RF-DETR · detector plus rules</h3>
+        <span class="tag">Off-the-shelf detector, pre-trained on millions of images; trained 4 epochs</span>
+        <ol class="steps">
+          <li><span>Finds every traffic light and tags it, for example “left + U-turn, red” or “not for our lane”.</span></li>
+          <li><span>Fixed rules collect, for each maneuver, the lights that control it; the most specific one wins.</span></li>
+          <li><span>No light found for a maneuver means “no light”, so go with care.</span></li>
+        </ol>
+        <p class="key">The detector only labels lights; plain rules turn them into answers.</p>
+      </div>
+    </div>
+  </section>`;
+}
+function ciSvg() {
+  // 95% interval of (Swin - RF-DETR) TSS, in points, on a fixed -3..+3 scale
+  const [lo, hi] = B.tss.ci95.map((v) => v * 100), d = B.tss.diff * 100;
+  const W = 520, x = (v) => 30 + ((v + 3) / 6) * (W - 60);
+  const ticks = [-3, -2, -1, 0, 1, 2, 3];
+  return `<svg viewBox="0 0 ${W} 120" role="img" aria-label="95% interval of the TSS difference, ${lo.toFixed(1)} to ${hi.toFixed(1)} points, includes zero">
+    <line x1="${x(0)}" y1="14" x2="${x(0)}" y2="84" stroke="var(--muted)" stroke-dasharray="4 4" fill="none"/>
+    <line x1="30" y1="84" x2="${W - 30}" y2="84" stroke="var(--line)" fill="none"/>
+    ${ticks.map((t) => `<line x1="${x(t)}" y1="84" x2="${x(t)}" y2="90" stroke="var(--muted)" fill="none"/>
+      <text x="${x(t)}" y="108" text-anchor="middle" font-size="14" fill="var(--muted)">${t > 0 ? "+" + t : t}</text>`).join("")}
+    <rect x="${x(lo)}" y="40" width="${x(hi) - x(lo)}" height="18" rx="9" fill="var(--accent-soft)" stroke="var(--accent)"/>
+    <circle cx="${x(d)}" cy="49" r="7" fill="var(--accent)"/>
+    <text x="${x(-3)}" y="28" font-size="14" fill="var(--muted)">RF-DETR better</text>
+    <text x="${x(3)}" y="28" font-size="14" text-anchor="end" fill="var(--muted)">Swin better</text>
+  </svg>`;
+}
+function resultsSlide() {
+  const row = (name, key, sub) => {
+    const r = B[key], d = (100 * r.diff).toFixed(1);
+    return `<tr class="${key === "tss" ? "lead" : ""}"><td>${name}<span class="sub">${sub}</span></td>
+      <td>${pct(r.a)}</td><td>${pct(r.b)}</td><td>${r.diff > 0 ? "+" + d : d.replace("-", "−")} pts<span class="sub">p = ${r.p.toFixed(2)}, not significant</span></td></tr>`;
+  };
+  return `<section class="slide">
+    <span class="eyebrow">Result on all ${nFrames.toLocaleString("en-US")} validation frames</span>
+    <h2>A statistical tie</h2>
+    <div class="results">
+      <div class="mtable-wrap"><table class="mtable">
+        <tr><th>Metric</th><th>Swin</th><th>RF-DETR</th><th>Swin − RF-DETR</th></tr>
+        ${row("Overall score (TSS)", "tss", "average of the three accuracies below")}
+        ${row("Color right", "acc_color", "per maneuver")}
+        ${row("Go / stop right", "acc_pass", "per maneuver")}
+        ${row("Whole frame right", "em", "all 4 maneuvers correct")}
+        ${row("Wrongly says GO", "false_go", "share of real STOPs; lower is safer")}
+        ${row("Wrongly says STOP", "false_stop", "share of real GOs; lower is better")}
+      </table></div>
+      <div class="verdict-box">
+        <h3>Difference in overall score: ${(B.tss.diff * 100).toFixed(1)} points</h3>
+        <div class="ci">${ciSvg()}</div>
+        <p>The range of plausible differences (95%) runs from ${(B.tss.ci95[0] * 100).toFixed(1)} to +${(B.tss.ci95[1] * 100).toFixed(1)} points and includes zero.
+        No metric differs significantly (every p &gt; 0.1).</p>
+        <p class="muted" style="font-size:var(--s-1)">Paired bootstrap over ${BOOT.n_segments.A + BOOT.n_segments.B} driving sequences, ${BOOT.n_boot.toLocaleString("en-US")} resamples. Each model trained once, so the real uncertainty is a little larger.</p>
+      </div>
+    </div>
+  </section>`;
+}
+function legendSlide() {
+  const g = M.groups, n = FRAMES.length, colors = { both: "var(--sig-green)", rfdetr: "var(--accent)", swin: "var(--accent)", neither: "var(--wrong)" };
+  return `<section class="slide">
+    <span class="eyebrow">How to read the examples</span>
+    <h2>100 random frames, grouped by who got them right</h2>
+    <div class="legend">
+      <div><h3>On the photo</h3>
+        <p><span class="swatch-box"></span>Thick outline: a light that controls our lane, drawn in its own color.</p>
+        <p><span class="swatch-box thin"></span>Thin grey outline: a light for another lane or road.</p>
+        <p class="muted">Lights are small, so the panel also shows them zoomed in.</p></div>
+      <div><h3>In the table</h3>
+        <p>First row: the correct answer. Then each model’s answer for the four maneuvers.</p>
+        <p><span style="outline:2px solid var(--wrong);background:var(--wrong-soft);padding:2px 8px;border-radius:6px">✗ wrong</span> marks an answer that differs from the truth.</p></div>
+      <div><h3>The 100 frames</h3>
+        <p>Picked at random: 50 from the US dataset (Argoverse 2) and 50 from nuScenes. Not cherry-picked.</p>
+        <div class="groupbar">${["both", "rfdetr", "swin", "neither"].map((k) => g[k] ? `<div style="flex:${g[k]};background:${colors[k]}" title="${GROUP[k].label}: ${g[k]}">${g[k]}</div>` : "").join("")}</div>
+        <p style="font-size:var(--s-1)">${["both", "rfdetr", "swin", "neither"].map((k) => `${GROUP[k].label}: <b>${g[k]}</b>`).join(" · ")}</p>
+        <p class="muted" style="font-size:var(--s-1)">Use the filter at the top to show one group only.</p></div>
+    </div>
+  </section>`;
+}
+function endSlide() {
+  return `<section class="slide">
+    <span class="eyebrow">Takeaways</span>
+    <h2>What we learned</h2>
+    <div class="takeaways">
+      <div><h3>It’s a tie</h3><p>Our direction-aware model and the off-the-shelf detector score the same (TSS ${pct(B.tss.a)} vs ${pct(B.tss.b)}); the gap is within noise.</p></div>
+      <div><h3>They fail differently</h3><p>RF-DETR’s typical error is missing a light and answering “no light”. Swin usually sees the light but mixes up its color, most often calling a red light green.</p></div>
+      <div><h3>Right turns are hard for both</h3><p>Real “stop” cases for right turns are rare in the data (about 50 in the whole validation set), so neither model learned them well.</p></div>
+      <div><h3>Next step</h3><p>Combine the two: feed RF-DETR’s stronger light detector into the direction-aware model, and train several runs of each to tighten the comparison.</p></div>
+    </div>
+  </section>`;
+}
+
+/* ---------- example slides ---------- */
+function exampleSlide(f, k, total) {
+  const rows = [["truth", "Correct answer", ""], ["swin", "Swin", "our model"], ["rfdetr", "RF-DETR", "detector + rules"]];
+  const head = `<tr><th></th>${M.directions.map((d) => `<th>${ARROWS[d]} ${DIR_NAMES[d]}</th>`).join("")}</tr>`;
+  const body = rows.map(([key, name, sub]) => `<tr class="${key}"><td class="who">${name}<span class="sub">${sub}</span></td>${f[key].map(([c, p], j) => {
+    const wrong = key !== "truth" && (c !== f.truth[j][0] || p !== f.truth[j][1]);
+    return `<td class="${wrong ? "wrong" : ""}"><div class="cell">${sig(c)}<span class="pass">${p.toUpperCase()}</span>${wrong ? '<span class="mark">✗ wrong</span>' : ""}</div></td>`;
+  }).join("")}</tr>`).join("");
+  const where = f.subset === "A" ? "Argoverse 2 (US)" : "nuScenes";
+  return `<div class="example">
+    <div class="photo"><img src="img/${f.id}.jpg" width="${f.size[0]}" height="${f.size[1]}" alt="Front camera frame ${f.id} with ${f.n_lights} annotated traffic lights outlined"></div>
+    <div class="panel">
+      <span class="outcome ${f.group}">${GROUP[f.group].label}</span>
+      <span class="where">Example ${k + 1} of ${total} · ${where} · frame ${f.id}</span>
+      ${f.n_tiles ? `<div class="crops"><span class="label">Lights for our lane, zoomed</span><img src="crops/${f.id}.jpg" alt="Zoomed view of the ${f.n_tiles} relevant traffic lights"></div>` : ""}
+      <div class="answers-wrap"><table class="answers">${head}${body}</table></div>
+    </div>
+  </div>`;
+}
+
+/* ---------- deck ---------- */
+const intro = [titleSlide, taskSlide, modelsSlide, resultsSlide, legendSlide];
+let filter = "all", examples = FRAMES, pos = 0;
+const stage = document.getElementById("stage");
+const slides = () => [...intro.map((fn) => ({ kind: "static", fn })), ...examples.map((f, k) => ({ kind: "ex", f, k })), { kind: "static", fn: endSlide }];
+
+function render() {
+  const list = slides();
+  pos = Math.max(0, Math.min(pos, list.length - 1));
+  const s = list[pos];
+  stage.innerHTML = s.kind === "ex" ? exampleSlide(s.f, s.k, examples.length) : s.fn();
+  stage.scrollTop = 0;
+  document.getElementById("counter").textContent = `${pos + 1} / ${list.length}`;
+  document.getElementById("bar").style.width = `${(100 * (pos + 1)) / list.length}%`;
+  document.getElementById("prev").disabled = pos === 0;
+  document.getElementById("next").disabled = pos === list.length - 1;
+  document.getElementById("filters").hidden = s.kind !== "ex" && s.fn !== legendSlide;
+  // preload the next example's images
+  const nx = list[pos + 1];
+  if (nx && nx.kind === "ex") { new Image().src = `img/${nx.f.id}.jpg`; }
+}
+function go(delta) { pos += delta; render(); }
+function setFilter(g) {
+  filter = g;
+  examples = g === "all" ? FRAMES : FRAMES.filter((f) => f.group === g);
+  pos = intro.length;
+  document.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.g === g)));
+  render();
+}
+document.getElementById("filters").innerHTML = [["all", `All ${FRAMES.length}`], ...Object.keys(GROUP).filter((g) => M.groups[g]).map((g) => [g, `${GROUP[g].short} (${M.groups[g]})`])]
+  .map(([g, t]) => `<button type="button" class="chip" data-g="${g}" aria-pressed="${g === "all"}">${t}</button>`).join("");
+document.getElementById("filters").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (c) setFilter(c.dataset.g); });
+document.getElementById("prev").addEventListener("click", () => go(-1));
+document.getElementById("next").addEventListener("click", () => go(1));
+document.addEventListener("keydown", (e) => {
+  if (e.target.closest && e.target.closest("input, textarea")) return;
+  if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") { e.preventDefault(); go(1); }
+  else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); go(-1); }
+  else if (e.key === "Home") { pos = 0; render(); }
+  else if (e.key === "End") { pos = slides().length - 1; render(); }
+});
+render();
+</script>
