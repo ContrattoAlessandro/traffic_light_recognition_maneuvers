@@ -9,6 +9,8 @@ our labels or starve tiny lights:
 - brightness/contrast jitter as in ``dtsu.data``, inserted into RF-DETR's torchvision train pipeline
   (the Albumentations route would resize train images with cv2 and val images with torchvision).
 The EMA weights are saved after every epoch (``epoch_<n>_ema.pth``) for ``tools/eval_rfdetr.py``.
+With ``--report`` (needs a dataset exported with ``--probe``) every epoch also prints an overfitting
+report (``EpochReport``).
 """
 import argparse
 import json
@@ -56,7 +58,155 @@ class SaveEMAEachEpoch(Callback):
             trainer.should_stop = True
 
 
-def patch_rfdetr(out_dir, stop_after=None):
+class EpochReport(Callback):
+    """Per-epoch overfitting report, printed and appended to ``<out-dir>/epoch_report.jsonl``.
+
+    RF-DETR's own train loss comes from the base weights in train mode over 13 query groups, its val
+    loss from the EMA weights in eval mode, so the two are not comparable. Here both sides are scored
+    the same way with the EMA weights in eval mode: valid/ (held out) and the train probe test/ (a fixed
+    random part of train/, from ``make_rfdetr_coco.py --probe``). For each: the detection loss and the
+    paper's direction metrics at the score threshold that maximizes valid TSS. RF-DETR's train-mode
+    loss and valid mAP are reported too. Overfitting shows as valid TSS no longer improving (or valid
+    loss rising) while the probe keeps improving. Creating ``<out-dir>/STOP`` ends training after the
+    current epoch (its checkpoint is saved first).
+    """
+
+    def __init__(self, out_dir, dataset_dir, patience=3, workers=2):
+        self.out_dir, self.dataset_dir, self.patience, self.workers = out_dir, dataset_dir, patience, workers
+        self.path = os.path.join(out_dir, "epoch_report.jsonl")
+        self.class_names = json.load(open(os.path.join(dataset_dir, "class_names.json")))
+        self.records = {name: [json.loads(l) for l in open(os.path.join(dataset_dir, folder, "records.jsonl"))]
+                        for name, folder in (("val", "valid"), ("probe", "test"))}
+        self.history = [json.loads(l) for l in open(self.path)] if os.path.exists(self.path) else []
+        self.loaders = None
+        self.train_losses = []
+
+    def on_train_epoch_start(self, trainer, pl_module):
+        self.train_losses = []
+
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+        loss = outputs["loss"] if isinstance(outputs, dict) else outputs
+        if loss is not None:  # Lightning hands over the loss divided by the accumulation steps
+            self.train_losses.append(float(loss.detach()) * trainer.accumulate_grad_batches)
+
+    def _loss_loaders(self, trainer):
+        """valid/ and test/ in RF-DETR's own eval pipeline, as its validation_step sees them."""
+        from rfdetr._namespace import _namespace_from_configs
+        from rfdetr.datasets import build_dataset
+        from torch.utils.data import DataLoader
+
+        dm = trainer.datamodule
+        ns = _namespace_from_configs(dm.model_config, dm.train_config)
+        sets = {"val": dm._dataset_val, "probe": build_dataset("test", ns, dm.model_config.resolution)}
+        return {k: DataLoader(ds, batch_size=dm._resolve_eval_batch_size(), shuffle=False, collate_fn=dm._collate_fn,
+                              num_workers=self.workers, persistent_workers=True) for k, ds in sets.items()}
+
+    @torch.no_grad()
+    def _loss(self, trainer, pl_module, net, loader):
+        dm, crit = trainer.datamodule, pl_module.criterion
+        was_training = crit.training
+        crit.eval()  # one query group, as in RF-DETR's validation_step
+        total, n = 0.0, 0
+        for batch in loader:
+            batch = dm.on_after_batch_transfer(dm.transfer_batch_to_device(batch, pl_module.device, 0), 0)
+            samples, targets = batch
+            with trainer.precision_plugin.forward_context():
+                outputs = net(samples)
+                loss_dict = crit(outputs, targets)
+            loss = sum(loss_dict[k] * crit.weight_dict[k] for k in loss_dict if k in crit.weight_dict)
+            total, n = total + float(loss) * len(targets), n + len(targets)
+        crit.train(was_training)
+        return total / n
+
+    def on_train_epoch_end(self, trainer, pl_module):
+        import numpy as np
+        from rfdetr.training.callbacks.coco_eval import _get_ema_inner_module
+
+        from dtsu.metrics import evaluate
+        from tools.eval_rfdetr import THRESHOLDS, run_detector, score
+
+        t0 = time.time()
+        net = pl_module.model
+        for cb in trainer.callbacks:
+            inner = _get_ema_inner_module(cb)
+            if inner is not None:
+                net = inner.model
+        was_training = net.training
+        net.eval()
+        if self.loaders is None:
+            self.loaders = self._loss_loaders(trainer)
+        losses = {k: self._loss(trainer, pl_module, net, dl) for k, dl in self.loaders.items()}
+        res = trainer.datamodule.model_config.resolution
+        dets = {k: run_detector(net, r, self.class_names, res, self.workers) for k, r in self.records.items()}
+        net.train(was_training)
+
+        val_tss = [evaluate(*score(self.records["val"], dets["val"], self.class_names, t))["tss"] for t in THRESHOLDS]
+        thr = float(THRESHOLDS[int(np.argmax(val_tss))])
+        m = {k: evaluate(*score(self.records[k], dets[k], self.class_names, thr)) for k in self.records}
+        cm = trainer.callback_metrics
+        entry = {
+            "epoch": trainer.current_epoch,
+            "train_loss_trainmode": float(np.mean(self.train_losses)) if self.train_losses else None,
+            "probe_loss": losses["probe"], "val_loss": losses["val"],
+            "val_mAP_50": float(cm["val/ema_mAP_50"]) if "val/ema_mAP_50" in cm else None,
+            "val_mAP_50_95": float(cm["val/ema_mAP_50_95"]) if "val/ema_mAP_50_95" in cm else None,
+            "threshold": thr, "val": m["val"], "probe": m["probe"],
+        }
+        hist = [h for h in self.history if h["epoch"] < entry["epoch"]] + [entry]
+        best = max(hist, key=lambda h: h["val"]["tss"])
+        since_best = entry["epoch"] - best["epoch"]
+        entry["best_epoch"], entry["epochs_since_best"] = best["epoch"], since_best
+        if since_best >= self.patience and entry["probe"]["tss"] > best["probe"]["tss"]:
+            verdict = (f"OVERFITTING LIKELY: val TSS has not beaten epoch {best['epoch']} for {since_best} epochs "
+                       f"while probe (train) TSS kept rising - consider stopping and using epoch {best['epoch']}")
+        elif since_best >= self.patience:
+            verdict = f"PLATEAU: no val TSS gain for {since_best} epochs, probe not improving either"
+        elif len(hist) >= 3 and hist[-1]["val_loss"] > hist[-2]["val_loss"] > hist[-3]["val_loss"] \
+                and hist[-1]["probe_loss"] < hist[-3]["probe_loss"]:
+            verdict = "WATCH: val loss rose two epochs in a row while probe loss fell"
+        else:
+            verdict = "ok: still improving or within patience"
+        entry["verdict"] = verdict
+        self.history = hist
+        if trainer.is_global_zero:
+            with open(self.path, "a") as f:
+                f.write(json.dumps(entry) + "\n")
+
+        prev = hist[-2] if len(hist) > 1 else None
+
+        def delta(key, sub=None):
+            if prev is None:
+                return ""
+            now, before = (entry[key][sub], prev[key][sub]) if sub else (entry[key], prev[key])
+            return f" ({now - before:+.4f})"
+
+        def row(name):
+            v = m[name]
+            return (f"TSS {v['tss']:.4f}{delta(name, 'tss')}  Acc_color {v['acc_color']:.4f}  Acc_pass {v['acc_pass']:.4f}  "
+                    f"EM {v['em']:.4f}  False-Go {v['false_go']:.4f}  False-Stop {v['false_stop']:.4f}")
+
+        mAP = lambda k: f"{entry[k]:.4f}" if entry[k] is not None else "n/a"
+        train_loss = f"{entry['train_loss_trainmode']:.4f}" if entry["train_loss_trainmode"] is not None else "n/a"
+        print("\n".join([
+            f"===== epoch {entry['epoch']} report ({time.time() - t0:.0f}s) =====",
+            f"loss (EMA, eval mode)  probe/train {entry['probe_loss']:.4f}{delta('probe_loss')}   "
+            f"val {entry['val_loss']:.4f}{delta('val_loss')}   val - probe gap {entry['val_loss'] - entry['probe_loss']:+.4f}",
+            f"loss (RF-DETR train mode, 13 query groups, not comparable to the above)  {train_loss}",
+            f"val detection  mAP50 {mAP('val_mAP_50')}  mAP50-95 {mAP('val_mAP_50_95')}",
+            f"directions @ threshold {thr:.2f} (picked on val)",
+            f"  val          {row('val')}",
+            f"  probe/train  {row('probe')}",
+            f"  probe - val TSS gap {m['probe']['tss'] - m['val']['tss']:+.4f}",
+            f"best val TSS {best['val']['tss']:.4f} at epoch {best['epoch']}, {since_best} epoch(s) since",
+            f"verdict: {verdict}",
+        ]), flush=True)
+
+        if os.path.exists(os.path.join(self.out_dir, "STOP")):
+            print(f"STOP file found: ending training after epoch {entry['epoch']}", flush=True)
+            trainer.should_stop = True
+
+
+def patch_rfdetr(out_dir, stop_after=None, report_dir=None):
     import rfdetr.datasets.coco as coco
     import rfdetr.training as training
 
@@ -77,6 +227,8 @@ def patch_rfdetr(out_dir, stop_after=None):
     def build_trainer_with_saver(*args, **kwargs):
         trainer = build_trainer(*args, **kwargs)
         trainer.callbacks.append(SaveEMAEachEpoch(out_dir, stop_after))
+        if report_dir:  # after the saver, so a STOP still keeps this epoch's weights
+            trainer.callbacks.append(EpochReport(out_dir, report_dir))
         return trainer
 
     training.build_trainer = build_trainer_with_saver
@@ -97,6 +249,8 @@ def main():
     ap.add_argument("--grad-ckpt", action="store_true", help="gradient checkpointing (less memory, slower)")
     ap.add_argument("--stop-after", type=int, help="end after this many epochs (resumable to --epochs)")
     ap.add_argument("--resume", help="a full Lightning checkpoint, e.g. <out-dir>/last.ckpt")
+    ap.add_argument("--report", action="store_true",
+                    help="per-epoch overfitting report on valid/ and the train probe test/ (see EpochReport)")
     args = ap.parse_args()
 
     os.makedirs(args.out_dir, exist_ok=True)
@@ -104,7 +258,7 @@ def main():
         json.dump(vars(args), f, indent=1)
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
-    patch_rfdetr(args.out_dir, args.stop_after)
+    patch_rfdetr(args.out_dir, args.stop_after, args.dataset_dir if args.report else None)
 
     import rfdetr
 

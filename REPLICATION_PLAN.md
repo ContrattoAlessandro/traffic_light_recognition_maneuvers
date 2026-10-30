@@ -109,6 +109,51 @@
 >   --out-dir runs/swin_t_AB --amp
 > ```
 
+## Extra datasets: DTLD and LISA (2026-10-29)
+
+Goal: train on more varied data (German cities, US night driving) for robustness. Labels follow
+the same conventions as `dtsu/labels.py` (US rules, right = dedicated signal only, U-turn = left), so
+the sets can be mixed. Build everything with `bash tools/build_ext_labels.sh`.
+
+- **DTLD v2.0** (`dtsu/labels_dtld.py`). DTLD's `relevant` flag follows the driven route, so the
+  lamps for each route come from the reviewed counterfactual rule of traffic-light-detection's
+  `route_labels_20261023`: front-facing vehicle lamps at the ego intersection; an arrow for the route
+  if there is one, else the circles. red_yellow counts as red. Frames are dropped for conflicting
+  lamps (619 train), off/unknown lamps (656), rule mismatch against the reviewed route (484), or no
+  relevant vehicle lamp (949).
+  - **Right turns follow German rules:** a right arrow if there is one, otherwise the circle (no right
+    on red). Records carry `near_turn: "signal"`. OpenLane-V2 and LISA keep the paper's US convention
+    (right = dedicated signal only), so right-turn labels mean different things across datasets.
+  - DTLD train right: 63% green / 27% red / 3% yellow / 7% none (US convention: 97% none).
+- **LISA** (`dtsu/labels_lisa.py`). It has no relevance info, so lights at the ego intersection are
+  found by size: at least 0.6 × the tallest light *of the same kind* (ball / left arrow / straight
+  arrow). Comparing per kind keeps far-side balls next to a big near-side left-arrow pole (spot-check).
+  Frames are dropped for conflicts (130 train), or for showing only arrows (LISA leaves some visible
+  balls unannotated). Right is always none.
+- **Splits.** test = official test (DTLD test; LISA day/nightSequence1–2). val = held out from the
+  official train by whole session/clip: `data/labels/tune/{dtld,lisa}_train_{fit,tune}.jsonl`.
+
+| Kept frames | train (fit) | val (tune) | test | canvas |
+|---|---|---|---|---|
+| DTLD | 23,222 | 2,706 | 11,347 | 1024×512 |
+| LISA | 16,240 | 1,431 (dayClip9/10, nightClip1) | 17,612 | 1024×768 |
+
+- Image roots: `<datasets>/DTLD_jpg/{train,test}` and `<datasets>/LISA`.
+- LISA frames are consecutive video frames, so they are heavily redundant. `--stride n` keeps every n-th frame.
+- Spot-checked about 50 frames across turn arrows, straight=none, dedicated right and conflicts. Two bugs were found and fixed: an inflated relevant-light count in DTLD, and the LISA size reference.
+- **RF-DETR on DTLD** (`bash tools/run_rfdetr_dtld.sh` → `runs/rfdetr_m_dtld/`).
+  - Same recipe as the OpenLane baseline (Medium, 1024 square, default lr), but 15 epochs with a
+    per-epoch overfitting report (`train_rfdetr.py --report` → `epoch_report.jsonl`): eval-mode loss and
+    direction metrics on the tune split vs a fixed 1,000-frame train probe. `touch <out>/STOP` ends
+    training after the current epoch.
+  - Trained on DTLD fit. The tune split picks the score threshold, and DTLD test is only reported.
+  - 24 "<moves>|<color>" classes. `assign_scored` takes `near_turn`. GT-box oracle TSS = 1.0000 on fit/tune/test, and the OpenLane oracle is unchanged.
+  - **Result (2026-10-30).** Best val TSS 0.9595 at epoch 4. After that, the probe loss kept falling
+    (4.61 → 3.43) while the val loss rose (6.50 → 6.78), so it was overfitting. DTLD test, epoch 4 @ 0.25:
+    TSS 0.9584, Acc_color 0.968, Acc_pass 0.979, EM 0.928, False-Go 0.030, False-Stop 0.016. Epoch 14
+    gives the same TSS. Right is the weakest direction (Acc_color 0.950). About 5 epochs is enough.
+    Latency on an RTX 5070 (bf16, batch 1): 22 ms network, 37 ms with JPEG decode and resize.
+
 **Scope.** Replicate only the paper's best setting: the direction-aware model ("Ours") with a Swin-Tiny
 backbone, trained and evaluated on Subset-A. Targets from Tables 1–3:
 

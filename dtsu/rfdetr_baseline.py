@@ -26,12 +26,14 @@ def parse_class(name):
     return (None if moves == IRRELEVANT else set(moves.split("+"))), color
 
 
-def assign_scored(dets, side="right"):
+def assign_scored(dets, side="right", near_turn="dedicated"):
     """Per-direction colors from detected lights, mirroring ``labels.assign_directions``.
 
     dets: list of (moves set, color, score) for relevant lights. Among the most specific candidates
     the highest-scoring light wins; ``assign_directions`` instead marks color disagreement as a
     conflict (those frames are not in the benchmark, so ground truth never needs the tie-break).
+    near_turn "dedicated" (paper, US rules): only lights controlling nothing but the near turn set it;
+    "signal" (DTLD, German rules): any light controlling the near turn does, the most specific first.
     """
     far, near = ("left", "right") if side == "right" else ("right", "left")
 
@@ -42,7 +44,7 @@ def assign_scored(dets, side="right"):
     out = {"straight": pick(lambda m: "straight" in m or "generic" in m)}
     out[far] = pick(lambda m: far in m) or out["straight"]
     out["uturn"] = pick(lambda m: "uturn" in m) or out[far]
-    out[near] = pick(lambda m: m <= {near})
+    out[near] = pick((lambda m: m <= {near}) if near_turn == "dedicated" else (lambda m: near in m))
     return {d: out[d] or "none" for d in DIRECTIONS}
 
 
@@ -83,7 +85,7 @@ def detect(model, images, class_names, amp=True):
     return cls.cpu(), score.cpu(), out["pred_boxes"].float().cpu()
 
 
-def frame_directions(cls, score, boxes, class_names, threshold, side="right", nms_iou=0.5):
+def frame_directions(cls, score, boxes, class_names, threshold, side="right", near_turn="dedicated", nms_iou=0.5):
     """Thresholded, class-agnostic-NMS'd detections of one image -> per-direction colors."""
     from torchvision.ops import box_convert, nms
 
@@ -97,7 +99,7 @@ def frame_directions(cls, score, boxes, class_names, threshold, side="right", nm
         moves, color = parse_class(class_names[c])
         if moves is not None:
             dets.append((moves, color, s))
-    return assign_scored(dets, side)
+    return assign_scored(dets, side, near_turn)
 
 
 def to_arrays(colors):

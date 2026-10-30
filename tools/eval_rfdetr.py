@@ -5,6 +5,7 @@ For every ``epoch_<n>_ema.pth`` in the run (or only ``--epochs``):
 2. pick the score threshold that maximizes combined tune TSS (val is never used for this);
 3. write val metrics at that threshold to ``<run>/val_log.jsonl``, in the format of the
    direction-aware model's log, plus val TSS over the whole threshold grid (diagnostic only).
+``--dataset dtld`` picks the threshold on the DTLD tune split and reports DTLD test.
 With ``--tune-only`` (tuning runs trained on the fit split) only the tune split is loaded and scored,
 and the log is ``<run>/tune_log.jsonl``.
 ``--per-direction`` also writes ``<run>/per_direction.json`` for the last scored epoch, as
@@ -30,11 +31,15 @@ from dtsu.rfdetr_baseline import detect, frame_directions, load_image, to_arrays
 from tools.eval_directions import direction_stats, save_preds  # noqa: E402
 
 L, R = "data/labels", "data/OpenLane-V2"
-SETS = {
-    "A_tune": (f"{L}/tune/subset_A_train_tune.jsonl", f"{R}/subset_A"),
-    "B_tune": (f"{L}/tune/subset_B_train_tune.jsonl", f"{R}/subset_B"),
-    "A": (f"{L}/subset_A_val.jsonl", f"{R}/subset_A"),
-    "B": (f"{L}/subset_B_val.jsonl", f"{R}/subset_B"),
+DTLD = os.path.join(os.environ.get("DATASETS", "../traffic-light-detection/datasets"), "DTLD_jpg")
+# per dataset: (tune sets that pick the threshold, sets reported)
+PRESETS = {
+    "openlane": ({"A_tune": (f"{L}/tune/subset_A_train_tune.jsonl", f"{R}/subset_A"),
+                  "B_tune": (f"{L}/tune/subset_B_train_tune.jsonl", f"{R}/subset_B")},
+                 {"A": (f"{L}/subset_A_val.jsonl", f"{R}/subset_A"),
+                  "B": (f"{L}/subset_B_val.jsonl", f"{R}/subset_B")}),
+    "dtld": ({"DTLD_tune": (f"{L}/tune/dtld_train_tune.jsonl", f"{DTLD}/train")},
+             {"DTLD_test": (f"{L}/dtld_test.jsonl", f"{DTLD}/test")}),
 }
 THRESHOLDS = np.round(np.arange(0.05, 0.951, 0.05), 2)
 MIN_SCORE = 0.05  # detections kept per frame for the threshold sweep
@@ -64,7 +69,8 @@ def run_detector(model, records, class_names, resolution, workers):
 
 
 def score(records, dets, class_names, threshold):
-    pred = [frame_directions(*d, class_names, threshold, r["traffic_side"]) for r, d in zip(records, dets)]
+    pred = [frame_directions(*d, class_names, threshold, r["traffic_side"], r.get("near_turn", "dedicated"))
+            for r, d in zip(records, dets)]
     pc, pp = to_arrays(pred)
     gc, gp = to_arrays([r["color"] for r in records])
     return pc, pp, gc, gp
@@ -86,6 +92,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--run", default="runs/rfdetr_m_AB")
     ap.add_argument("--class-names", default="data/rfdetr_coco/class_names.json")
+    ap.add_argument("--dataset", choices=sorted(PRESETS), default="openlane")
     ap.add_argument("--epochs", type=int, nargs="*", help="epochs to score (default: all not yet in val_log.jsonl)")
     ap.add_argument("--per-direction", action="store_true")
     ap.add_argument("--workers", type=int, default=6)
@@ -99,9 +106,11 @@ def main():
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
     class_names = json.load(open(args.class_names))
-    report = ("A_tune", "B_tune") if args.tune_only else ("A", "B")
-    pick_on = () if args.threshold is not None else ("A_tune", "B_tune")
-    recs = {k: load_records(*v)[: args.limit] for k, v in SETS.items() if k in pick_on + report}
+    tune_sets, report_sets = PRESETS[args.dataset]
+    sets = {**tune_sets, **report_sets}
+    report = tuple(tune_sets) if args.tune_only else tuple(report_sets)
+    pick_on = () if args.threshold is not None else tuple(tune_sets)
+    recs = {k: load_records(*v)[: args.limit] for k, v in sets.items() if k in pick_on + report}
     log_path = os.path.join(args.run, "tune_log.jsonl" if args.tune_only else "val_log.jsonl")
     done = set()
     if os.path.exists(log_path):
@@ -115,8 +124,8 @@ def main():
         dets = {k: run_detector(model, r, class_names, resolution, args.workers) for k, r in recs.items()}
 
         if args.threshold is None:
-            tune_recs = recs["A_tune"] + recs["B_tune"]
-            tune_dets = dets["A_tune"] + dets["B_tune"]
+            tune_recs = [r for k in pick_on for r in recs[k]]
+            tune_dets = [d for k in pick_on for d in dets[k]]
             tune_tss = [evaluate(*score(tune_recs, tune_dets, class_names, t))["tss"] for t in THRESHOLDS]
             thr, best_tune = float(THRESHOLDS[int(np.argmax(tune_tss))]), max(tune_tss)
         else:
