@@ -64,13 +64,23 @@ MEAN = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
 STD = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
 
 
-def load_image(path, resolution):
-    """Square resize as RF-DETR's val transform does (torchvision bilinear + antialias), normalized."""
+def load_image(path, resolution, pad_aspect=None):
+    """Square resize as RF-DETR's val transform does (torchvision bilinear + antialias), normalized.
+
+    pad_aspect (width / height): first pad left and right with the mean color up to that aspect, so a
+    4:3 image is squeezed into the square like the 2:1 images a model was trained on.
+    """
     import torchvision.transforms.v2.functional as TF
 
     img = TF.to_image(Image.open(path).convert("RGB"))
-    img = TF.resize(img, [resolution, resolution], antialias=True)
-    return (TF.to_dtype(img, torch.float32, scale=True) - MEAN) / STD
+    if pad_aspect is None:
+        img = TF.resize(img, [resolution, resolution], antialias=True)
+        return (TF.to_dtype(img, torch.float32, scale=True) - MEAN) / STD
+    img = (TF.to_dtype(img, torch.float32, scale=True) - MEAN) / STD
+    h, w = img.shape[-2:]
+    extra = max(0, round(h * pad_aspect) - w)
+    img = torch.nn.functional.pad(img, (extra // 2, extra - extra // 2))
+    return TF.resize(img, [resolution, resolution], antialias=True)
 
 
 @torch.no_grad()
