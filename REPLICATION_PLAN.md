@@ -555,3 +555,77 @@ Written before any J+P code or result existed. Reason: OpenLane-V2 has no pictog
 4. No cell has a ΔFalse-Go point estimate above +0.01.
 
 Otherwise F is not built, and the paper reports J+P as the test of the pictogram idea.
+
+**Implementation notes for amendment 1** (recorded before any J+P result):
+- **P's training crops** (`tools/make_pictogram_crops.py`): 77,784 for training and 22,836 for validation. Circles are capped at 15,000 and others at 8,000 per source; lamps with a long side under 6 px are left out. Evaluation crops: ATLAS test 6,156, LISA test 21,525 (circles capped at 15,000), and the 1,154 hand-labelled OpenLane lights. Unclear lights and the single U-turn arrow are left out, because neither is a P class.
+- **ATLAS validation has only 2 straight-right arrows**, so that class's recall makes the macro accuracy used for epoch selection noisy.
+- **Deviation:** the arrow-column CIs bootstrap over images, not over sequences or cameras. ATLAS test has 3 cameras and LISA test 4 sequences, too few clusters for a cluster bootstrap. Images from one sequence are correlated, so these CIs are too narrow, and the LISA criterion should be read with that in mind.
+- **Tie-break for τ:** when several τ give the same source-tune TSS, the most conservative is taken (the largest, then off). In the smoke test, τ = 0.8 … off all tied.
+
+### Amendment 1 results: J vs J+P (2026-11-06, single seed, preliminary)
+
+P = `runs/pictogram_p/best.pth`, epoch 9 (sha256 prefix `2fd9aed0693abe75`). Outputs: `results/hybrid_v1/`.
+
+**P on its own** (ground-truth boxes and colors):
+
+| Set | Accuracy | Arrow recall | Arrow precision | Exact type on true arrows |
+|---|---|---|---|---|
+| val (DTLD + ATLAS, selection) | 0.856 | 0.948 | 0.873 | 0.893 |
+| ATLAS test (in-domain for P) | 0.705 | 0.891 | 0.704 | 0.716 |
+| OpenLane hand labels | 0.685 | 0.719 | 0.415 | 0.582 |
+| LISA test | 0.515 | 0.261 | 0.287 | 0.158 |
+
+On OpenLane, 144 of 962 circles are called arrows (87 of them arrow_straight), and 126 are called other. LISA's wider boxes take P far outside its training crops.
+
+**τ chosen on each source tune split:**
+
+| Run | τ | Effect |
+|---|---|---|
+| A | off | J+P = J everywhere |
+| A+B | off | J+P = J everywhere |
+| B | 0.8 | overrides applied |
+| DTLD | 0.8 | overrides applied |
+
+On the OpenLane tune splits, tune TSS falls as more lights are overridden: P's false arrows on US and Singapore circles cost more than its true arrows gain.
+
+**Per-direction matrix** (ΔTSS = J+P − J, with the segment-cluster bootstrap 95% CI):
+
+| Run → test | J TSS | J+P TSS | ΔTSS [95% CI] | ΔFalse-Go | frames changed |
+|---|---|---|---|---|---|
+| A → A val | 0.8995 | 0.8995 | 0 | 0 | 0 |
+| A → B val | 0.7893 | 0.7893 | 0 | 0 | 0 |
+| A → D*_US | 0.7545 | 0.7545 | 0 | 0 | 0 |
+| B → A val | 0.8273 | 0.8255 | −0.0018 [−0.0054, +0.0006] | +0.0047 | 28 |
+| B → B val | 0.9039 | 0.9020 | −0.0019 [−0.0081, +0.0025] | −0.0005 | 30 |
+| **B → D*_US** | 0.7816 | **0.8131** | **+0.0315 [+0.0237, +0.0398]** | **−0.0353** | 987 |
+| A+B → A val | 0.9048 | 0.9048 | 0 | 0 | 0 |
+| A+B → B val | 0.9178 | 0.9178 | 0 | 0 | 0 |
+| A+B → D*_US | 0.8273 | 0.8273 | 0 | 0 | 0 |
+| DTLD → A val | 0.8658 | 0.8639 | −0.0019 [−0.0048, +0.0003] | +0.0033 | 13 |
+| DTLD → B val | 0.8829 | 0.8834 | +0.0005 [−0.0017, +0.0030] | 0 | 21 |
+| DTLD → D*_US | 0.9602 | 0.9641 | +0.0039 [+0.0010, +0.0071] | −0.0035 | 229 |
+
+**Arrow directions** (exact moves on arrows the run calls relevant; image-bootstrap CI, too narrow, see the deviation above):
+
+| Run | ATLAS test (in-domain for P) J → J+P | LISA test J → J+P |
+|---|---|---|
+| A | 0.188 → 0.188 (off) | 0.147 → 0.147 (off) |
+| B | 0.230 → **0.877** (+0.648 [+0.611, +0.684]) | 0.005 → 0.090 (+0.085 [+0.074, +0.097]) |
+| A+B | 0.183 → 0.183 (off) | 0.058 → 0.058 (off) |
+| DTLD | 0.433 → **0.849** (+0.417 [+0.388, +0.445]) | 0.338 → 0.395 (+0.057 [+0.047, +0.067]) |
+
+**Decision rule (amendment 1), applied as written:**
+1. **Transfer gain: met.** B → D*_US has ΔTSS +0.0315 [+0.0237, +0.0398]. The other transfer cells are 0 (τ off) or have a CI that includes 0.
+2. **LISA arrow gain: met** for B and DTLD, with the image-bootstrap caveat.
+3. **In-domain non-inferiority: not met.** B → B val has a lower CI bound of −0.0081, below the −0.005 margin (point estimate −0.0019). A → A val and A+B on A and B val are exactly 0.
+4. **No ΔFalse-Go above +0.01: met.** The largest is +0.0047.
+
+**Verdict:** criterion 3 fails, so by the pre-registered rule **F is not built**. J+P is the reported test of the pictogram idea. It fails by a narrow margin, on one cell, with a single seed.
+
+Reading:
+- **The pictogram classifier switches itself off for the models that matter most.** For A and A+B, the source tune split rejects every override. J+P = J for the best model, so in-domain there is nothing to gain or lose.
+- **Where τ is on, rules on arrows help out of domain and are neutral to slightly negative in domain.**
+  - Out of domain, B → D*_US gains 3.2 TSS points and cuts False-Go by 3.5 points.
+  - Exact arrow moves on ATLAS rise from 0.23 to 0.88 (B) and from 0.43 to 0.85 (DTLD).
+  - In domain, the cost is small and its CI includes 0 (−0.2 points on B → A and B → B val).
+- **The bottleneck is P's precision on OpenLane** (0.415): US and Singapore circles called arrows. A pictogram stage helps where arrows are common and look like its training crops (Germany). It does not help on OpenLane-V2, where H1 already showed arrows are rare and mostly not readable.

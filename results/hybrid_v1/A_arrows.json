@@ -1,0 +1,28 @@
+{
+ "run": "runs/rfdetr_m_A",
+ "epoch": 2,
+ "threshold": 0.2,
+ "tau": null,
+ "atlas": {
+  "arrows": 1041,
+  "J_exact": 0.1882804995196926,
+  "J+P_exact": 0.1882804995196926,
+  "d_exact": 0.0,
+  "d_exact_ci95": [
+   0.0,
+   0.0
+  ],
+  "overridden": 0
+ },
+ "lisa": {
+  "arrows": 2413,
+  "J_exact": 0.14711976792374637,
+  "J+P_exact": 0.14711976792374637,
+  "d_exact": 0.0,
+  "d_exact_ci95": [
+   0.0,
+   0.0
+  ],
+  "overridden": 0
+ }
+}
