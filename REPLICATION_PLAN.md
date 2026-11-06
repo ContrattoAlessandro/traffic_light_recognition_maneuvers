@@ -629,3 +629,56 @@ Reading:
   - Exact arrow moves on ATLAS rise from 0.23 to 0.88 (B) and from 0.43 to 0.85 (DTLD).
   - In domain, the cost is small and its CI includes 0 (−0.2 points on B → A and B → B val).
 - **The bottleneck is P's precision on OpenLane** (0.415): US and Singapore circles called arrows. A pictogram stage helps where arrows are common and look like its training crops (Germany). It does not help on OpenLane-V2, where H1 already showed arrows are rare and mostly not readable.
+
+## Exp 5: mixed training A+B+D*_US (2026-11-06, design fixed before training)
+
+**Question.** Does adding German data (DTLD with the OpenLane protocol, D*_US) close the zero-shot gap to Germany without hurting OpenLane-V2? Does the resulting model serve both US and German traffic rules, switched only at decoding time?
+
+**Training data.** The OpenLane-V2 A+B fit split (14,977 kept frames) plus a random sample (seed 0) of 14,977 of the 23,526 kept D*_US fit frames, so both domains carry equal weight. LISA is not used.
+- Classes are the union of the training classes: `<moves>|<color>` per light, plus `none|<color>` for non-relevant lights.
+- D*_US per-light classes are the DTLD lamps' moves from `serving()`. They don't depend on the US-vs-German direction rule, so the same trained model can be decoded with either rule.
+- The recipe is r1's: RF-DETR Medium at 1024, 4 epochs, batch 4 × grad-accum 4, lr 1e-4 / encoder 1.5e-4, single seed. Output: `runs/rfdetr_m_mix`.
+
+**Selection.** Per epoch, the score threshold maximizes the equal-weight mean of TSS on the OpenLane tune split (A_tune + B_tune) and on the D*_US tune split. The reported epoch is the best on that mean. No test set is used to choose anything.
+
+**Reported** (all at that threshold):
+- A val and B val (OpenLane rules);
+- D*_US test (DTLD test with US rules: right only by a dedicated signal);
+- DTLD test with German rules (`dtld_test.jsonl`, `near_turn = signal`: the circle also governs the right turn). This is the "switch rules only" test.
+
+**Compared with** A+B (r1) and the DTLD model, each scored on the same four sets at its own source threshold. Paired segment-cluster bootstrap (`tools/bootstrap_compare.py`). The comparison is descriptive, with a single seed and no decision rule attached.
+
+### Exp 5 results (2026-11-06)
+
+**Selection.** Epoch 1, threshold 0.25 (mean tune TSS 0.9364). By epoch, mean tune TSS was 0.9276 / 0.9364 / 0.9347 / 0.9318. The DTLD sets keep improving after epoch 1 (DTLD test German 0.950 → 0.956 at epoch 3), while A val drops (0.915 → 0.900).
+
+**TSS, each model at its own source-selected epoch and threshold.** Differences are mix minus the other model, with paired segment-cluster bootstrap 95% CIs (10,000 draws).
+
+| Test set | Mix | A+B (r1) | Mix − A+B | DTLD | Mix − DTLD |
+|---|---|---|---|---|---|
+| A val | 0.9148 | 0.9048 | +0.0100 [−0.0010, +0.0227] | 0.8658 | +0.0490 [+0.0235, +0.0778] |
+| B val | 0.9206 | 0.9178 | +0.0028 [−0.0139, +0.0200] | 0.8829 | +0.0377 [+0.0017, +0.0822] |
+| A+B pooled | 0.9172 | 0.9102 | +0.0070 [−0.0025, +0.0172] | 0.8729 | +0.0443 [+0.0225, +0.0690] |
+| D*_US test (US rules) | 0.9523 | 0.8273 | +0.1250 [+0.1112, +0.1392] | 0.9602 | −0.0079 [−0.0116, −0.0044] |
+| DTLD test (German rules) | 0.9497 | 0.5770 | +0.3727 [+0.3596, +0.3857] | 0.9584 | −0.0088 [−0.0127, −0.0049] |
+
+**False-Go** (mix vs A+B vs DTLD):
+- A val: 0.146 / 0.145 / 0.341
+- B val: 0.092 / 0.098 / 0.166
+- D*_US: 0.042 / 0.213 / 0.033
+- DTLD German: 0.036 / 0.327 / 0.030
+
+Mix vs A+B on A+B pooled: False-Go −0.002 [−0.029, +0.022], False-Stop −0.007 [−0.013, −0.001].
+
+**Reading.**
+- **OpenLane is not hurt by the German data.** Mix vs A+B is +0.007 TSS on A+B pooled (CI includes 0); False-Go is unchanged.
+- **The German zero-shot gap closes almost entirely.** On D*_US the mixed model reaches 0.952, against 0.827 for A+B and 0.960 for the DTLD specialist.
+- **A small residual cost on German data.** The mixed model is 0.008–0.009 below the DTLD specialist on both DTLD sets, a significant difference. False-Go is +0.006 to +0.008 higher. It saw half as many German frames, and the epoch was chosen on the mean of both domains.
+- **Rule switching works for the mixed model.** The same weights score 0.952 with US rules and 0.950 with German rules. Right-turn color accuracy is 0.964 (US) vs 0.942 (German), and right False-Go is 0.057 under German rules.
+- **Rule switching fails for the A+B model.** It scores 0.827 with US rules but 0.577 with German rules; right-turn color accuracy drops to 0.272 and right False-Go rises to 0.81. Its per-light moves are learned from OpenLane's lane-based labels, so its round lights rarely carry the moves the German rule needs to give the right turn to the circle.
+- **Conclusion on rules.** Switching rules at decoding only works if the model learned per-light moves with the conventions of the region being decoded, which requires training data from that region. The rule switch is a decoding choice, not a substitute for in-region data.
+- **Single seed.** The ±0.01 OpenLane differences are within seed noise until seeds are run.
+
+Outputs:
+- `runs/rfdetr_m_mix/`: `val_log.jsonl`, `val_log_mix.jsonl`, `per_direction_mix.json`, `bootstrap_vs_r1_m_default.json`, `bootstrap_vs_rfdetr_m_dtld.json`;
+- `*_mix.*` files in `runs/tune_rfdetr/r1_m_default/` and `runs/rfdetr_m_dtld/`.

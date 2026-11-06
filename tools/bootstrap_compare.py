@@ -38,17 +38,22 @@ def main():
     ap.add_argument("--n", type=int, default=10000)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default="runs/bootstrap_swin_vs_rfdetr.json")
+    ap.add_argument("--a-preds", default="val_preds.npz", help="file name inside run a (e.g. val_preds_mix.npz)")
+    ap.add_argument("--b-preds", default="val_preds.npz")
+    ap.add_argument("--sets", nargs="+", default=["A", "B"], help="val sets in the npz files")
     args = ap.parse_args()
 
-    sets = ("A", "B")
-    pa, pb = load(os.path.join(args.a, "val_preds.npz"), sets), load(os.path.join(args.b, "val_preds.npz"), sets)
+    sets = tuple(args.sets)
+    pa, pb = load(os.path.join(args.a, args.a_preds), sets), load(os.path.join(args.b, args.b_preds), sets)
     for s in sets:  # same frames, same order, same labels
         for k in ("gc", "gp", "segment"):
             assert np.array_equal(pa[s][k], pb[s][k]), f"{s}_{k} differs between runs"
 
     groups = {s: [np.flatnonzero(pa[s]["segment"] == g) for g in np.unique(pa[s]["segment"])] for s in sets}
     rng = np.random.default_rng(args.seed)
-    scopes = {"A": ("A",), "B": ("B",), "combined": sets}
+    scopes = {s: (s,) for s in sets}
+    if "A" in sets and "B" in sets:
+        scopes["A+B"] = ("A", "B")
     point = {sc: metrics(pa, pb, {s: np.arange(len(pa[s]["gc"])) for s in ss}) for sc, ss in scopes.items()}
     diffs = {sc: {m: [] for m in METRICS} for sc in scopes}
     for _ in range(args.n):

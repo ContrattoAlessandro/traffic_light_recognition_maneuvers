@@ -1,0 +1,37 @@
+{
+ "code_commit": "930e0630e5ddba11355013cca9326f8f4581ddb4",
+ "code_dirty_at_snapshot": true,
+ "runs": {
+  "runs/rfdetr_m_mix": {
+   "scored_epoch": 1,
+   "checkpoint": "runs/rfdetr_m_mix/epoch_1_ema.pth",
+   "checkpoint_sha256": "e427e497139855f8886219eb7d6475b0aba11391ad00184d4a052f5d1c6ef525",
+   "class_names": "data/rfdetr_coco_fit_mix/class_names.json",
+   "class_names_sha256": "618c25b409d48db2e21c3fea6e590de774c11bc5ce9ec1c75790cd62484769f2",
+   "files_copied": 11
+  }
+ },
+ "labels": {
+  "data/labels/tune/dtld_train_fit.jsonl": "b081f5475fd8c7b53e8f1f51fbed4a6360f386a763c734c34cb705732d1c7f42",
+  "data/labels/tune/dtld_train_tune.jsonl": "f9224932f004d1c88f53f5bb768c1ca541ecf531e8387a9e195118fd5a793c12",
+  "data/labels/tune/dtld_us_train_fit.jsonl": "76768ecf58e5f7f46e22d83ac961fddb0076fdddc1b8b72f2054e66f02306a57",
+  "data/labels/tune/dtld_us_train_tune.jsonl": "05b3a94b16792d7123c1e0e9c2f8d313236de90f879fcbc692a2f18bd25e437b",
+  "data/labels/tune/lisa_train_fit.jsonl": "b7c9d05819593b9a461ce986c9065ffc64c5cb91db82c975689c6c758143decc",
+  "data/labels/tune/lisa_train_tune.jsonl": "6397c167e5226dde6ffc9ec292a6bfb26999957f4216a3168d96dd4e3b46de65",
+  "data/labels/tune/subset_A_train_fit.jsonl": "bd37a0ab84d24faa7f70fd3f76c0f9a2ade98db9aa74e660ac0f9e4cc5351c74",
+  "data/labels/tune/subset_A_train_tune.jsonl": "485d91775f36c145a46f4986b9d51d53529b0e167bb7f8aecaa6b49d14327164",
+  "data/labels/tune/subset_B_train_fit.jsonl": "0548836431eb71528a984c498d899d42629c461d83745f29ed6189a59df98f4f",
+  "data/labels/tune/subset_B_train_tune.jsonl": "ab17a77019d36b05bbfb1a225c13ca64c1dba2ad968be0252b9af6feab94d746",
+  "data/labels/dtld_test.jsonl": "031786bcac3ac905a02bd220e8da7d168f3b6a1ecdb9318b14b8e9a39398c79b",
+  "data/labels/dtld_train.jsonl": "30708aafd0676f8b0c1c8df7d5963ee0fc297fff87e834d4509237672a0bea15",
+  "data/labels/dtld_us_test.jsonl": "664048c6fe5d9be9328dd4c60d4811bbef43d1d53cbb9c69ec7fbaa9555d5ca9",
+  "data/labels/dtld_us_train.jsonl": "afeb3c21d42f81403be9eb729ff9a62533c50ab19ab4b1b6d15a08d187704508",
+  "data/labels/lisa_test.jsonl": "d38dcbc3bb9388283ae5a37e8b9ff6db6db1e95c642dbd7bb8f875d90a70a3d1",
+  "data/labels/lisa_train.jsonl": "d799c3b610342b0bc23fbdf470f90993361759318f1ded61be86fb2e2f02a536",
+  "data/labels/sample_train.jsonl": "94a76ff25e7f05627583f6c0a686800d23c604940f48ad23679eaaa367e6a26c",
+  "data/labels/subset_A_train.jsonl": "c6fea214f5a8c96b3a3abb2a8fa80ee46a89ce4c57fc9cd6530994b3d134c6f9",
+  "data/labels/subset_A_val.jsonl": "d82e1f8fd5e9498c0da10673a44be5067272d7637a8d9a4726b48d9c37f203ee",
+  "data/labels/subset_B_train.jsonl": "448c2076ec6ecbdb68b97d4b45eb78ab520bc837aac0408df6dae973304a6d82",
+  "data/labels/subset_B_val.jsonl": "e0cf4b97862ccf0348ddb8fdd5fdfd5e06f25242c0c27ccd7ff4a8685cb3f325"
+ }
+}

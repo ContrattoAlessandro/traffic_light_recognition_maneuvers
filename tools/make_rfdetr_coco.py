@@ -5,6 +5,8 @@ valid/  = A+B tune split (a subset of train; only feeds RF-DETR's own per-epoch 
 With ``--fit`` (tuning runs, out dir data/rfdetr_coco_fit) train/ is the 90% fit split instead, so
 valid/ is held out. ``--dataset dtld`` exports DTLD the same way (fit / tune / official test).
 ``--subsets A`` (or B) exports one OpenLane-V2 subset only (single-subset runs).
+``--dataset mixed`` (Exp 5, with ``--fit``): OpenLane-V2 A+B fit plus a random sample (seed 0) of the D*_US
+fit frames of the same size, valid/ = A+B tune + D*_US tune.
 ``--probe N`` also writes test/ = N random frames of train/: RF-DETR never evaluates it, but
 ``tools/train_rfdetr.py`` scores it each epoch exactly like valid/ to measure overfitting.
 Each folder gets a records.jsonl with the label records of its images, in order.
@@ -41,6 +43,8 @@ DTLD_SPLITS = {
     "valid": [(f"{L}/tune/dtld_train_tune.jsonl", f"{DTLD}/train")],
     "test": [(f"{L}/dtld_test.jsonl", f"{DTLD}/test")],
 }
+DTLD_US = {"fit": [(f"{L}/tune/dtld_us_train_fit.jsonl", f"{DTLD}/train")],
+           "valid": [(f"{L}/tune/dtld_us_train_tune.jsonl", f"{DTLD}/train")]}
 
 
 def oracle(records, class_names):
@@ -68,17 +72,25 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", default="data/rfdetr_coco")
     ap.add_argument("--fit", action="store_true", help="train/ = fit split (train minus tune)")
-    ap.add_argument("--dataset", choices=("openlane", "dtld"), default="openlane")
+    ap.add_argument("--dataset", choices=("openlane", "dtld", "mixed"), default="openlane")
     ap.add_argument("--probe", type=int, default=0, help="write test/ = this many random train/ frames (seed 0)")
     ap.add_argument("--subsets", nargs="+", choices=("A", "B"), default=["A", "B"],
                     help="OpenLane-V2 subsets to export (single-subset runs: classes then come from that subset's train)")
     args = ap.parse_args()
 
     splits = DTLD_SPLITS if args.dataset == "dtld" else OPENLANE
-    if args.dataset == "openlane":
+    if args.dataset in ("openlane", "mixed"):
         splits = {k: [(lab, root) for lab, root in v if root.rsplit("_", 1)[-1] in args.subsets] for k, v in splits.items()}
         splits = {k: v for k, v in splits.items() if v}
     recs = {k: [r for lab, root in v for r in load_records(lab, root)] for k, v in splits.items()}
+    if args.dataset == "mixed":
+        if not args.fit:
+            sys.exit("--dataset mixed needs --fit (the D*_US part only exists as fit / tune)")
+        us = {k: [r for lab, root in v for r in load_records(lab, root)] for k, v in DTLD_US.items()}
+        recs = {"train": recs["fit"] + random.Random(0).sample(us["fit"], len(recs["fit"])),
+                "fit": None, "valid": recs["valid"] + us["valid"], "val_A": recs["val_A"], "val_B": recs["val_B"]}
+        recs["fit"] = recs["train"]
+        print(f"mixed: {len(recs['train'])} train frames (half D*_US), {len(recs['valid'])} valid frames")
     class_names = sorted({box_class(b) for r in recs["train"] for b in r["boxes"]})
     unseen = collections.Counter(box_class(b) for k in recs if k not in ("train", "fit", "valid") for r in recs[k] for b in r["boxes"]
                                  if box_class(b) not in class_names)

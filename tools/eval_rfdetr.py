@@ -48,7 +48,17 @@ PRESETS = {
                     "B": (f"{L}/subset_B_val.jsonl", f"{R}/subset_B")}),
     "dtld": ({"DTLD_tune": (f"{L}/tune/dtld_train_tune.jsonl", f"{DTLD}/train")},
              {"DTLD_test": (f"{L}/dtld_test.jsonl", f"{DTLD}/test")}),
+    # Exp 5 (mixed A+B+D*_US): threshold on the equal-weight mean of OpenLane and D*_US tune TSS (PICK_GROUPS);
+    # DTLD_test keeps the German rule (near_turn "signal" in its records), DTLD_US_test the US rule
+    "mixed": ({"A_tune": (f"{L}/tune/subset_A_train_tune.jsonl", f"{R}/subset_A"),
+               "B_tune": (f"{L}/tune/subset_B_train_tune.jsonl", f"{R}/subset_B"),
+               "DTLD_US_tune": (f"{L}/tune/dtld_us_train_tune.jsonl", f"{DTLD}/train")},
+              {"A": (f"{L}/subset_A_val.jsonl", f"{R}/subset_A"),
+               "B": (f"{L}/subset_B_val.jsonl", f"{R}/subset_B"),
+               "DTLD_US_test": (f"{L}/dtld_us_test.jsonl", f"{DTLD}/test"),
+               "DTLD_test": (f"{L}/dtld_test.jsonl", f"{DTLD}/test")}),
 }
+PICK_GROUPS = {"mixed": [["A_tune", "B_tune"], ["DTLD_US_tune"]]}  # default: one group of all tune sets
 THRESHOLDS = np.round(np.arange(0.05, 0.951, 0.05), 2)
 MIN_SCORE = 0.05  # detections kept per frame for the threshold sweep
 
@@ -107,6 +117,7 @@ def main():
     ap.add_argument("--limit", type=int, help="first N frames per set (smoke tests)")
     ap.add_argument("--tune-only", action="store_true",
                     help="tuning runs: score the tune split only (val is never loaded), log to tune_log.jsonl")
+    ap.add_argument("--tag", default="", help="suffix for val_log / per_direction / val_preds (scoring a run on another preset)")
     ap.add_argument("--threshold", type=float,
                     help="fixed score threshold (from tuning); needed when the run trained on the tune split")
     args = ap.parse_args()
@@ -119,7 +130,7 @@ def main():
     report = tuple(tune_sets) if args.tune_only else tuple(report_sets)
     pick_on = () if args.threshold is not None else tuple(tune_sets)
     recs = {k: load_records(*v)[: args.limit] for k, v in sets.items() if k in pick_on + report}
-    log_path = os.path.join(args.run, "tune_log.jsonl" if args.tune_only else "val_log.jsonl")
+    log_path = os.path.join(args.run, ("tune_log" if args.tune_only else "val_log") + args.tag + ".jsonl")
     done = set()
     if os.path.exists(log_path):
         done = {json.loads(l)["epoch"] for l in open(log_path)}
@@ -132,9 +143,9 @@ def main():
         dets = {k: run_detector(model, r, class_names, resolution, args.workers) for k, r in recs.items()}
 
         if args.threshold is None:
-            tune_recs = [r for k in pick_on for r in recs[k]]
-            tune_dets = [d for k in pick_on for d in dets[k]]
-            tune_tss = [evaluate(*score(tune_recs, tune_dets, class_names, t))["tss"] for t in THRESHOLDS]
+            groups = PICK_GROUPS.get(args.dataset, [list(pick_on)])
+            tune_tss = [np.mean([evaluate(*score([r for k in g for r in recs[k]], [d for k in g for d in dets[k]],
+                                                 class_names, t))["tss"] for g in groups]) for t in THRESHOLDS]
             thr, best_tune = float(THRESHOLDS[int(np.argmax(tune_tss))]), max(tune_tss)
         else:
             thr, best_tune = args.threshold, None
@@ -158,9 +169,9 @@ def main():
                 out[name] = {"overall": evaluate(pc, pp, gc, gp),
                              "directions": {d: direction_stats(pc[:, j], pp[:, j], gc[:, j], gp[:, j])
                                             for j, d in enumerate(DIRECTIONS)}}
-            with open(os.path.join(args.run, "per_direction.json"), "w") as f:
+            with open(os.path.join(args.run, f"per_direction{args.tag}.json"), "w") as f:
                 json.dump(out, f, indent=1)
-            save_preds(os.path.join(args.run, "val_preds.npz"), recs, preds, report)
+            save_preds(os.path.join(args.run, f"val_preds{args.tag}.npz"), recs, preds, report)
 
 
 if __name__ == "__main__":
