@@ -521,3 +521,37 @@ Findings:
 - The hybrid (F) is therefore the right design: rules for arrows, a learned moves head for circles.
 - The cap (≈ 0.96) is well above today's learned models (≈ 0.91), so it doesn't limit F yet.
 - In the random N frames, arrows are only 3 / 174 (A) and 5 / 156 (B) relevant lights. They are about 13% only in the sample as a whole, which is enriched with turn-only lights. Any in-domain gain from the pictogram head (H2) should therefore be small. If F helps, it should show mostly in transfer and OOD arrow reading (H3, H4), where datasets have more arrows and no topology.
+
+### Amendment 1 (2026-11-06): two-stage arm J+P, before F
+
+Written before any J+P code or result existed. Reason: OpenLane-V2 has no pictogram labels for training, and H1 showed that arrows are rare there. The cheapest clean test of "do pictogram rules help" changes only the decoding of the existing J models. F is built only if J+P shows a gain (decision rule below). Seeds are deferred: every J+P result below is single-seed and preliminary until they are run.
+
+**P (pictogram classifier).**
+- Model: ResNet-18 trained from scratch.
+- Input: a square crop of side 1.25 × the box's long side, resized to 64 × 64, plus the light's color as a one-hot input. The color picks the lamp when a head has two lamps lit.
+- 7 classes: circle, arrow_left, arrow_straight, arrow_right, arrow_straight_left, arrow_straight_right, other (DTLD pedestrian / bicycle / tram). Unknown pictograms are left out.
+- Training data: DTLD train (fit sessions of `data/labels/tune/dtld_train_fit.jsonl`) and ATLAS train (85% of sessions). It uses ground-truth boxes, jittered in scale (0.8–1.5 per side) and shift (±15%), with color jitter. A horizontal flip swaps left and right.
+- Model selection (epoch): macro accuracy on DTLD tune sessions plus the held-out ATLAS train sessions.
+- It never sees OpenLane, LISA, ATLAS test or DTLD test.
+- P's accuracy on the 1,172 hand-labelled OpenLane lights (ground-truth boxes and colors) is reported, never used.
+
+**Decoding J+P.** Each J run keeps its own epoch and score threshold, picked on its source tune split.
+- After threshold and NMS, every detection J calls relevant is cropped from the source image and given J's color.
+- If P's top class is an arrow with probability ≥ τ, the detection's moves become the arrow's directions. Otherwise J's moves are kept. Colors are always J's, and "other" is not used.
+- τ ∈ {0.5, 0.6, 0.7, 0.8, 0.9, 0.95, off} is picked on the same source tune split, by TSS. "off" reproduces J exactly, so J is nested in J+P.
+
+**Matrix.** Rows: J models A, B, A+B, DTLD.
+- Per-direction columns: A val, B val, D*_US test, with the same metrics as before.
+- Arrow columns: exact arrow-moves accuracy (center matching) on ATLAS test and LISA test. ATLAS test is in-domain for P, since P trains on ATLAS train; LISA is the out-of-distribution arrow test.
+
+**Comparison.**
+- J vs J+P is paired on the same detections.
+- 95% CIs of ΔTSS and ΔFalse-Go come from a segment-cluster bootstrap (10,000 draws, seed 0). For the arrow columns, the bootstrap is over images grouped by sequence or camera.
+
+**Decision rule (build F or not).** F is built if all of the following hold:
+1. At least one transfer cell has a ΔTSS CI above 0. The transfer cells are A→B, B→A, A→D*_US, B→D*_US and A+B→D*_US.
+2. Or, instead of 1, the LISA arrow-accuracy gain has a CI above 0.
+3. In-domain is non-inferior: on A→A val, B→B val and A+B on A val and B val, the lower ΔTSS CI bound is above −0.005.
+4. No cell has a ΔFalse-Go point estimate above +0.01.
+
+Otherwise F is not built, and the paper reports J+P as the test of the pictogram idea.
