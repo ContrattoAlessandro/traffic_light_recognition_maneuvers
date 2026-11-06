@@ -1,0 +1,16 @@
+{
+ "dataset_dir": "data/rfdetr_coco_dtld",
+ "out_dir": "runs/rfdetr_m_dtld",
+ "variant": "RFDETRMedium",
+ "resolution": 1024,
+ "epochs": 15,
+ "batch_size": 4,
+ "grad_accum": 4,
+ "lr": 0.0001,
+ "lr_encoder": 0.00015,
+ "workers": 6,
+ "grad_ckpt": false,
+ "stop_after": null,
+ "resume": null,
+ "report": true
+}

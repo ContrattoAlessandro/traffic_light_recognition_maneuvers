@@ -1,0 +1,627 @@
+{
+ "run": "runs/rfdetr_m_dtld",
+ "epoch": 4,
+ "threshold": 0.25,
+ "dataset": "atlas",
+ "iou0.5": {
+  "all": {
+   "images": 2828,
+   "lights": 6169,
+   "AP": 0.567489262986689,
+   "detections": 6102,
+   "recall": 0.6022045712433134,
+   "precision": 0.6088167813831531,
+   "recall_by_height": {
+    "0-10px": [
+     3,
+     373
+    ],
+    "10-20px": [
+     382,
+     1779
+    ],
+    "20-40px": [
+     1154,
+     1667
+    ],
+    "40-1e+09px": [
+     2176,
+     2350
+    ]
+   },
+   "color_acc": 0.9092866756393001,
+   "color_recall": {
+    "red": 0.8597168597168597,
+    "yellow": 0.9473684210526315,
+    "green": 0.9940564635958395
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 2004,
+     "yellow": 251,
+     "green": 76
+    },
+    "yellow": {
+     "red": 2,
+     "yellow": 36,
+     "green": 0
+    },
+    "green": {
+     "red": 8,
+     "yellow": 0,
+     "green": 1338
+    }
+   },
+   "arrows": {
+    "matched": 1536,
+    "called_relevant": 1397,
+    "moves_correct": 649,
+    "moves_contain": 1161,
+    "moves_acc": 0.4645669291338583,
+    "moves_contain_acc": 0.8310665712240516,
+    "gt_to_pred_moves": {
+     "left -> left": 462,
+     "straight -> left+right+straight": 228,
+     "straight -> straight": 171,
+     "left -> left+right+straight": 156,
+     "right -> left+right+straight": 54,
+     "left -> right+straight": 47,
+     "straight -> left": 43,
+     "right -> right+straight": 43,
+     "right -> left": 36,
+     "left -> straight": 35,
+     "right -> straight": 26,
+     "straight -> right+straight": 20,
+     "left -> right": 19,
+     "straight -> right": 16,
+     "right -> right": 16,
+     "straight -> left+right": 13,
+     "straight -> left+straight": 7,
+     "left -> left+straight": 3,
+     "right -> left+straight": 1,
+     "right -> left+right": 1
+    }
+   }
+  },
+  "front_medium": {
+   "images": 1003,
+   "lights": 2064,
+   "AP": 0.6296505151511267,
+   "detections": 2111,
+   "recall": 0.6584302325581395,
+   "precision": 0.6437707247749882,
+   "recall_by_height": {
+    "0-10px": [
+     3,
+     122
+    ],
+    "10-20px": [
+     131,
+     513
+    ],
+    "20-40px": [
+     522,
+     714
+    ],
+    "40-1e+09px": [
+     703,
+     715
+    ]
+   },
+   "color_acc": 0.8866813833701251,
+   "color_recall": {
+    "red": 0.8147699757869249,
+    "yellow": 1.0,
+    "green": 0.9980582524271845
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 673,
+     "yellow": 123,
+     "green": 30
+    },
+    "yellow": {
+     "red": 0,
+     "yellow": 18,
+     "green": 0
+    },
+    "green": {
+     "red": 1,
+     "yellow": 0,
+     "green": 514
+    }
+   },
+   "arrows": {
+    "matched": 585,
+    "called_relevant": 551,
+    "moves_correct": 258,
+    "moves_contain": 470,
+    "moves_acc": 0.46823956442831216,
+    "moves_contain_acc": 0.852994555353902,
+    "gt_to_pred_moves": {
+     "left -> left": 178,
+     "straight -> left+right+straight": 79,
+     "straight -> straight": 75,
+     "left -> left+right+straight": 67,
+     "right -> left+right+straight": 30,
+     "right -> right+straight": 23,
+     "straight -> left": 22,
+     "left -> right+straight": 15,
+     "left -> straight": 13,
+     "right -> left": 11,
+     "straight -> left+straight": 7,
+     "straight -> right": 6,
+     "straight -> right+straight": 6,
+     "right -> straight": 6,
+     "left -> right": 5,
+     "right -> right": 5,
+     "straight -> left+right": 2,
+     "right -> left+straight": 1
+    }
+   }
+  },
+  "front_tele": {
+   "images": 997,
+   "lights": 2050,
+   "AP": 0.6484703212319847,
+   "detections": 2298,
+   "recall": 0.6790243902439025,
+   "precision": 0.6057441253263708,
+   "recall_by_height": {
+    "0-10px": [
+     0,
+     12
+    ],
+    "10-20px": [
+     114,
+     517
+    ],
+    "20-40px": [
+     397,
+     576
+    ],
+    "40-1e+09px": [
+     881,
+     945
+    ]
+   },
+   "color_acc": 0.8951149425287356,
+   "color_recall": {
+    "red": 0.8488745980707395,
+    "yellow": 0.875,
+    "green": 0.9932279909706546
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 792,
+     "yellow": 125,
+     "green": 16
+    },
+    "yellow": {
+     "red": 2,
+     "yellow": 14,
+     "green": 0
+    },
+    "green": {
+     "red": 3,
+     "yellow": 0,
+     "green": 440
+    }
+   },
+   "arrows": {
+    "matched": 583,
+    "called_relevant": 493,
+    "moves_correct": 237,
+    "moves_contain": 372,
+    "moves_acc": 0.48073022312373226,
+    "moves_contain_acc": 0.7545638945233266,
+    "gt_to_pred_moves": {
+     "left -> left": 169,
+     "straight -> left+right+straight": 64,
+     "straight -> straight": 63,
+     "left -> left+right+straight": 43,
+     "left -> right+straight": 29,
+     "right -> left": 25,
+     "right -> straight": 18,
+     "straight -> left": 13,
+     "left -> right": 12,
+     "right -> right+straight": 12,
+     "straight -> left+right": 11,
+     "left -> straight": 9,
+     "right -> left+right+straight": 8,
+     "straight -> right+straight": 6,
+     "right -> right": 5,
+     "straight -> right": 4,
+     "left -> left+straight": 1,
+     "right -> left+right": 1
+    }
+   }
+  },
+  "front_wide": {
+   "images": 828,
+   "lights": 2055,
+   "AP": 0.4264406420236857,
+   "detections": 1693,
+   "recall": 0.46909975669099757,
+   "precision": 0.5694034258712345,
+   "recall_by_height": {
+    "0-10px": [
+     0,
+     239
+    ],
+    "10-20px": [
+     137,
+     749
+    ],
+    "20-40px": [
+     235,
+     377
+    ],
+    "40-1e+09px": [
+     592,
+     690
+    ]
+   },
+   "color_acc": 0.9616182572614108,
+   "color_recall": {
+    "red": 0.9423076923076923,
+    "yellow": 1.0,
+    "green": 0.9896907216494846
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 539,
+     "yellow": 3,
+     "green": 30
+    },
+    "yellow": {
+     "red": 0,
+     "yellow": 4,
+     "green": 0
+    },
+    "green": {
+     "red": 4,
+     "yellow": 0,
+     "green": 384
+    }
+   },
+   "arrows": {
+    "matched": 368,
+    "called_relevant": 353,
+    "moves_correct": 154,
+    "moves_contain": 319,
+    "moves_acc": 0.43626062322946174,
+    "moves_contain_acc": 0.9036827195467422,
+    "gt_to_pred_moves": {
+     "left -> left": 115,
+     "straight -> left+right+straight": 85,
+     "left -> left+right+straight": 46,
+     "straight -> straight": 33,
+     "right -> left+right+straight": 16,
+     "left -> straight": 13,
+     "straight -> left": 8,
+     "straight -> right+straight": 8,
+     "right -> right+straight": 8,
+     "straight -> right": 6,
+     "right -> right": 6,
+     "left -> right+straight": 3,
+     "left -> left+straight": 2,
+     "left -> right": 2,
+     "right -> straight": 2
+    }
+   }
+  }
+ },
+ "center": {
+  "all": {
+   "images": 2828,
+   "lights": 6169,
+   "AP": 0.6974638814649976,
+   "detections": 5965,
+   "recall": 0.6889285135354191,
+   "precision": 0.7124895222129086,
+   "recall_by_height": {
+    "0-10px": [
+     12,
+     373
+    ],
+    "10-20px": [
+     631,
+     1779
+    ],
+    "20-40px": [
+     1346,
+     1667
+    ],
+    "40-1e+09px": [
+     2261,
+     2350
+    ]
+   },
+   "color_acc": 0.9,
+   "color_recall": {
+    "red": 0.8467261904761905,
+    "yellow": 0.9302325581395349,
+    "green": 0.9934167215273206
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 2276,
+     "yellow": 284,
+     "green": 128
+    },
+    "yellow": {
+     "red": 2,
+     "yellow": 40,
+     "green": 1
+    },
+    "green": {
+     "red": 10,
+     "yellow": 0,
+     "green": 1509
+    }
+   },
+   "arrows": {
+    "matched": 1748,
+    "called_relevant": 1560,
+    "moves_correct": 675,
+    "moves_contain": 1305,
+    "moves_acc": 0.4326923076923077,
+    "moves_contain_acc": 0.8365384615384616,
+    "gt_to_pred_moves": {
+     "left -> left": 481,
+     "straight -> left+right+straight": 284,
+     "left -> left+right+straight": 196,
+     "straight -> straight": 178,
+     "right -> left+right+straight": 68,
+     "straight -> left": 47,
+     "left -> right+straight": 47,
+     "right -> right+straight": 46,
+     "right -> left": 43,
+     "left -> straight": 37,
+     "right -> straight": 31,
+     "straight -> right+straight": 22,
+     "left -> right": 19,
+     "straight -> right": 16,
+     "right -> right": 16,
+     "straight -> left+right": 14,
+     "straight -> left+straight": 7,
+     "left -> left+straight": 4,
+     "right -> left+right": 2,
+     "right -> left+straight": 1,
+     "left -> left+right": 1
+    }
+   }
+  },
+  "front_medium": {
+   "images": 1003,
+   "lights": 2064,
+   "AP": 0.7378170763480524,
+   "detections": 2061,
+   "recall": 0.7286821705426356,
+   "precision": 0.7297428432799612,
+   "recall_by_height": {
+    "0-10px": [
+     8,
+     122
+    ],
+    "10-20px": [
+     198,
+     513
+    ],
+    "20-40px": [
+     592,
+     714
+    ],
+    "40-1e+09px": [
+     706,
+     715
+    ]
+   },
+   "color_acc": 0.870345744680851,
+   "color_recall": {
+    "red": 0.7935483870967742,
+    "yellow": 1.0,
+    "green": 0.9946043165467626
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 738,
+     "yellow": 136,
+     "green": 56
+    },
+    "yellow": {
+     "red": 0,
+     "yellow": 18,
+     "green": 0
+    },
+    "green": {
+     "red": 3,
+     "yellow": 0,
+     "green": 553
+    }
+   },
+   "arrows": {
+    "matched": 653,
+    "called_relevant": 602,
+    "moves_correct": 265,
+    "moves_contain": 516,
+    "moves_acc": 0.44019933554817275,
+    "moves_contain_acc": 0.8571428571428571,
+    "gt_to_pred_moves": {
+     "left -> left": 183,
+     "straight -> left+right+straight": 100,
+     "left -> left+right+straight": 82,
+     "straight -> straight": 77,
+     "right -> left+right+straight": 31,
+     "straight -> left": 24,
+     "right -> right+straight": 24,
+     "left -> right+straight": 15,
+     "left -> straight": 13,
+     "right -> left": 12,
+     "right -> straight": 8,
+     "straight -> right+straight": 7,
+     "straight -> left+straight": 7,
+     "straight -> right": 6,
+     "left -> right": 5,
+     "right -> right": 5,
+     "straight -> left+right": 2,
+     "right -> left+straight": 1
+    }
+   }
+  },
+  "front_tele": {
+   "images": 997,
+   "lights": 2050,
+   "AP": 0.7527393942318935,
+   "detections": 2244,
+   "recall": 0.7517073170731707,
+   "precision": 0.6867201426024956,
+   "recall_by_height": {
+    "0-10px": [
+     0,
+     12
+    ],
+    "10-20px": [
+     188,
+     517
+    ],
+    "20-40px": [
+     457,
+     576
+    ],
+    "40-1e+09px": [
+     896,
+     945
+    ]
+   },
+   "color_acc": 0.8864373783257625,
+   "color_recall": {
+    "red": 0.8385565052231719,
+    "yellow": 0.8888888888888888,
+    "green": 0.9936170212765958
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 883,
+     "yellow": 144,
+     "green": 26
+    },
+    "yellow": {
+     "red": 2,
+     "yellow": 16,
+     "green": 0
+    },
+    "green": {
+     "red": 3,
+     "yellow": 0,
+     "green": 467
+    }
+   },
+   "arrows": {
+    "matched": 638,
+    "called_relevant": 532,
+    "moves_correct": 246,
+    "moves_contain": 402,
+    "moves_acc": 0.462406015037594,
+    "moves_contain_acc": 0.7556390977443609,
+    "gt_to_pred_moves": {
+     "left -> left": 175,
+     "straight -> left+right+straight": 69,
+     "straight -> straight": 66,
+     "left -> left+right+straight": 55,
+     "right -> left": 31,
+     "left -> right+straight": 29,
+     "right -> straight": 21,
+     "straight -> left": 13,
+     "right -> right+straight": 13,
+     "left -> right": 12,
+     "straight -> left+right": 11,
+     "left -> straight": 9,
+     "right -> left+right+straight": 9,
+     "straight -> right+straight": 6,
+     "right -> right": 5,
+     "straight -> right": 4,
+     "right -> left+right": 2,
+     "left -> left+straight": 1,
+     "left -> left+right": 1
+    }
+   }
+  },
+  "front_wide": {
+   "images": 828,
+   "lights": 2055,
+   "AP": 0.6053623219391742,
+   "detections": 1660,
+   "recall": 0.5863746958637469,
+   "precision": 0.7259036144578314,
+   "recall_by_height": {
+    "0-10px": [
+     4,
+     239
+    ],
+    "10-20px": [
+     245,
+     749
+    ],
+    "20-40px": [
+     297,
+     377
+    ],
+    "40-1e+09px": [
+     659,
+     690
+    ]
+   },
+   "color_acc": 0.9543568464730291,
+   "color_recall": {
+    "red": 0.9290780141843972,
+    "yellow": 0.8571428571428571,
+    "green": 0.9918864097363083
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 655,
+     "yellow": 4,
+     "green": 46
+    },
+    "yellow": {
+     "red": 0,
+     "yellow": 6,
+     "green": 1
+    },
+    "green": {
+     "red": 4,
+     "yellow": 0,
+     "green": 489
+    }
+   },
+   "arrows": {
+    "matched": 457,
+    "called_relevant": 426,
+    "moves_correct": 164,
+    "moves_contain": 387,
+    "moves_acc": 0.38497652582159625,
+    "moves_contain_acc": 0.9084507042253521,
+    "gt_to_pred_moves": {
+     "left -> left": 123,
+     "straight -> left+right+straight": 115,
+     "left -> left+right+straight": 59,
+     "straight -> straight": 35,
+     "right -> left+right+straight": 28,
+     "left -> straight": 15,
+     "straight -> left": 10,
+     "straight -> right+straight": 9,
+     "right -> right+straight": 9,
+     "straight -> right": 6,
+     "right -> right": 6,
+     "left -> left+straight": 3,
+     "left -> right+straight": 3,
+     "left -> right": 2,
+     "right -> straight": 2,
+     "straight -> left+right": 1
+    }
+   }
+  }
+ }
+}

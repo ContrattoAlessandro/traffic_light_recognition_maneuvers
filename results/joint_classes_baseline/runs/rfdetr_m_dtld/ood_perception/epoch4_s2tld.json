@@ -1,0 +1,310 @@
+{
+ "run": "runs/rfdetr_m_dtld",
+ "epoch": 4,
+ "threshold": 0.25,
+ "dataset": "s2tld",
+ "iou0.5": {
+  "all": {
+   "images": 5786,
+   "lights": 13317,
+   "AP": 0.712160375736027,
+   "detections": 17518,
+   "recall": 0.7678906660659308,
+   "precision": 0.5837424363511816,
+   "recall_by_height": {
+    "0-10px": [
+     0,
+     26
+    ],
+    "10-20px": [
+     110,
+     684
+    ],
+    "20-40px": [
+     2839,
+     4584
+    ],
+    "40-1e+09px": [
+     7277,
+     8023
+    ]
+   },
+   "color_acc": 0.9864071973401134,
+   "color_recall": {
+    "red": 0.9826695550741543,
+    "yellow": 0.8545454545454545,
+    "green": 0.9972906403940887
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 5897,
+     "yellow": 40,
+     "green": 64
+    },
+    "yellow": {
+     "red": 20,
+     "yellow": 141,
+     "green": 4
+    },
+    "green": {
+     "red": 10,
+     "yellow": 1,
+     "green": 4049
+    }
+   },
+   "arrows": null
+  },
+  "1280x720": {
+   "images": 4564,
+   "lights": 11191,
+   "AP": 0.7802293687416298,
+   "detections": 13676,
+   "recall": 0.8326333660977572,
+   "precision": 0.6813395729745539,
+   "recall_by_height": {
+    "0-10px": [
+     0,
+     14
+    ],
+    "10-20px": [
+     95,
+     340
+    ],
+    "20-40px": [
+     2660,
+     3750
+    ],
+    "40-1e+09px": [
+     6563,
+     7087
+    ]
+   },
+   "color_acc": 0.9892680832796737,
+   "color_recall": {
+    "red": 0.9880087209302325,
+    "yellow": 0.8333333333333334,
+    "green": 0.9970076169749728
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 5438,
+     "yellow": 3,
+     "green": 63
+    },
+    "yellow": {
+     "red": 20,
+     "yellow": 115,
+     "green": 3
+    },
+    "green": {
+     "red": 10,
+     "yellow": 1,
+     "green": 3665
+    }
+   },
+   "arrows": null
+  },
+  "1920x1080": {
+   "images": 1222,
+   "lights": 2126,
+   "AP": 0.37303799721263337,
+   "detections": 3842,
+   "recall": 0.4270931326434619,
+   "precision": 0.23633524206142634,
+   "recall_by_height": {
+    "0-10px": [
+     0,
+     12
+    ],
+    "10-20px": [
+     15,
+     344
+    ],
+    "20-40px": [
+     179,
+     834
+    ],
+    "40-1e+09px": [
+     714,
+     936
+    ]
+   },
+   "color_acc": 0.9570484581497798,
+   "color_recall": {
+    "red": 0.9235412474849095,
+    "yellow": 0.9629629629629629,
+    "green": 1.0
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 459,
+     "yellow": 37,
+     "green": 1
+    },
+    "yellow": {
+     "red": 0,
+     "yellow": 26,
+     "green": 1
+    },
+    "green": {
+     "red": 0,
+     "yellow": 0,
+     "green": 384
+    }
+   },
+   "arrows": null
+  }
+ },
+ "center": {
+  "all": {
+   "images": 5786,
+   "lights": 13317,
+   "AP": 0.8116829607633014,
+   "detections": 17511,
+   "recall": 0.8429826537508448,
+   "precision": 0.6410827479869796,
+   "recall_by_height": {
+    "0-10px": [
+     3,
+     26
+    ],
+    "10-20px": [
+     213,
+     684
+    ],
+    "20-40px": [
+     3371,
+     4584
+    ],
+    "40-1e+09px": [
+     7639,
+     8023
+    ]
+   },
+   "color_acc": 0.9854801353999644,
+   "color_recall": {
+    "red": 0.9828536436007348,
+    "yellow": 0.8317307692307693,
+    "green": 0.9964333481943826
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 6420,
+     "yellow": 44,
+     "green": 68
+    },
+    "yellow": {
+     "red": 29,
+     "yellow": 173,
+     "green": 6
+    },
+    "green": {
+     "red": 13,
+     "yellow": 3,
+     "green": 4470
+    }
+   },
+   "arrows": null
+  },
+  "1280x720": {
+   "images": 4564,
+   "lights": 11191,
+   "AP": 0.8718612419725293,
+   "detections": 13671,
+   "recall": 0.8979537128049325,
+   "precision": 0.735059615243947,
+   "recall_by_height": {
+    "0-10px": [
+     1,
+     14
+    ],
+    "10-20px": [
+     136,
+     340
+    ],
+    "20-40px": [
+     3059,
+     3750
+    ],
+    "40-1e+09px": [
+     6853,
+     7087
+    ]
+   },
+   "color_acc": 0.9885560752313663,
+   "color_recall": {
+    "red": 0.9884235614572693,
+    "yellow": 0.79375,
+    "green": 0.9965130759651307
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 5806,
+     "yellow": 3,
+     "green": 65
+    },
+    "yellow": {
+     "red": 29,
+     "yellow": 127,
+     "green": 4
+    },
+    "green": {
+     "red": 13,
+     "yellow": 1,
+     "green": 4001
+    }
+   },
+   "arrows": null
+  },
+  "1920x1080": {
+   "images": 1222,
+   "lights": 2126,
+   "AP": 0.47090153523356615,
+   "detections": 3840,
+   "recall": 0.5536218250235183,
+   "precision": 0.3065104166666667,
+   "recall_by_height": {
+    "0-10px": [
+     2,
+     12
+    ],
+    "10-20px": [
+     77,
+     344
+    ],
+    "20-40px": [
+     312,
+     834
+    ],
+    "40-1e+09px": [
+     786,
+     936
+    ]
+   },
+   "color_acc": 0.9592183517417162,
+   "color_recall": {
+    "red": 0.9331306990881459,
+    "yellow": 0.9583333333333334,
+    "green": 0.9957537154989384
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 614,
+     "yellow": 41,
+     "green": 3
+    },
+    "yellow": {
+     "red": 0,
+     "yellow": 46,
+     "green": 2
+    },
+    "green": {
+     "red": 0,
+     "yellow": 2,
+     "green": 469
+    }
+   },
+   "arrows": null
+  }
+ }
+}

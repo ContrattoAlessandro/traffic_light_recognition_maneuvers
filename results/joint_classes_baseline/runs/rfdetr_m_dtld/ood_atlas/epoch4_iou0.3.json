@@ -1,0 +1,153 @@
+{
+ "run": "runs/rfdetr_m_dtld",
+ "epoch": 4,
+ "threshold": 0.25,
+ "iou": 0.3,
+ "front_wide": {
+  "images": 828,
+  "lights": 2055,
+  "detections": 1663,
+  "recall": 0.5854014598540146,
+  "precision": 0.7233914612146722,
+  "recall_by_height": {
+   "0-10px": [
+    1,
+    239
+   ],
+   "10-20px": [
+    244,
+    749
+   ],
+   "20-40px": [
+    299,
+    377
+   ],
+   "40-1e+09px": [
+    659,
+    690
+   ]
+  },
+  "color_acc": 0.9534497090606816,
+  "color_confusion_gt_x_pred": {
+   "red": {
+    "red": 654,
+    "yellow": 4,
+    "green": 48
+   },
+   "yellow": {
+    "red": 0,
+    "yellow": 6,
+    "green": 0
+   },
+   "green": {
+    "red": 4,
+    "yellow": 0,
+    "green": 487
+   }
+  },
+  "arrows": {
+   "matched": 456,
+   "relevant": 423,
+   "moves_correct": 164,
+   "moves_acc": 0.3877068557919622
+  }
+ },
+ "front_medium": {
+  "images": 1003,
+  "lights": 2064,
+  "detections": 2063,
+  "recall": 0.7291666666666666,
+  "precision": 0.7309743092583616,
+  "recall_by_height": {
+   "0-10px": [
+    7,
+    122
+   ],
+   "10-20px": [
+    198,
+    513
+   ],
+   "20-40px": [
+    592,
+    714
+   ],
+   "40-1e+09px": [
+    708,
+    715
+   ]
+  },
+  "color_acc": 0.8710963455149502,
+  "color_confusion_gt_x_pred": {
+   "red": {
+    "red": 740,
+    "yellow": 137,
+    "green": 54
+   },
+   "yellow": {
+    "red": 0,
+    "yellow": 18,
+    "green": 0
+   },
+   "green": {
+    "red": 3,
+    "yellow": 0,
+    "green": 553
+   }
+  },
+  "arrows": {
+   "matched": 655,
+   "relevant": 604,
+   "moves_correct": 266,
+   "moves_acc": 0.44039735099337746
+  }
+ },
+ "front_tele": {
+  "images": 997,
+  "lights": 2050,
+  "detections": 2237,
+  "recall": 0.7590243902439024,
+  "precision": 0.6978095663835494,
+  "recall_by_height": {
+   "0-10px": [
+    0,
+    12
+   ],
+   "10-20px": [
+    197,
+    517
+   ],
+   "20-40px": [
+    462,
+    576
+   ],
+   "40-1e+09px": [
+    897,
+    945
+   ]
+  },
+  "color_acc": 0.8881748071979434,
+  "color_confusion_gt_x_pred": {
+   "red": {
+    "red": 895,
+    "yellow": 144,
+    "green": 25
+   },
+   "yellow": {
+    "red": 2,
+    "yellow": 15,
+    "green": 0
+   },
+   "green": {
+    "red": 3,
+    "yellow": 0,
+    "green": 472
+   }
+  },
+  "arrows": {
+   "matched": 640,
+   "relevant": 533,
+   "moves_correct": 246,
+   "moves_acc": 0.46153846153846156
+  }
+ }
+}

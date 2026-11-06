@@ -1,0 +1,510 @@
+{
+ "run": "runs/rfdetr_m_B",
+ "epoch": 2,
+ "threshold": 0.15,
+ "dataset": "bdd100k",
+ "iou0.5": {
+  "all": {
+   "images": 10000,
+   "lights": 18538,
+   "AP": 0.3442651658559104,
+   "detections": 35064,
+   "recall": 0.5785413744740533,
+   "precision": 0.30586926762491445,
+   "recall_by_height": {
+    "0-10px": [
+     539,
+     1371
+    ],
+    "10-20px": [
+     4632,
+     8821
+    ],
+    "20-40px": [
+     3641,
+     5872
+    ],
+    "40-1e+09px": [
+     1913,
+     2474
+    ]
+   },
+   "color_acc": 0.9343589743589743,
+   "color_recall": {
+    "red": 0.9561452513966481,
+    "yellow": 0.22448979591836735,
+    "green": 0.953437454386221
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 3423,
+     "yellow": 84,
+     "green": 73
+    },
+    "yellow": {
+     "red": 211,
+     "yellow": 66,
+     "green": 17
+    },
+    "green": {
+     "red": 160,
+     "yellow": 159,
+     "green": 6532
+    }
+   },
+   "arrows": null
+  },
+  "dawn/dusk": {
+   "images": 778,
+   "lights": 1432,
+   "AP": 0.364667539736635,
+   "detections": 2463,
+   "recall": 0.5586592178770949,
+   "precision": 0.32480714575720665,
+   "recall_by_height": {
+    "0-10px": [
+     47,
+     129
+    ],
+    "10-20px": [
+     333,
+     720
+    ],
+    "20-40px": [
+     267,
+     404
+    ],
+    "40-1e+09px": [
+     153,
+     179
+    ]
+   },
+   "color_acc": 0.94,
+   "color_recall": {
+    "red": 0.9694656488549618,
+    "yellow": 0.25,
+    "green": 0.9683794466403162
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 254,
+     "yellow": 4,
+     "green": 4
+    },
+    "yellow": {
+     "red": 24,
+     "yellow": 8,
+     "green": 0
+    },
+    "green": {
+     "red": 4,
+     "yellow": 12,
+     "green": 490
+    }
+   },
+   "arrows": null
+  },
+  "daytime": {
+   "images": 5258,
+   "lights": 6542,
+   "AP": 0.44035848993912063,
+   "detections": 10306,
+   "recall": 0.6308468358300214,
+   "precision": 0.4004463419367359,
+   "recall_by_height": {
+    "0-10px": [
+     135,
+     392
+    ],
+    "10-20px": [
+     1348,
+     2784
+    ],
+    "20-40px": [
+     1666,
+     2280
+    ],
+    "40-1e+09px": [
+     978,
+     1086
+    ]
+   },
+   "color_acc": 0.8936273322025684,
+   "color_recall": {
+    "red": 0.9281221922731356,
+    "yellow": 0.30538922155688625,
+    "green": 0.9146469968387777
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 1033,
+     "yellow": 69,
+     "green": 11
+    },
+    "yellow": {
+     "red": 104,
+     "yellow": 51,
+     "green": 12
+    },
+    "green": {
+     "red": 108,
+     "yellow": 135,
+     "green": 2604
+    }
+   },
+   "arrows": null
+  },
+  "night": {
+   "images": 3929,
+   "lights": 10553,
+   "AP": 0.28633276452112877,
+   "detections": 22239,
+   "recall": 0.5491329479768786,
+   "precision": 0.2605782634111246,
+   "recall_by_height": {
+    "0-10px": [
+     357,
+     850
+    ],
+    "10-20px": [
+     2949,
+     5314
+    ],
+    "20-40px": [
+     1707,
+     3180
+    ],
+    "40-1e+09px": [
+     782,
+     1209
+    ]
+   },
+   "color_acc": 0.9625539257981018,
+   "color_recall": {
+    "red": 0.9686648501362398,
+    "yellow": 0.07368421052631578,
+    "green": 0.9828473413379074
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 2133,
+     "yellow": 11,
+     "green": 58
+    },
+    "yellow": {
+     "red": 83,
+     "yellow": 7,
+     "green": 5
+    },
+    "green": {
+     "red": 48,
+     "yellow": 12,
+     "green": 3438
+    }
+   },
+   "arrows": null
+  },
+  "undefined": {
+   "images": 35,
+   "lights": 11,
+   "AP": 0.0493006993006993,
+   "detections": 56,
+   "recall": 0.2727272727272727,
+   "precision": 0.05357142857142857,
+   "recall_by_height": {
+    "0-10px": [
+     0,
+     0
+    ],
+    "10-20px": [
+     2,
+     3
+    ],
+    "20-40px": [
+     1,
+     8
+    ],
+    "40-1e+09px": [
+     0,
+     0
+    ]
+   },
+   "color_acc": 1.0,
+   "color_recall": {
+    "red": 1.0,
+    "yellow": null,
+    "green": null
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 3,
+     "yellow": 0,
+     "green": 0
+    },
+    "yellow": {
+     "red": 0,
+     "yellow": 0,
+     "green": 0
+    },
+    "green": {
+     "red": 0,
+     "yellow": 0,
+     "green": 0
+    }
+   },
+   "arrows": null
+  }
+ },
+ "center": {
+  "all": {
+   "images": 10000,
+   "lights": 18538,
+   "AP": 0.6467466108054165,
+   "detections": 34659,
+   "recall": 0.8275973675693171,
+   "precision": 0.4426555872933437,
+   "recall_by_height": {
+    "0-10px": [
+     960,
+     1371
+    ],
+    "10-20px": [
+     7159,
+     8821
+    ],
+    "20-40px": [
+     5027,
+     5872
+    ],
+    "40-1e+09px": [
+     2196,
+     2474
+    ]
+   },
+   "color_acc": 0.9338417416242993,
+   "color_recall": {
+    "red": 0.9513916111328891,
+    "yellow": 0.19592875318066158,
+    "green": 0.9541992485020818
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 4854,
+     "yellow": 114,
+     "green": 134
+    },
+    "yellow": {
+     "red": 293,
+     "yellow": 77,
+     "green": 23
+    },
+    "green": {
+     "red": 220,
+     "yellow": 231,
+     "green": 9396
+    }
+   },
+   "arrows": null
+  },
+  "dawn/dusk": {
+   "images": 778,
+   "lights": 1432,
+   "AP": 0.689641261263265,
+   "detections": 2437,
+   "recall": 0.8337988826815642,
+   "precision": 0.4899466557242511,
+   "recall_by_height": {
+    "0-10px": [
+     94,
+     129
+    ],
+    "10-20px": [
+     595,
+     720
+    ],
+    "20-40px": [
+     341,
+     404
+    ],
+    "40-1e+09px": [
+     164,
+     179
+    ]
+   },
+   "color_acc": 0.9430485762144054,
+   "color_recall": {
+    "red": 0.9621212121212122,
+    "yellow": 0.2391304347826087,
+    "green": 0.976063829787234
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 381,
+     "yellow": 7,
+     "green": 8
+    },
+    "yellow": {
+     "red": 34,
+     "yellow": 11,
+     "green": 1
+    },
+    "green": {
+     "red": 6,
+     "yellow": 12,
+     "green": 734
+    }
+   },
+   "arrows": null
+  },
+  "daytime": {
+   "images": 5258,
+   "lights": 6542,
+   "AP": 0.7007030583297006,
+   "detections": 10033,
+   "recall": 0.8284928156527056,
+   "precision": 0.5402172829662115,
+   "recall_by_height": {
+    "0-10px": [
+     269,
+     392
+    ],
+    "10-20px": [
+     2140,
+     2784
+    ],
+    "20-40px": [
+     1986,
+     2280
+    ],
+    "40-1e+09px": [
+     1025,
+     1086
+    ]
+   },
+   "color_acc": 0.8883763837638377,
+   "color_recall": {
+    "red": 0.9251191286589516,
+    "yellow": 0.2727272727272727,
+    "green": 0.9083377872795296
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 1359,
+     "yellow": 94,
+     "green": 16
+    },
+    "yellow": {
+     "red": 137,
+     "yellow": 57,
+     "green": 15
+    },
+    "green": {
+     "red": 141,
+     "yellow": 202,
+     "green": 3399
+    }
+   },
+   "arrows": null
+  },
+  "night": {
+   "images": 3929,
+   "lights": 10553,
+   "AP": 0.6099178711972099,
+   "detections": 22133,
+   "recall": 0.8264000758078272,
+   "precision": 0.39402701847919397,
+   "recall_by_height": {
+    "0-10px": [
+     597,
+     850
+    ],
+    "10-20px": [
+     4421,
+     5314
+    ],
+    "20-40px": [
+     2696,
+     3180
+    ],
+    "40-1e+09px": [
+     1007,
+     1209
+    ]
+   },
+   "color_acc": 0.9607843137254902,
+   "color_recall": {
+    "red": 0.9619666048237476,
+    "yellow": 0.06521739130434782,
+    "green": 0.9831744251261918
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 3111,
+     "yellow": 13,
+     "green": 110
+    },
+    "yellow": {
+     "red": 122,
+     "yellow": 9,
+     "green": 7
+    },
+    "green": {
+     "red": 73,
+     "yellow": 17,
+     "green": 5259
+    }
+   },
+   "arrows": null
+  },
+  "undefined": {
+   "images": 35,
+   "lights": 11,
+   "AP": 0.207040465163882,
+   "detections": 56,
+   "recall": 0.6363636363636364,
+   "precision": 0.125,
+   "recall_by_height": {
+    "0-10px": [
+     0,
+     0
+    ],
+    "10-20px": [
+     3,
+     3
+    ],
+    "20-40px": [
+     4,
+     8
+    ],
+    "40-1e+09px": [
+     0,
+     0
+    ]
+   },
+   "color_acc": 1.0,
+   "color_recall": {
+    "red": 1.0,
+    "yellow": null,
+    "green": 1.0
+   },
+   "color_confusion_gt_x_pred": {
+    "red": {
+     "red": 3,
+     "yellow": 0,
+     "green": 0
+    },
+    "yellow": {
+     "red": 0,
+     "yellow": 0,
+     "green": 0
+    },
+    "green": {
+     "red": 0,
+     "yellow": 0,
+     "green": 4
+    }
+   },
+   "arrows": null
+  }
+ }
+}

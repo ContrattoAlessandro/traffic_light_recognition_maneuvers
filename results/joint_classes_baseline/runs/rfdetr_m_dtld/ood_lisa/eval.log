@@ -1,0 +1,8 @@
+oracle LISA_tune: 1431 frames, 0 differ from the labels []
+oracle LISA_test: 17612 frames, 0 differ from the labels []
+squeeze source thr 0.25 | LISA_test TSS 0.9104 EM 0.8627 | no right: TSS 0.8981 Acc_color 0.8889 Acc_pass 0.9386 EM 0.8669 F-Go 0.0466 F-Stop 0.0785 | day TSS 0.9509 night TSS 0.8607
+squeeze lisa_tuned thr 0.50 | LISA_test TSS 0.8839 EM 0.8196 | no right: TSS 0.8655 Acc_color 0.8374 Acc_pass 0.9391 EM 0.8200 F-Go 0.0737 F-Stop 0.0462 | day TSS 0.9192 night TSS 0.8275
+oracle LISA_tune: 1431 frames, 0 differ from the labels []
+oracle LISA_test: 17612 frames, 0 differ from the labels []
+pad2 source thr 0.25 | LISA_test TSS 0.8793 EM 0.8172 | no right: TSS 0.8605 Acc_color 0.8486 Acc_pass 0.9138 EM 0.8192 F-Go 0.0863 F-Stop 0.0861 | day TSS 0.9010 night TSS 0.8318
+pad2 lisa_tuned thr 0.35 | LISA_test TSS 0.8850 EM 0.8248 | no right: TSS 0.8668 Acc_color 0.8472 Acc_pass 0.9272 EM 0.8259 F-Go 0.0758 F-Stop 0.0694 | day TSS 0.9232 night TSS 0.8268

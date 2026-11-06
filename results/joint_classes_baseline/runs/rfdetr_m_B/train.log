@@ -1,0 +1,93 @@
+W1105 18:16:34.547000 17764 Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+[2026-11-05 18:16:36] [INFO] rf-detr - File C:\Users\alexa\.roboflow\models\rf-detr-medium.pth already exists with correct MD5 hash.
+[2026-11-05 18:16:36] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-05 18:16:36] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-05 18:16:36] [INFO] rf-detr - File C:\Users\alexa\.roboflow\models\rf-detr-medium.pth already exists with correct MD5 hash.
+[2026-11-05 18:16:37] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-05 18:16:37] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-05 18:16:38] [INFO] rf-detr - File C:\Users\alexa\.roboflow\models\rf-detr-medium.pth already exists with correct MD5 hash.
+[2026-11-05 18:16:39] [WARNING] rf-detr - Checkpoint has 90 classes but model is configured for 35. The detection head will be re-initialized to 35 classes.
+Using bfloat16 Automatic Mixed Precision (AMP)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+[2026-11-05 18:16:39] [INFO] rf-detr - Building Roboflow train dataset with square resize at resolution 1024
+loading annotations into memory...
+Done (t=0.04s)
+creating index...
+index created!
+[2026-11-05 18:16:39] [INFO] rf-detr - Building Roboflow val dataset with square resize at resolution 1024
+loading annotations into memory...
+Done (t=0.00s)
+creating index...
+index created!
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+Loading `train_dataloader` to estimate number of stepping batches.
+W1105 18:16:44.650000 9012 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1105 18:16:50.488000 19200 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1105 18:16:56.360000 15432 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1105 18:17:02.213000 10560 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1105 18:17:08.111000 7872 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1105 18:17:14.482000 19216 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+┌───┬─────────────┬──────────────┬────────┬───────┬───────┐
+│   │ Name        │ Type         │ Params │ Mode  │ FLOPs │
+├───┼─────────────┼──────────────┼────────┼───────┼───────┤
+│ 0 │ model       │ LWDETR       │ 34.6 M │ train │     0 │
+│ 1 │ criterion   │ SetCriterion │      0 │ train │     0 │
+│ 2 │ postprocess │ PostProcess  │      0 │ train │     0 │
+└───┴─────────────┴──────────────┴────────┴───────┴───────┘
+Trainable params: 34.6 M                                                       
+Non-trainable params: 0                                                        
+Total params: 34.6 M                                                           
+Total estimated model params size (MB): 138.259                                
+Modules in train mode: 483                                                     
+Modules in eval mode: 0                                                        
+Total FLOPs: 0                                                                 
+W1105 18:24:06.906000 31444 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1105 18:24:12.823000 6360 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1105 18:24:18.675000 19244 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1105 18:24:24.565000 10816 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1105 18:24:30.416000 25604 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1105 18:24:36.343000 23372 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+[2026-11-05 18:24:37] [INFO] rf-detr - Skipping validation-loss computation: compute_val_loss='auto' found no scheduler or callback monitoring 'val/loss', so no 'val/loss' metric is logged this run. Set compute_val_loss=True to log it every validation epoch (for example to read the curve from metrics.csv, TensorBoard, or Weights & Biases).
+            Val (ema) (Epoch 1/4) — Overall Metrics             
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.1607 │ 0.2420 │ 0.1759 │ 0.5937 │ 0.2316 │ 0.2292 │ 0.3386 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[2026-11-05 18:24:50] [INFO] rf-detr - Best EMA metric improved to 0.1607 (epoch 0)
+[epoch 0] 455s incl. val, 1508 batches, peak mem 6.50 GiB
+            Val (ema) (Epoch 2/4) — Overall Metrics             
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.1826 │ 0.2731 │ 0.2020 │ 0.6551 │ 0.2668 │ 0.2373 │ 0.3764 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[2026-11-05 18:31:49] [INFO] rf-detr - Best EMA metric improved to 0.1826 (epoch 1)
+[epoch 1] 418s incl. val, 1508 batches, peak mem 6.52 GiB
+            Val (ema) (Epoch 3/4) — Overall Metrics             
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.1859 │ 0.2779 │ 0.2067 │ 0.6611 │ 0.2640 │ 0.2391 │ 0.3582 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[2026-11-05 18:38:49] [INFO] rf-detr - Best EMA metric improved to 0.1859 (epoch 2)
+[epoch 2] 418s incl. val, 1508 batches, peak mem 6.52 GiB
+            Val (ema) (Epoch 4/4) — Overall Metrics             
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.1835 │ 0.2722 │ 0.2042 │ 0.6578 │ 0.2511 │ 0.2649 │ 0.2724 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[epoch 3] 419s incl. val, 1508 batches, peak mem 6.52 GiB
+`Trainer.fit` stopped: `max_epochs=4` reached.
+[2026-11-05 18:45:53] [INFO] rf-detr - Best total checkpoint saved from EMA (regular=0.0000, ema=0.1859)

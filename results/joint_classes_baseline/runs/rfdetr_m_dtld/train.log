@@ -1,0 +1,412 @@
+W1029 20:54:22.321000 25644 Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+[2026-10-29 20:54:23] [INFO] rf-detr - File C:\Users\alexa\.roboflow\models\rf-detr-medium.pth already exists with correct MD5 hash.
+[2026-10-29 20:54:23] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-10-29 20:54:23] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-10-29 20:54:24] [INFO] rf-detr - File C:\Users\alexa\.roboflow\models\rf-detr-medium.pth already exists with correct MD5 hash.
+[2026-10-29 20:54:25] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-10-29 20:54:25] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-10-29 20:54:26] [INFO] rf-detr - File C:\Users\alexa\.roboflow\models\rf-detr-medium.pth already exists with correct MD5 hash.
+[2026-10-29 20:54:27] [WARNING] rf-detr - Checkpoint has 90 classes but model is configured for 24. The detection head will be re-initialized to 24 classes.
+Using bfloat16 Automatic Mixed Precision (AMP)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+[2026-10-29 20:54:27] [INFO] rf-detr - Building Roboflow train dataset with square resize at resolution 1024
+loading annotations into memory...
+Done (t=0.13s)
+creating index...
+index created!
+[2026-10-29 20:54:27] [INFO] rf-detr - Building Roboflow val dataset with square resize at resolution 1024
+loading annotations into memory...
+Done (t=0.02s)
+creating index...
+index created!
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+Loading `train_dataloader` to estimate number of stepping batches.
+W1029 20:54:33.402000 29020 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 20:54:39.616000 3692 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 20:54:45.882000 31520 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 20:54:52.137000 28448 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 20:54:58.343000 31904 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 20:55:04.608000 17064 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+┌───┬─────────────┬──────────────┬────────┬───────┬───────┐
+│   │ Name        │ Type         │ Params │ Mode  │ FLOPs │
+├───┼─────────────┼──────────────┼────────┼───────┼───────┤
+│ 0 │ model       │ LWDETR       │ 34.5 M │ train │     0 │
+│ 1 │ criterion   │ SetCriterion │      0 │ train │     0 │
+│ 2 │ postprocess │ PostProcess  │      0 │ train │     0 │
+└───┴─────────────┴──────────────┴────────┴───────┴───────┘
+Trainable params: 34.5 M                                                       
+Non-trainable params: 0                                                        
+Total params: 34.5 M                                                           
+Total estimated model params size (MB): 138.101                                
+Modules in train mode: 483                                                     
+Modules in eval mode: 0                                                        
+Total FLOPs: 0                                                                 
+W1029 21:21:27.980000 11172 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:21:33.851000 26300 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:21:39.682000 21740 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:21:45.541000 7528 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:21:52.892000 23696 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:22:00.111000 9960 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+[2026-10-29 21:22:01] [INFO] rf-detr - Skipping validation-loss computation: compute_val_loss='auto' found no scheduler or callback monitoring 'val/loss', so no 'val/loss' metric is logged this run. Set compute_val_loss=True to log it every validation epoch (for example to read the curve from metrics.csv, TensorBoard, or Weights & Biases).
+            Val (ema) (Epoch 1/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3047 │ 0.4708 │ 0.3488 │ 0.5578 │ 0.4436 │ 0.4568 │ 0.4585 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[2026-10-29 21:22:48] [INFO] rf-detr - Best EMA metric improved to 0.3047 (epoch 0)
+[epoch 0] 1663s incl. val, 5808 batches, peak mem 6.49 GiB
+[2026-10-29 21:22:48] [INFO] rf-detr - Building Roboflow test dataset with square resize at resolution 1024
+loading annotations into memory...
+Done (t=0.00s)
+creating index...
+index created!
+W1029 21:22:53.887000 16940 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:22:59.895000 28784 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:24:30.073000 31692 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:24:36.252000 25960 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:25:07.837000 30648 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:25:13.414000 13660 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:26:23.795000 19556 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:26:29.141000 19788 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 0 report (251s) =====
+loss (EMA, eval mode)  probe/train 6.1032   val 6.6451   val - probe gap +0.5419
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  7.1693
+val detection  mAP50 0.4708  mAP50-95 0.3047
+directions @ threshold 0.25 (picked on val)
+  val          TSS 0.9546  Acc_color 0.9636  Acc_pass 0.9772  EM 0.9231  False-Go 0.0377  False-Stop 0.0158
+  probe/train  TSS 0.9595  Acc_color 0.9670  Acc_pass 0.9805  EM 0.9310  False-Go 0.0341  False-Stop 0.0128
+  probe - val TSS gap +0.0049
+best val TSS 0.9546 at epoch 0, 0 epoch(s) since
+verdict: ok: still improving or within patience
+            Val (ema) (Epoch 2/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3454 │ 0.5301 │ 0.3910 │ 0.5765 │ 0.5018 │ 0.5310 │ 0.5141 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[2026-10-29 21:54:31] [INFO] rf-detr - Best EMA metric improved to 0.3454 (epoch 1)
+[epoch 1] 1650s incl. val, 5808 batches, peak mem 6.55 GiB
+W1029 21:56:14.277000 5516 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:56:19.801000 31996 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:57:30.893000 9132 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 21:57:36.210000 29876 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 1 report (215s) =====
+loss (EMA, eval mode)  probe/train 5.5148 (-0.5884)   val 6.4954 (-0.1497)   val - probe gap +0.9806
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  6.2824
+val detection  mAP50 0.5301  mAP50-95 0.3454
+directions @ threshold 0.30 (picked on val)
+  val          TSS 0.9531 (-0.0016)  Acc_color 0.9613  Acc_pass 0.9751  EM 0.9228  False-Go 0.0469  False-Stop 0.0144
+  probe/train  TSS 0.9809 (+0.0214)  Acc_color 0.9838  Acc_pass 0.9900  EM 0.9690  False-Go 0.0174  False-Stop 0.0066
+  probe - val TSS gap +0.0278
+best val TSS 0.9546 at epoch 0, 1 epoch(s) since
+verdict: ok: still improving or within patience
+            Val (ema) (Epoch 3/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3620 │ 0.5577 │ 0.4015 │ 0.5891 │ 0.5417 │ 0.6167 │ 0.5117 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[2026-10-29 22:25:36] [INFO] rf-detr - Best EMA metric improved to 0.3620 (epoch 2)
+[epoch 2] 1649s incl. val, 5808 batches, peak mem 6.55 GiB
+W1029 22:27:17.021000 17508 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 22:27:22.352000 4620 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 22:28:33.422000 14176 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 22:28:38.722000 31476 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 2 report (212s) =====
+loss (EMA, eval mode)  probe/train 5.1252 (-0.3897)   val 6.4484 (-0.0471)   val - probe gap +1.3232
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  5.8437
+val detection  mAP50 0.5577  mAP50-95 0.3620
+directions @ threshold 0.25 (picked on val)
+  val          TSS 0.9562 (+0.0032)  Acc_color 0.9652  Acc_pass 0.9812  EM 0.9224  False-Go 0.0314  False-Stop 0.0129
+  probe/train  TSS 0.9893 (+0.0083)  Acc_color 0.9912  Acc_pass 0.9955  EM 0.9810  False-Go 0.0087  False-Stop 0.0026
+  probe - val TSS gap +0.0330
+best val TSS 0.9562 at epoch 2, 0 epoch(s) since
+verdict: ok: still improving or within patience
+            Val (ema) (Epoch 4/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3544 │ 0.5429 │ 0.4007 │ 0.5748 │ 0.5307 │ 0.5598 │ 0.5239 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[epoch 3] 1645s incl. val, 5808 batches, peak mem 6.55 GiB
+W1029 22:58:14.545000 12700 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 22:58:19.921000 17112 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 22:59:29.468000 18088 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 22:59:34.770000 21188 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 3 report (210s) =====
+loss (EMA, eval mode)  probe/train 4.8349 (-0.2903)   val 6.5083 (+0.0599)   val - probe gap +1.6734
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  5.4862
+val detection  mAP50 0.5429  mAP50-95 0.3544
+directions @ threshold 0.30 (picked on val)
+  val          TSS 0.9536 (-0.0027)  Acc_color 0.9619  Acc_pass 0.9782  EM 0.9205  False-Go 0.0383  False-Stop 0.0140
+  probe/train  TSS 0.9930 (+0.0037)  Acc_color 0.9948  Acc_pass 0.9972  EM 0.9870  False-Go 0.0079  False-Stop 0.0004
+  probe - val TSS gap +0.0394
+best val TSS 0.9562 at epoch 2, 1 epoch(s) since
+verdict: ok: still improving or within patience
+            Val (ema) (Epoch 5/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3710 │ 0.5752 │ 0.4065 │ 0.5838 │ 0.5638 │ 0.5974 │ 0.5529 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[2026-10-29 23:27:30] [INFO] rf-detr - Best EMA metric improved to 0.3710 (epoch 4)
+[epoch 4] 1644s incl. val, 5808 batches, peak mem 6.55 GiB
+W1029 23:29:11.397000 29672 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 23:29:16.815000 31544 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 23:30:28.085000 30756 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1029 23:30:33.438000 6408 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 4 report (213s) =====
+loss (EMA, eval mode)  probe/train 4.6075 (-0.2274)   val 6.4986 (-0.0097)   val - probe gap +1.8911
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  5.2180
+val detection  mAP50 0.5752  mAP50-95 0.3710
+directions @ threshold 0.25 (picked on val)
+  val          TSS 0.9595 (+0.0059)  Acc_color 0.9688  Acc_pass 0.9824  EM 0.9272  False-Go 0.0282  False-Stop 0.0125
+  probe/train  TSS 0.9932 (+0.0002)  Acc_color 0.9952  Acc_pass 0.9972  EM 0.9870  False-Go 0.0087  False-Stop 0.0000
+  probe - val TSS gap +0.0337
+best val TSS 0.9595 at epoch 4, 0 epoch(s) since
+verdict: ok: still improving or within patience
+            Val (ema) (Epoch 6/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3587 │ 0.5557 │ 0.4032 │ 0.5650 │ 0.5507 │ 0.6005 │ 0.5356 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[epoch 5] 1646s incl. val, 5808 batches, peak mem 6.55 GiB
+W1030 00:00:25.975000 19076 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 00:00:31.479000 14120 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 00:01:42.098000 30072 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 00:01:47.416000 20332 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 5 report (226s) =====
+loss (EMA, eval mode)  probe/train 4.3957 (-0.2118)   val 6.5592 (+0.0607)   val - probe gap +2.1636
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  5.0000
+val detection  mAP50 0.5557  mAP50-95 0.3587
+directions @ threshold 0.25 (picked on val)
+  val          TSS 0.9576 (-0.0019)  Acc_color 0.9676  Acc_pass 0.9810  EM 0.9242  False-Go 0.0328  False-Stop 0.0125
+  probe/train  TSS 0.9938 (+0.0006)  Acc_color 0.9948  Acc_pass 0.9975  EM 0.9890  False-Go 0.0055  False-Stop 0.0011
+  probe - val TSS gap +0.0362
+best val TSS 0.9595 at epoch 4, 1 epoch(s) since
+verdict: ok: still improving or within patience
+            Val (ema) (Epoch 7/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3619 │ 0.5592 │ 0.4001 │ 0.5510 │ 0.5616 │ 0.6218 │ 0.5302 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[epoch 6] 1649s incl. val, 5808 batches, peak mem 6.55 GiB
+W1030 00:31:28.967000 29952 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 00:31:34.330000 12572 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 00:32:45.671000 21544 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 00:32:50.961000 19740 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 6 report (214s) =====
+loss (EMA, eval mode)  probe/train 4.2602 (-0.1354)   val 6.5878 (+0.0285)   val - probe gap +2.3275
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  4.8213
+val detection  mAP50 0.5592  mAP50-95 0.3619
+directions @ threshold 0.30 (picked on val)
+  val          TSS 0.9558 (-0.0018)  Acc_color 0.9656  Acc_pass 0.9798  EM 0.9220  False-Go 0.0365  False-Stop 0.0125
+  probe/train  TSS 0.9942 (+0.0004)  Acc_color 0.9965  Acc_pass 0.9970  EM 0.9890  False-Go 0.0087  False-Stop 0.0004
+  probe - val TSS gap +0.0384
+best val TSS 0.9595 at epoch 4, 2 epoch(s) since
+verdict: WATCH: val loss rose two epochs in a row while probe loss fell
+            Val (ema) (Epoch 8/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3611 │ 0.5524 │ 0.4035 │ 0.5552 │ 0.5470 │ 0.6056 │ 0.5227 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[epoch 7] 1632s incl. val, 5808 batches, peak mem 6.55 GiB
+W1030 01:02:10.943000 11668 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 01:02:16.446000 12060 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 01:03:11.681000 31752 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 01:03:16.974000 16592 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 7 report (187s) =====
+loss (EMA, eval mode)  probe/train 4.1170 (-0.1432)   val 6.5894 (+0.0016)   val - probe gap +2.4723
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  4.6694
+val detection  mAP50 0.5524  mAP50-95 0.3611
+directions @ threshold 0.25 (picked on val)
+  val          TSS 0.9571 (+0.0013)  Acc_color 0.9663  Acc_pass 0.9807  EM 0.9242  False-Go 0.0388  False-Stop 0.0101
+  probe/train  TSS 0.9966 (+0.0024)  Acc_color 0.9978  Acc_pass 0.9980  EM 0.9940  False-Go 0.0063  False-Stop 0.0000
+  probe - val TSS gap +0.0395
+best val TSS 0.9595 at epoch 4, 3 epoch(s) since
+verdict: OVERFITTING LIKELY: val TSS has not beaten epoch 4 for 3 epochs while probe (train) TSS kept rising - consider stopping and using epoch 4
+            Val (ema) (Epoch 9/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3382 │ 0.5161 │ 0.3848 │ 0.5495 │ 0.5111 │ 0.5153 │ 0.5303 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[epoch 8] 1602s incl. val, 5808 batches, peak mem 6.55 GiB
+W1030 01:31:54.304000 16700 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 01:31:59.710000 29376 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 01:32:55.180000 5884 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 01:33:00.493000 9128 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 8 report (179s) =====
+loss (EMA, eval mode)  probe/train 3.9735 (-0.1435)   val 6.6673 (+0.0780)   val - probe gap +2.6938
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  4.5379
+val detection  mAP50 0.5161  mAP50-95 0.3382
+directions @ threshold 0.25 (picked on val)
+  val          TSS 0.9575 (+0.0005)  Acc_color 0.9659  Acc_pass 0.9802  EM 0.9265  False-Go 0.0337  False-Stop 0.0132
+  probe/train  TSS 0.9973 (+0.0007)  Acc_color 0.9982  Acc_pass 0.9985  EM 0.9950  False-Go 0.0048  False-Stop 0.0000
+  probe - val TSS gap +0.0397
+best val TSS 0.9595 at epoch 4, 4 epoch(s) since
+verdict: OVERFITTING LIKELY: val TSS has not beaten epoch 4 for 4 epochs while probe (train) TSS kept rising - consider stopping and using epoch 4
+           Val (ema) (Epoch 10/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3475 │ 0.5269 │ 0.3973 │ 0.5586 │ 0.5375 │ 0.5888 │ 0.5178 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[epoch 9] 1603s incl. val, 5808 batches, peak mem 6.55 GiB
+W1030 02:01:36.806000 8384 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 02:01:42.132000 7996 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 02:02:37.576000 7756 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 02:02:42.899000 15424 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 9 report (178s) =====
+loss (EMA, eval mode)  probe/train 3.8754 (-0.0981)   val 6.6779 (+0.0106)   val - probe gap +2.8025
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  4.4062
+val detection  mAP50 0.5269  mAP50-95 0.3475
+directions @ threshold 0.35 (picked on val)
+  val          TSS 0.9588 (+0.0012)  Acc_color 0.9667  Acc_pass 0.9798  EM 0.9298  False-Go 0.0380  False-Stop 0.0118
+  probe/train  TSS 0.9965 (-0.0008)  Acc_color 0.9972  Acc_pass 0.9982  EM 0.9940  False-Go 0.0055  False-Stop 0.0000
+  probe - val TSS gap +0.0377
+best val TSS 0.9595 at epoch 4, 5 epoch(s) since
+verdict: OVERFITTING LIKELY: val TSS has not beaten epoch 4 for 5 epochs while probe (train) TSS kept rising - consider stopping and using epoch 4
+           Val (ema) (Epoch 11/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3470 │ 0.5278 │ 0.3818 │ 0.5536 │ 0.5342 │ 0.5827 │ 0.5104 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[epoch 10] 1604s incl. val, 5808 batches, peak mem 6.55 GiB
+W1030 02:31:20.417000 21988 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 02:31:25.767000 5080 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 02:32:21.093000 11116 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 02:32:26.402000 28528 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 10 report (178s) =====
+loss (EMA, eval mode)  probe/train 3.7789 (-0.0965)   val 6.6620 (-0.0158)   val - probe gap +2.8832
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  4.2979
+val detection  mAP50 0.5278  mAP50-95 0.3470
+directions @ threshold 0.20 (picked on val)
+  val          TSS 0.9553 (-0.0035)  Acc_color 0.9646  Acc_pass 0.9792  EM 0.9220  False-Go 0.0363  False-Stop 0.0135
+  probe/train  TSS 0.9981 (+0.0016)  Acc_color 0.9988  Acc_pass 0.9995  EM 0.9960  False-Go 0.0016  False-Stop 0.0000
+  probe - val TSS gap +0.0428
+best val TSS 0.9595 at epoch 4, 6 epoch(s) since
+verdict: OVERFITTING LIKELY: val TSS has not beaten epoch 4 for 6 epochs while probe (train) TSS kept rising - consider stopping and using epoch 4
+           Val (ema) (Epoch 12/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3481 │ 0.5330 │ 0.3961 │ 0.5493 │ 0.5415 │ 0.5751 │ 0.5279 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[epoch 11] 1603s incl. val, 5808 batches, peak mem 6.55 GiB
+W1030 03:01:03.818000 28236 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 03:01:09.223000 32760 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 03:02:04.696000 30964 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 03:02:09.958000 32172 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 11 report (180s) =====
+loss (EMA, eval mode)  probe/train 3.6740 (-0.1049)   val 6.7092 (+0.0471)   val - probe gap +3.0352
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  4.1743
+val detection  mAP50 0.5330  mAP50-95 0.3481
+directions @ threshold 0.25 (picked on val)
+  val          TSS 0.9592 (+0.0039)  Acc_color 0.9689  Acc_pass 0.9808  EM 0.9279  False-Go 0.0368  False-Stop 0.0109
+  probe/train  TSS 0.9977 (-0.0003)  Acc_color 0.9980  Acc_pass 0.9992  EM 0.9960  False-Go 0.0024  False-Stop 0.0000
+  probe - val TSS gap +0.0386
+best val TSS 0.9595 at epoch 4, 7 epoch(s) since
+verdict: OVERFITTING LIKELY: val TSS has not beaten epoch 4 for 7 epochs while probe (train) TSS kept rising - consider stopping and using epoch 4
+           Val (ema) (Epoch 13/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3521 │ 0.5328 │ 0.4016 │ 0.5437 │ 0.5386 │ 0.6049 │ 0.5048 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[epoch 12] 1605s incl. val, 5808 batches, peak mem 6.55 GiB
+W1030 03:30:50.510000 8656 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 03:30:55.938000 24644 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 03:31:51.371000 7132 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 03:31:56.658000 21612 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 12 report (180s) =====
+loss (EMA, eval mode)  probe/train 3.5957 (-0.0783)   val 6.7796 (+0.0704)   val - probe gap +3.1839
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  4.1110
+val detection  mAP50 0.5328  mAP50-95 0.3521
+directions @ threshold 0.25 (picked on val)
+  val          TSS 0.9590 (-0.0002)  Acc_color 0.9688  Acc_pass 0.9804  EM 0.9279  False-Go 0.0374  False-Stop 0.0112
+  probe/train  TSS 0.9990 (+0.0013)  Acc_color 0.9995  Acc_pass 0.9995  EM 0.9980  False-Go 0.0008  False-Stop 0.0004
+  probe - val TSS gap +0.0400
+best val TSS 0.9595 at epoch 4, 8 epoch(s) since
+verdict: OVERFITTING LIKELY: val TSS has not beaten epoch 4 for 8 epochs while probe (train) TSS kept rising - consider stopping and using epoch 4
+           Val (ema) (Epoch 14/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3457 │ 0.5239 │ 0.3883 │ 0.5272 │ 0.5389 │ 0.6147 │ 0.4963 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[epoch 13] 1605s incl. val, 5808 batches, peak mem 6.55 GiB
+W1030 04:00:35.558000 13064 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 04:00:40.874000 18296 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 04:01:36.600000 21712 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 04:01:41.866000 16120 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 13 report (178s) =====
+loss (EMA, eval mode)  probe/train 3.5085 (-0.0872)   val 6.8003 (+0.0207)   val - probe gap +3.2918
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  4.0343
+val detection  mAP50 0.5239  mAP50-95 0.3457
+directions @ threshold 0.30 (picked on val)
+  val          TSS 0.9545 (-0.0046)  Acc_color 0.9635  Acc_pass 0.9767  EM 0.9231  False-Go 0.0440  False-Stop 0.0135
+  probe/train  TSS 0.9990 (+0.0000)  Acc_color 0.9995  Acc_pass 0.9995  EM 0.9980  False-Go 0.0016  False-Stop 0.0000
+  probe - val TSS gap +0.0445
+best val TSS 0.9595 at epoch 4, 9 epoch(s) since
+verdict: OVERFITTING LIKELY: val TSS has not beaten epoch 4 for 9 epochs while probe (train) TSS kept rising - consider stopping and using epoch 4
+           Val (ema) (Epoch 15/15) — Overall Metrics            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           mAP            ┃  mAR   ┃         F1 sweep         ┃
+┡━━━━━━━━┯━━━━━━━━┯━━━━━━━━╇━━━━━━━━╇━━━━━━━━┯━━━━━━━━┯━━━━━━━━┩
+│ 50:95  │   50   │   75   │  @500  │   F1   │  Prec  │ Recall │
+├────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0.3589 │ 0.5428 │ 0.4012 │ 0.5475 │ 0.5453 │ 0.5994 │ 0.5187 │
+└────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+[epoch 14] 1604s incl. val, 5808 batches, peak mem 6.55 GiB
+W1030 04:30:19.329000 28548 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 04:30:24.720000 29904 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 04:31:20.099000 3112 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+W1030 04:31:25.394000 16040 .venv\Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+===== epoch 14 report (178s) =====
+loss (EMA, eval mode)  probe/train 3.4324 (-0.0761)   val 6.7847 (-0.0156)   val - probe gap +3.3522
+loss (RF-DETR train mode, 13 query groups, not comparable to the above)  3.9331
+val detection  mAP50 0.5428  mAP50-95 0.3589
+directions @ threshold 0.30 (picked on val)
+  val          TSS 0.9554 (+0.0010)  Acc_color 0.9636  Acc_pass 0.9781  EM 0.9246  False-Go 0.0403  False-Stop 0.0132
+  probe/train  TSS 0.9988 (-0.0002)  Acc_color 0.9992  Acc_pass 0.9992  EM 0.9980  False-Go 0.0024  False-Stop 0.0000
+  probe - val TSS gap +0.0434
+best val TSS 0.9595 at epoch 4, 10 epoch(s) since
+verdict: OVERFITTING LIKELY: val TSS has not beaten epoch 4 for 10 epochs while probe (train) TSS kept rising - consider stopping and using epoch 4
+`Trainer.fit` stopped: `max_epochs=15` reached.
+[2026-10-30 04:31:54] [INFO] rf-detr - Best total checkpoint saved from EMA (regular=0.0000, ema=0.3710)

@@ -1,0 +1,16 @@
+oracle A_tune: 1185 frames, 0 not reproducible, left out []
+oracle B_tune: 785 frames, 0 not reproducible, left out []
+oracle A_val: 2220 frames, 6 not reproducible, left out ['val/10118/image/ring_front_center/315971609149927210.jpg', 'val/10146/image/ring_front_center/315966814849927220.jpg', 'val/10146/image/ring_front_center/315966815349927209.jpg', 'val/10146/image/ring_front_center/315966815849927214.jpg', 'val/10146/image/ring_front_center/315966816349927211.jpg']
+oracle B_val: 1565 frames, 0 not reproducible, left out []
+squeeze source thr 0.25 | A_val TSS 0.8669 Acc_color 0.8767 Acc_pass 0.9107 EM 0.8135 F-Go 0.3392 F-Stop 0.0114 | no right: TSS 0.8473 Acc_color 0.8436 Acc_pass 0.8830 EM 0.8153 F-Go 0.3348
+squeeze source thr 0.25 | B_val TSS 0.8829 Acc_color 0.9032 Acc_pass 0.9212 EM 0.8243 F-Go 0.1663 F-Stop 0.0376 | no right: TSS 0.8854 Acc_color 0.8882 Acc_pass 0.9029 EM 0.8652 F-Go 0.1511
+squeeze tuned thr 0.20 | A_val TSS 0.8698 Acc_color 0.8803 Acc_pass 0.9117 EM 0.8175 F-Go 0.3283 F-Stop 0.0135 | no right: TSS 0.8507 Acc_color 0.8484 Acc_pass 0.8844 EM 0.8193 F-Go 0.3238
+squeeze tuned thr 0.20 | B_val TSS 0.8820 Acc_color 0.9030 Acc_pass 0.9206 EM 0.8224 F-Go 0.1638 F-Stop 0.0397 | no right: TSS 0.8856 Acc_color 0.8888 Acc_pass 0.9022 EM 0.8658 F-Go 0.1485
+oracle A_tune: 1185 frames, 0 not reproducible, left out []
+oracle B_tune: 785 frames, 0 not reproducible, left out []
+oracle A_val: 2220 frames, 6 not reproducible, left out ['val/10118/image/ring_front_center/315971609149927210.jpg', 'val/10146/image/ring_front_center/315966814849927220.jpg', 'val/10146/image/ring_front_center/315966815349927209.jpg', 'val/10146/image/ring_front_center/315966815849927214.jpg', 'val/10146/image/ring_front_center/315966816349927211.jpg']
+oracle B_val: 1565 frames, 0 not reproducible, left out []
+pad2 source thr 0.25 | A_val TSS 0.7916 Acc_color 0.8049 Acc_pass 0.8647 EM 0.7051 F-Go 0.4803 F-Stop 0.0277 | no right: TSS 0.7590 Acc_color 0.7480 Acc_pass 0.8220 EM 0.7069 F-Go 0.4768
+pad2 source thr 0.25 | B_val TSS 0.8879 Acc_color 0.9050 Acc_pass 0.9275 EM 0.8313 F-Go 0.1418 F-Stop 0.0399 | no right: TSS 0.8904 Acc_color 0.8903 Acc_pass 0.9112 EM 0.8696 F-Go 0.1261
+pad2 tuned thr 0.15 | A_val TSS 0.7989 Acc_color 0.8202 Acc_pass 0.8645 EM 0.7118 F-Go 0.4385 F-Stop 0.0410 | no right: TSS 0.7694 Acc_color 0.7699 Acc_pass 0.8220 EM 0.7164 F-Go 0.4347
+pad2 tuned thr 0.15 | B_val TSS 0.8835 Acc_color 0.9037 Acc_pass 0.9238 EM 0.8230 F-Go 0.1313 F-Stop 0.0503 | no right: TSS 0.8868 Acc_color 0.8901 Acc_pass 0.9065 EM 0.8639 F-Go 0.1165

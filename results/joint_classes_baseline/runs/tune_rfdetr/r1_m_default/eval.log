@@ -1,0 +1,21 @@
+[2026-11-05 19:22:50] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-05 19:22:50] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+epoch 0 thr 0.20 tune 0.8948 | A TSS 0.8957 F-Go 0.1434 F-Stop 0.0426 | B TSS 0.9144 F-Go 0.1113 F-Stop 0.0197 | combined TSS 0.9034 F-Go 0.1278 F-Stop 0.0337
+[2026-11-05 19:26:05] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-05 19:26:05] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+epoch 1 thr 0.20 tune 0.9052 | A TSS 0.9048 F-Go 0.1448 F-Stop 0.0330 | B TSS 0.9178 F-Go 0.0979 F-Stop 0.0174 | combined TSS 0.9102 F-Go 0.1220 F-Stop 0.0269
+[2026-11-05 19:29:19] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-05 19:29:19] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+epoch 2 thr 0.20 tune 0.9018 | A TSS 0.8884 F-Go 0.1822 F-Stop 0.0361 | B TSS 0.9144 F-Go 0.0939 F-Stop 0.0125 | combined TSS 0.8991 F-Go 0.1392 F-Stop 0.0269
+[2026-11-05 19:32:32] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-05 19:32:32] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+epoch 3 thr 0.25 tune 0.9010 | A TSS 0.8735 F-Go 0.2163 F-Stop 0.0331 | B TSS 0.9010 F-Go 0.1308 F-Stop 0.0157 | combined TSS 0.8848 F-Go 0.1747 F-Stop 0.0264
+[2026-11-05 19:35:53] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-05 19:35:53] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+epoch 1 thr 0.20 tune 0.9052 | A TSS 0.9048 F-Go 0.1448 F-Stop 0.0330 | B TSS 0.9178 F-Go 0.0979 F-Stop 0.0174 | combined TSS 0.9102 F-Go 0.1220 F-Stop 0.0269
+oracle DTLD_US_tune: 2717 frames, 0 not reproducible, left out []
+oracle DTLD_US_test: 11501 frames, 0 not reproducible, left out []
+[2026-11-05 19:39:13] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-05 19:39:13] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+squeeze source thr 0.20 | DTLD_US_test TSS 0.8273 Acc_color 0.8519 Acc_pass 0.9035 EM 0.7265 F-Go 0.2129 F-Stop 0.0522 | no right: TSS 0.8139 Acc_color 0.8145 Acc_pass 0.8769 EM 0.7504 F-Go 0.2012
+squeeze tuned thr 0.20 | DTLD_US_test TSS 0.8273 Acc_color 0.8519 Acc_pass 0.9035 EM 0.7265 F-Go 0.2129 F-Stop 0.0522 | no right: TSS 0.8139 Acc_color 0.8145 Acc_pass 0.8769 EM 0.7504 F-Go 0.2012

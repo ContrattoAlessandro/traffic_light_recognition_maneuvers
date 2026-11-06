@@ -1,0 +1,412 @@
+{
+ "run": "runs/tune_rfdetr/r1_m_default",
+ "epoch": 1,
+ "target": "dtld_us",
+ "geometry": "squeeze",
+ "thresholds": {
+  "source": 0.2,
+  "tuned": 0.2
+ },
+ "unreproducible_kept": {
+  "DTLD_US_tune": 0,
+  "DTLD_US_test": 0
+ },
+ "source": {
+  "DTLD_US_test": {
+   "frames": 11501,
+   "overall": {
+    "acc_color": 0.8519259194852622,
+    "acc_pass": 0.9035083905747326,
+    "em": 0.7264585688201026,
+    "tss": 0.8272976262933658,
+    "false_go": 0.21290017347421542,
+    "false_stop": 0.052187743832903186
+   },
+   "no_right": {
+    "acc_color": 0.8144509173115382,
+    "acc_pass": 0.8768512882937716,
+    "em": 0.7503695330840796,
+    "tss": 0.8138905795631297,
+    "false_go": 0.20118437900128042,
+    "false_stop": 0.07883855137001863
+   },
+   "directions": {
+    "straight": {
+     "n": 11501,
+     "gt_color_mix": {
+      "none": 0.02425876010781671,
+      "red": 0.2935396922006782,
+      "yellow": 0.029910442570211287,
+      "green": 0.6522911051212938
+     },
+     "acc_color": 0.824015303017129,
+     "acc_pass": 0.8922702373706635,
+     "false_go": 0.11611374407582939,
+     "false_stop": 0.10424615384615385,
+     "n_stop": 3376,
+     "majority_color": "green",
+     "majority_acc_color": 0.6522911051212938,
+     "majority_acc_pass": 0.7064603077993218,
+     "pass_consistent_with_color": 1.0,
+     "color_confusion_rows_gt_cols_pred": [
+      [
+       93,
+       121,
+       11,
+       54
+      ],
+      [
+       281,
+       2984,
+       37,
+       74
+      ],
+      [
+       30,
+       139,
+       150,
+       25
+      ],
+      [
+       573,
+       587,
+       92,
+       6250
+      ]
+     ]
+    },
+    "left": {
+     "n": 11501,
+     "gt_color_mix": {
+      "none": 0.0028693157116772457,
+      "red": 0.3964872619772194,
+      "yellow": 0.033997043735327366,
+      "green": 0.566646378575776
+     },
+     "acc_color": 0.8096687244587427,
+     "acc_pass": 0.8691418137553256,
+     "false_go": 0.23267543859649123,
+     "false_stop": 0.06396772799308457,
+     "n_stop": 4560,
+     "majority_color": "green",
+     "majority_acc_color": 0.566646378575776,
+     "majority_acc_pass": 0.6035127380227806,
+     "pass_consistent_with_color": 1.0,
+     "color_confusion_rows_gt_cols_pred": [
+      [
+       22,
+       6,
+       2,
+       3
+      ],
+      [
+       349,
+       3499,
+       53,
+       659
+      ],
+      [
+       30,
+       162,
+       150,
+       49
+      ],
+      [
+       519,
+       276,
+       81,
+       5641
+      ]
+     ]
+    },
+    "right": {
+     "n": 11501,
+     "gt_color_mix": {
+      "none": 0.9648726197721937,
+      "red": 0.016172506738544475,
+      "yellow": 0.002608468828797496,
+      "green": 0.016346404660464307
+     },
+     "acc_color": 0.9643509260064342,
+     "acc_pass": 0.9834796974176159,
+     "false_go": 1.0,
+     "false_stop": 0.00035351303579319487,
+     "n_stop": 186,
+     "majority_color": "none",
+     "majority_acc_color": 0.9648726197721937,
+     "majority_acc_pass": 0.9838274932614556,
+     "pass_consistent_with_color": 1.0,
+     "color_confusion_rows_gt_cols_pred": [
+      [
+       11090,
+       4,
+       1,
+       2
+      ],
+      [
+       186,
+       0,
+       0,
+       0
+      ],
+      [
+       29,
+       0,
+       1,
+       0
+      ],
+      [
+       188,
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    "uturn": {
+     "n": 11501,
+     "gt_color_mix": {
+      "none": 0.0028693157116772457,
+      "red": 0.3964872619772194,
+      "yellow": 0.033997043735327366,
+      "green": 0.566646378575776
+     },
+     "acc_color": 0.8096687244587427,
+     "acc_pass": 0.8691418137553256,
+     "false_go": 0.23267543859649123,
+     "false_stop": 0.06396772799308457,
+     "n_stop": 4560,
+     "majority_color": "green",
+     "majority_acc_color": 0.566646378575776,
+     "majority_acc_pass": 0.6035127380227806,
+     "pass_consistent_with_color": 1.0,
+     "color_confusion_rows_gt_cols_pred": [
+      [
+       22,
+       6,
+       2,
+       3
+      ],
+      [
+       349,
+       3499,
+       53,
+       659
+      ],
+      [
+       30,
+       162,
+       150,
+       49
+      ],
+      [
+       519,
+       276,
+       81,
+       5641
+      ]
+     ]
+    }
+   }
+  }
+ },
+ "tuned": {
+  "DTLD_US_test": {
+   "frames": 11501,
+   "overall": {
+    "acc_color": 0.8519259194852622,
+    "acc_pass": 0.9035083905747326,
+    "em": 0.7264585688201026,
+    "tss": 0.8272976262933658,
+    "false_go": 0.21290017347421542,
+    "false_stop": 0.052187743832903186
+   },
+   "no_right": {
+    "acc_color": 0.8144509173115382,
+    "acc_pass": 0.8768512882937716,
+    "em": 0.7503695330840796,
+    "tss": 0.8138905795631297,
+    "false_go": 0.20118437900128042,
+    "false_stop": 0.07883855137001863
+   },
+   "directions": {
+    "straight": {
+     "n": 11501,
+     "gt_color_mix": {
+      "none": 0.02425876010781671,
+      "red": 0.2935396922006782,
+      "yellow": 0.029910442570211287,
+      "green": 0.6522911051212938
+     },
+     "acc_color": 0.824015303017129,
+     "acc_pass": 0.8922702373706635,
+     "false_go": 0.11611374407582939,
+     "false_stop": 0.10424615384615385,
+     "n_stop": 3376,
+     "majority_color": "green",
+     "majority_acc_color": 0.6522911051212938,
+     "majority_acc_pass": 0.7064603077993218,
+     "pass_consistent_with_color": 1.0,
+     "color_confusion_rows_gt_cols_pred": [
+      [
+       93,
+       121,
+       11,
+       54
+      ],
+      [
+       281,
+       2984,
+       37,
+       74
+      ],
+      [
+       30,
+       139,
+       150,
+       25
+      ],
+      [
+       573,
+       587,
+       92,
+       6250
+      ]
+     ]
+    },
+    "left": {
+     "n": 11501,
+     "gt_color_mix": {
+      "none": 0.0028693157116772457,
+      "red": 0.3964872619772194,
+      "yellow": 0.033997043735327366,
+      "green": 0.566646378575776
+     },
+     "acc_color": 0.8096687244587427,
+     "acc_pass": 0.8691418137553256,
+     "false_go": 0.23267543859649123,
+     "false_stop": 0.06396772799308457,
+     "n_stop": 4560,
+     "majority_color": "green",
+     "majority_acc_color": 0.566646378575776,
+     "majority_acc_pass": 0.6035127380227806,
+     "pass_consistent_with_color": 1.0,
+     "color_confusion_rows_gt_cols_pred": [
+      [
+       22,
+       6,
+       2,
+       3
+      ],
+      [
+       349,
+       3499,
+       53,
+       659
+      ],
+      [
+       30,
+       162,
+       150,
+       49
+      ],
+      [
+       519,
+       276,
+       81,
+       5641
+      ]
+     ]
+    },
+    "right": {
+     "n": 11501,
+     "gt_color_mix": {
+      "none": 0.9648726197721937,
+      "red": 0.016172506738544475,
+      "yellow": 0.002608468828797496,
+      "green": 0.016346404660464307
+     },
+     "acc_color": 0.9643509260064342,
+     "acc_pass": 0.9834796974176159,
+     "false_go": 1.0,
+     "false_stop": 0.00035351303579319487,
+     "n_stop": 186,
+     "majority_color": "none",
+     "majority_acc_color": 0.9648726197721937,
+     "majority_acc_pass": 0.9838274932614556,
+     "pass_consistent_with_color": 1.0,
+     "color_confusion_rows_gt_cols_pred": [
+      [
+       11090,
+       4,
+       1,
+       2
+      ],
+      [
+       186,
+       0,
+       0,
+       0
+      ],
+      [
+       29,
+       0,
+       1,
+       0
+      ],
+      [
+       188,
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    "uturn": {
+     "n": 11501,
+     "gt_color_mix": {
+      "none": 0.0028693157116772457,
+      "red": 0.3964872619772194,
+      "yellow": 0.033997043735327366,
+      "green": 0.566646378575776
+     },
+     "acc_color": 0.8096687244587427,
+     "acc_pass": 0.8691418137553256,
+     "false_go": 0.23267543859649123,
+     "false_stop": 0.06396772799308457,
+     "n_stop": 4560,
+     "majority_color": "green",
+     "majority_acc_color": 0.566646378575776,
+     "majority_acc_pass": 0.6035127380227806,
+     "pass_consistent_with_color": 1.0,
+     "color_confusion_rows_gt_cols_pred": [
+      [
+       22,
+       6,
+       2,
+       3
+      ],
+      [
+       349,
+       3499,
+       53,
+       659
+      ],
+      [
+       30,
+       162,
+       150,
+       49
+      ],
+      [
+       519,
+       276,
+       81,
+       5641
+      ]
+     ]
+    }
+   }
+  }
+ }
+}

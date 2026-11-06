@@ -1,0 +1,568 @@
+{
+ "epoch": 2,
+ "threshold": 0.2,
+ "A": {
+  "overall": {
+   "acc_color": 0.9149774774774775,
+   "acc_pass": 0.9313063063063063,
+   "em": 0.8522522522522522,
+   "tss": 0.899512012012012,
+   "false_go": 0.1779460482725982,
+   "false_stop": 0.03457957736072115
+  },
+  "directions": {
+   "straight": {
+    "n": 2220,
+    "gt_color_mix": {
+     "none": 0.03918918918918919,
+     "red": 0.2864864864864865,
+     "yellow": 0.04954954954954955,
+     "green": 0.6247747747747747
+    },
+    "acc_color": 0.8860360360360361,
+    "acc_pass": 0.918918918918919,
+    "false_go": 0.13050314465408805,
+    "false_stop": 0.061237373737373736,
+    "n_stop": 636,
+    "majority_color": "green",
+    "majority_acc_color": 0.6247747747747747,
+    "majority_acc_pass": 0.7135135135135136,
+    "pass_consistent_with_color": 1.0,
+    "color_confusion_rows_gt_cols_pred": [
+     [
+      6,
+      36,
+      3,
+      42
+     ],
+     [
+      39,
+      553,
+      9,
+      35
+     ],
+     [
+      0,
+      42,
+      51,
+      17
+     ],
+     [
+      10,
+      19,
+      1,
+      1357
+     ]
+    ]
+   },
+   "left": {
+    "n": 2220,
+    "gt_color_mix": {
+     "none": 0.008558558558558558,
+     "red": 0.32837837837837835,
+     "yellow": 0.04144144144144144,
+     "green": 0.6216216216216216
+    },
+    "acc_color": 0.8990990990990991,
+    "acc_pass": 0.909009009009009,
+    "false_go": 0.18792866941015088,
+    "false_stop": 0.043594902749832326,
+    "n_stop": 729,
+    "majority_color": "green",
+    "majority_acc_color": 0.6216216216216216,
+    "majority_acc_pass": 0.6716216216216216,
+    "pass_consistent_with_color": 1.0,
+    "color_confusion_rows_gt_cols_pred": [
+     [
+      0,
+      14,
+      3,
+      2
+     ],
+     [
+      35,
+      592,
+      11,
+      91
+     ],
+     [
+      0,
+      33,
+      52,
+      7
+     ],
+     [
+      7,
+      18,
+      3,
+      1352
+     ]
+    ]
+   },
+   "right": {
+    "n": 2220,
+    "gt_color_mix": {
+     "none": 0.977027027027027,
+     "red": 0.006306306306306306,
+     "yellow": 0.0013513513513513514,
+     "green": 0.015315315315315315
+    },
+    "acc_color": 0.9779279279279279,
+    "acc_pass": 0.9905405405405405,
+    "false_go": 1.0,
+    "false_stop": 0.003173164097914778,
+    "n_stop": 14,
+    "majority_color": "none",
+    "majority_acc_color": 0.977027027027027,
+    "majority_acc_pass": 0.9936936936936936,
+    "pass_consistent_with_color": 1.0,
+    "color_confusion_rows_gt_cols_pred": [
+     [
+      2161,
+      7,
+      0,
+      1
+     ],
+     [
+      14,
+      0,
+      0,
+      0
+     ],
+     [
+      3,
+      0,
+      0,
+      0
+     ],
+     [
+      24,
+      0,
+      0,
+      10
+     ]
+    ]
+   },
+   "uturn": {
+    "n": 2220,
+    "gt_color_mix": {
+     "none": 0.008558558558558558,
+     "red": 0.33063063063063064,
+     "yellow": 0.04144144144144144,
+     "green": 0.6193693693693694
+    },
+    "acc_color": 0.8968468468468469,
+    "acc_pass": 0.9067567567567567,
+    "false_go": 0.19346049046321526,
+    "false_stop": 0.04374158815612382,
+    "n_stop": 734,
+    "majority_color": "green",
+    "majority_acc_color": 0.6193693693693694,
+    "majority_acc_pass": 0.6693693693693694,
+    "pass_consistent_with_color": 1.0,
+    "color_confusion_rows_gt_cols_pred": [
+     [
+      0,
+      14,
+      3,
+      2
+     ],
+     [
+      35,
+      592,
+      11,
+      96
+     ],
+     [
+      0,
+      33,
+      52,
+      7
+     ],
+     [
+      7,
+      18,
+      3,
+      1347
+     ]
+    ]
+   }
+  }
+ },
+ "B": {
+  "overall": {
+   "acc_color": 0.8220447284345048,
+   "acc_pass": 0.8806709265175718,
+   "em": 0.6651757188498403,
+   "tss": 0.7892971246006389,
+   "false_go": 0.28806789815277084,
+   "false_stop": 0.039934225980737606
+  },
+  "directions": {
+   "straight": {
+    "n": 1565,
+    "gt_color_mix": {
+     "none": 0.030670926517571886,
+     "red": 0.4115015974440895,
+     "yellow": 0.021725239616613417,
+     "green": 0.5361022364217253
+    },
+    "acc_color": 0.723961661341853,
+    "acc_pass": 0.7884984025559105,
+    "false_go": 0.4254658385093168,
+    "false_stop": 0.06188925081433225,
+    "n_stop": 644,
+    "majority_color": "green",
+    "majority_acc_color": 0.5361022364217253,
+    "majority_acc_pass": 0.5884984025559106,
+    "pass_consistent_with_color": 1.0,
+    "color_confusion_rows_gt_cols_pred": [
+     [
+      22,
+      17,
+      5,
+      4
+     ],
+     [
+      177,
+      370,
+      43,
+      54
+     ],
+     [
+      1,
+      15,
+      11,
+      7
+     ],
+     [
+      80,
+      25,
+      4,
+      730
+     ]
+    ]
+   },
+   "left": {
+    "n": 1565,
+    "gt_color_mix": {
+     "none": 0.0038338658146964857,
+     "red": 0.42236421725239615,
+     "yellow": 0.02939297124600639,
+     "green": 0.544408945686901
+    },
+    "acc_color": 0.8146964856230032,
+    "acc_pass": 0.888817891373802,
+    "false_go": 0.2027231467473525,
+    "false_stop": 0.04424778761061947,
+    "n_stop": 661,
+    "majority_color": "green",
+    "majority_acc_color": 0.544408945686901,
+    "majority_acc_pass": 0.5776357827476039,
+    "pass_consistent_with_color": 1.0,
+    "color_confusion_rows_gt_cols_pred": [
+     [
+      2,
+      3,
+      1,
+      0
+     ],
+     [
+      69,
+      527,
+      38,
+      27
+     ],
+     [
+      2,
+      14,
+      15,
+      15
+     ],
+     [
+      89,
+      23,
+      9,
+      731
+     ]
+    ]
+   },
+   "right": {
+    "n": 1565,
+    "gt_color_mix": {
+     "none": 0.9584664536741214,
+     "red": 0.023642172523961662,
+     "yellow": 0.003194888178913738,
+     "green": 0.014696485623003195
+    },
+    "acc_color": 0.9348242811501597,
+    "acc_pass": 0.9565495207667731,
+    "false_go": 0.9459459459459459,
+    "false_stop": 0.021596858638743454,
+    "n_stop": 37,
+    "majority_color": "none",
+    "majority_acc_color": 0.9584664536741214,
+    "majority_acc_pass": 0.9763578274760384,
+    "pass_consistent_with_color": 1.0,
+    "color_confusion_rows_gt_cols_pred": [
+     [
+      1461,
+      32,
+      6,
+      1
+     ],
+     [
+      35,
+      2,
+      0,
+      0
+     ],
+     [
+      4,
+      1,
+      0,
+      0
+     ],
+     [
+      23,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "uturn": {
+    "n": 1565,
+    "gt_color_mix": {
+     "none": 0.0038338658146964857,
+     "red": 0.42236421725239615,
+     "yellow": 0.02939297124600639,
+     "green": 0.544408945686901
+    },
+    "acc_color": 0.8146964856230032,
+    "acc_pass": 0.888817891373802,
+    "false_go": 0.2027231467473525,
+    "false_stop": 0.04424778761061947,
+    "n_stop": 661,
+    "majority_color": "green",
+    "majority_acc_color": 0.544408945686901,
+    "majority_acc_pass": 0.5776357827476039,
+    "pass_consistent_with_color": 1.0,
+    "color_confusion_rows_gt_cols_pred": [
+     [
+      2,
+      3,
+      1,
+      0
+     ],
+     [
+      69,
+      527,
+      38,
+      27
+     ],
+     [
+      2,
+      14,
+      15,
+      15
+     ],
+     [
+      89,
+      23,
+      9,
+      731
+     ]
+    ]
+   }
+  }
+ },
+ "combined": {
+  "overall": {
+   "acc_color": 0.876552179656539,
+   "acc_pass": 0.9103698811096433,
+   "em": 0.7749009247027742,
+   "tss": 0.8539409951563188,
+   "false_go": 0.2315354713313897,
+   "false_stop": 0.03664731494920174
+  },
+  "directions": {
+   "straight": {
+    "n": 3785,
+    "gt_color_mix": {
+     "none": 0.035667107001321,
+     "red": 0.3381770145310436,
+     "yellow": 0.038044914134742404,
+     "green": 0.588110964332893
+    },
+    "acc_color": 0.8190224570673712,
+    "acc_pass": 0.8649933949801849,
+    "false_go": 0.27890625,
+    "false_stop": 0.06147704590818363,
+    "n_stop": 1280,
+    "majority_color": "green",
+    "majority_acc_color": 0.588110964332893,
+    "majority_acc_pass": 0.6618229854689565,
+    "pass_consistent_with_color": 1.0,
+    "color_confusion_rows_gt_cols_pred": [
+     [
+      28,
+      53,
+      8,
+      46
+     ],
+     [
+      216,
+      923,
+      52,
+      89
+     ],
+     [
+      1,
+      57,
+      62,
+      24
+     ],
+     [
+      90,
+      44,
+      5,
+      2087
+     ]
+    ]
+   },
+   "left": {
+    "n": 3785,
+    "gt_color_mix": {
+     "none": 0.0066050198150594455,
+     "red": 0.36723910171730517,
+     "yellow": 0.03645970937912814,
+     "green": 0.5896961690885073
+    },
+    "acc_color": 0.8642007926023778,
+    "acc_pass": 0.9006605019815059,
+    "false_go": 0.1949640287769784,
+    "false_stop": 0.04384133611691023,
+    "n_stop": 1390,
+    "majority_color": "green",
+    "majority_acc_color": 0.5896961690885073,
+    "majority_acc_pass": 0.6327608982826949,
+    "pass_consistent_with_color": 1.0,
+    "color_confusion_rows_gt_cols_pred": [
+     [
+      2,
+      17,
+      4,
+      2
+     ],
+     [
+      104,
+      1119,
+      49,
+      118
+     ],
+     [
+      2,
+      47,
+      67,
+      22
+     ],
+     [
+      96,
+      41,
+      12,
+      2083
+     ]
+    ]
+   },
+   "right": {
+    "n": 3785,
+    "gt_color_mix": {
+     "none": 0.9693527080581241,
+     "red": 0.013474240422721268,
+     "yellow": 0.0021136063408190224,
+     "green": 0.015059445178335535
+    },
+    "acc_color": 0.9601056803170409,
+    "acc_pass": 0.9764861294583884,
+    "false_go": 0.9607843137254902,
+    "false_stop": 0.010712372790573112,
+    "n_stop": 51,
+    "majority_color": "none",
+    "majority_acc_color": 0.9693527080581241,
+    "majority_acc_pass": 0.9865257595772787,
+    "pass_consistent_with_color": 1.0,
+    "color_confusion_rows_gt_cols_pred": [
+     [
+      3622,
+      39,
+      6,
+      2
+     ],
+     [
+      49,
+      2,
+      0,
+      0
+     ],
+     [
+      7,
+      1,
+      0,
+      0
+     ],
+     [
+      47,
+      0,
+      0,
+      10
+     ]
+    ]
+   },
+   "uturn": {
+    "n": 3785,
+    "gt_color_mix": {
+     "none": 0.0066050198150594455,
+     "red": 0.36856010568031705,
+     "yellow": 0.03645970937912814,
+     "green": 0.5883751651254954
+    },
+    "acc_color": 0.8628797886393659,
+    "acc_pass": 0.8993394980184941,
+    "false_go": 0.1978494623655914,
+    "false_stop": 0.043933054393305436,
+    "n_stop": 1395,
+    "majority_color": "green",
+    "majority_acc_color": 0.5883751651254954,
+    "majority_acc_pass": 0.631439894319683,
+    "pass_consistent_with_color": 1.0,
+    "color_confusion_rows_gt_cols_pred": [
+     [
+      2,
+      17,
+      4,
+      2
+     ],
+     [
+      104,
+      1119,
+      49,
+      123
+     ],
+     [
+      2,
+      47,
+      67,
+      22
+     ],
+     [
+      96,
+      41,
+      12,
+      2078
+     ]
+    ]
+   }
+  }
+ }
+}

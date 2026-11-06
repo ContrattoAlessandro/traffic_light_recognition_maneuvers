@@ -1,0 +1,153 @@
+{
+ "run": "runs/rfdetr_m_dtld",
+ "epoch": 4,
+ "threshold": 0.25,
+ "iou": 0.5,
+ "front_wide": {
+  "images": 828,
+  "lights": 2055,
+  "detections": 1693,
+  "recall": 0.46909975669099757,
+  "precision": 0.5694034258712345,
+  "recall_by_height": {
+   "0-10px": [
+    0,
+    239
+   ],
+   "10-20px": [
+    137,
+    749
+   ],
+   "20-40px": [
+    235,
+    377
+   ],
+   "40-1e+09px": [
+    592,
+    690
+   ]
+  },
+  "color_acc": 0.9616182572614108,
+  "color_confusion_gt_x_pred": {
+   "red": {
+    "red": 539,
+    "yellow": 3,
+    "green": 30
+   },
+   "yellow": {
+    "red": 0,
+    "yellow": 4,
+    "green": 0
+   },
+   "green": {
+    "red": 4,
+    "yellow": 0,
+    "green": 384
+   }
+  },
+  "arrows": {
+   "matched": 368,
+   "relevant": 353,
+   "moves_correct": 154,
+   "moves_acc": 0.43626062322946174
+  }
+ },
+ "front_medium": {
+  "images": 1003,
+  "lights": 2064,
+  "detections": 2111,
+  "recall": 0.6584302325581395,
+  "precision": 0.6437707247749882,
+  "recall_by_height": {
+   "0-10px": [
+    3,
+    122
+   ],
+   "10-20px": [
+    131,
+    513
+   ],
+   "20-40px": [
+    522,
+    714
+   ],
+   "40-1e+09px": [
+    703,
+    715
+   ]
+  },
+  "color_acc": 0.8866813833701251,
+  "color_confusion_gt_x_pred": {
+   "red": {
+    "red": 673,
+    "yellow": 123,
+    "green": 30
+   },
+   "yellow": {
+    "red": 0,
+    "yellow": 18,
+    "green": 0
+   },
+   "green": {
+    "red": 1,
+    "yellow": 0,
+    "green": 514
+   }
+  },
+  "arrows": {
+   "matched": 585,
+   "relevant": 551,
+   "moves_correct": 258,
+   "moves_acc": 0.46823956442831216
+  }
+ },
+ "front_tele": {
+  "images": 997,
+  "lights": 2050,
+  "detections": 2298,
+  "recall": 0.6790243902439025,
+  "precision": 0.6057441253263708,
+  "recall_by_height": {
+   "0-10px": [
+    0,
+    12
+   ],
+   "10-20px": [
+    114,
+    517
+   ],
+   "20-40px": [
+    397,
+    576
+   ],
+   "40-1e+09px": [
+    881,
+    945
+   ]
+  },
+  "color_acc": 0.8951149425287356,
+  "color_confusion_gt_x_pred": {
+   "red": {
+    "red": 792,
+    "yellow": 125,
+    "green": 16
+   },
+   "yellow": {
+    "red": 2,
+    "yellow": 14,
+    "green": 0
+   },
+   "green": {
+    "red": 3,
+    "yellow": 0,
+    "green": 440
+   }
+  },
+  "arrows": {
+   "matched": 583,
+   "relevant": 493,
+   "moves_correct": 237,
+   "moves_acc": 0.48073022312373226
+  }
+ }
+}
