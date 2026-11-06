@@ -24,7 +24,7 @@ import os
 import statistics
 
 from . import DIRECTIONS, color_to_pass
-from .labels import stats
+from .labels import assign_directions, stats
 
 ARROW_ROUTES = {
     "arrow_left": {"left"},
@@ -117,6 +117,27 @@ def build_frame(im, rule_ok=None):
     }
     rec["kept"] = rec["n_relevant_lights"] > 0 and not rec["conflict"] and not rec["unknown"] and rule_ok is not False
     return rec
+
+
+def to_openlane_protocol(rec):
+    """D*_US: a DTLD record relabelled with the exact OpenLane-V2 protocol of ``dtsu.labels``.
+
+    The lamps serving each route (``serving``) play the role of OpenLane's light-to-lane links
+    (``topology_lcte``): a lamp's ``moves`` are the maneuvers of the lanes it governs. Those per-light
+    links are kept and only the direction rule and the frame filter are replaced by OpenLane's:
+    - ``labels.assign_directions`` (US rules): right = dedicated right-only lamps, else none; among the
+      candidates of a direction the most specific lamps win, and only their disagreement is a conflict;
+    - lamps without a color (off / unknown) are not lights, as OpenLane's unknown-attribute elements are
+      not: they are ignored instead of dropping the frame (``had_unknown`` marks the frames this affects);
+    - kept = at least one relevant colored lamp and no conflict. The DTLD route-review filter
+      (``rule_ok`` false) is kept: it is label quality control, not a traffic rule.
+    """
+    light_moves = {i: (b["color"], set(b["moves"])) for i, b in enumerate(rec["boxes"]) if b["relevant"]}
+    out = assign_directions(light_moves, "right")
+    new = {**rec, **out, "traffic_side": "right", "near_turn": "dedicated", "n_relevant_lights": len(light_moves),
+           "had_unknown": bool(rec["unknown"]), "unknown": []}
+    new["kept"] = bool(light_moves) and not out["conflict"] and rec["rule_ok"] is not False
+    return new
 
 
 def main():

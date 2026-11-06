@@ -34,28 +34,38 @@ from tools.eval_directions import direction_stats  # noqa: E402
 from tools.eval_rfdetr import MIN_SCORE, THRESHOLDS, load_model  # noqa: E402
 
 L, R = "data/labels", "data/OpenLane-V2"
+DTLD = os.path.join(os.environ.get("DATASETS", "../traffic-light-detection/datasets"), "DTLD_jpg")
 LISA = os.path.join(os.environ.get("DATASETS", "../traffic-light-detection/datasets"), "LISA")
 # per target: (tune sets that pick the "tuned" threshold, test sets reported)
 TARGETS = {
     "lisa": ({"LISA_tune": (f"{L}/tune/lisa_train_tune.jsonl", LISA)},
              {"LISA_test": (f"{L}/lisa_test.jsonl", LISA)}),
+    # D*_US: DTLD relabelled with the OpenLane-V2 protocol (tools/make_dtld_us.py)
+    "dtld_us": ({"DTLD_US_tune": (f"{L}/tune/dtld_us_train_tune.jsonl", f"{DTLD}/train")},
+                {"DTLD_US_test": (f"{L}/dtld_us_test.jsonl", f"{DTLD}/test")}),
     "openlane": ({"A_tune": (f"{L}/tune/subset_A_train_tune.jsonl", f"{R}/subset_A"),
                   "B_tune": (f"{L}/tune/subset_B_train_tune.jsonl", f"{R}/subset_B")},
                  {"A_val": (f"{L}/subset_A_val.jsonl", f"{R}/subset_A"),
                   "B_val": (f"{L}/subset_B_val.jsonl", f"{R}/subset_B")}),
 }
-NEAR_TURN = "dedicated"  # LISA and OpenLane-V2 labels use US rules
+NEAR_TURN = "dedicated"  # LISA, OpenLane-V2 and D*_US labels use US rules
 NO_RIGHT = [DIRECTIONS.index(d) for d in DIRECTIONS if d != "right"]
 
 
 def to_trained_class(b, class_names):
-    """Target box -> the run's class name; balls ("generic") control every direction of the approach."""
+    """Target box -> the run's class name, or None if the run has no such class.
+
+    For a run without "generic" / "uturn" classes (DTLD), balls ("generic") control every direction of the
+    approach and U-turn arrows drop "uturn". A run trained on OpenLane-V2 keeps the target's own class.
+    """
+    name = box_class(b)
+    if name in class_names:
+        return name
     moves = set(b["moves"]) - {"uturn"}
     if "generic" in moves:
         moves = (moves - {"generic"}) | {"left", "right", "straight"}
     name = box_class({**b, "moves": sorted(moves)})
-    assert name in class_names, name
-    return name
+    return name if name in class_names else None
 
 
 def oracle(records, class_names):
@@ -64,7 +74,10 @@ def oracle(records, class_names):
     for r in records:
         dets = []
         for b in r["boxes"]:
-            moves, color = parse_class(to_trained_class(b, class_names))
+            name = to_trained_class(b, class_names)
+            if name is None:  # a light the run cannot predict
+                continue
+            moves, color = parse_class(name)
             if moves is not None:
                 dets.append((moves, color, 1.0))
         if assign_scored(dets, r["traffic_side"], NEAR_TURN) != r["color"]:
@@ -121,6 +134,9 @@ def main():
     ap.add_argument("--pad-aspect", type=float, help="pad images to this width/height before the square resize")
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--limit", type=int, help="first N frames per set (smoke tests)")
+    ap.add_argument("--keep-all", action="store_true",
+                    help="score every frame, also those the run's classes cannot reproduce (so runs with different "
+                         "class lists share one test set); the oracle count is still reported")
     args = ap.parse_args()
 
     class_names = json.load(open(args.class_names))
@@ -130,7 +146,7 @@ def main():
         rs = load_records(*v)[: args.limit]
         bad = set(oracle(rs, class_names))
         print(f"oracle {k}: {len(rs)} frames, {len(bad)} not reproducible, left out {sorted(bad)[:5]}")
-        recs[k], dropped[k] = [r for r in rs if r["image"] not in bad], len(bad)
+        recs[k], dropped[k] = ([r for r in rs if r["image"] not in bad] if not args.keep_all else rs), len(bad)
 
     model, res, _ = load_model(args.run, os.path.join(args.run, f"epoch_{args.epoch}_ema.pth"), len(class_names))
     dets = {k: run_detector(model, rs, class_names, res, args.pad_aspect, args.workers) for k, rs in recs.items()}
@@ -141,7 +157,7 @@ def main():
 
     geometry = f"pad{args.pad_aspect:g}" if args.pad_aspect else "squeeze"
     out = {"run": args.run, "epoch": args.epoch, "target": args.target, "geometry": geometry,
-           "thresholds": thresholds, "dropped_by_oracle": dropped}
+           "thresholds": thresholds, ("unreproducible_kept" if args.keep_all else "dropped_by_oracle"): dropped}
     for name, t in thresholds.items():
         out[name] = {}
         for k in test_sets:

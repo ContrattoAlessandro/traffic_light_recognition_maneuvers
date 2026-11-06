@@ -4,6 +4,7 @@ train/  = A+B train (the same frames the direction-aware model trains on)
 valid/  = A+B tune split (a subset of train; only feeds RF-DETR's own per-epoch mAP log, never val)
 With ``--fit`` (tuning runs, out dir data/rfdetr_coco_fit) train/ is the 90% fit split instead, so
 valid/ is held out. ``--dataset dtld`` exports DTLD the same way (fit / tune / official test).
+``--subsets A`` (or B) exports one OpenLane-V2 subset only (single-subset runs).
 ``--probe N`` also writes test/ = N random frames of train/: RF-DETR never evaluates it, but
 ``tools/train_rfdetr.py`` scores it each epoch exactly like valid/ to measure overfitting.
 Each folder gets a records.jsonl with the label records of its images, in order.
@@ -69,9 +70,14 @@ def main():
     ap.add_argument("--fit", action="store_true", help="train/ = fit split (train minus tune)")
     ap.add_argument("--dataset", choices=("openlane", "dtld"), default="openlane")
     ap.add_argument("--probe", type=int, default=0, help="write test/ = this many random train/ frames (seed 0)")
+    ap.add_argument("--subsets", nargs="+", choices=("A", "B"), default=["A", "B"],
+                    help="OpenLane-V2 subsets to export (single-subset runs: classes then come from that subset's train)")
     args = ap.parse_args()
 
     splits = DTLD_SPLITS if args.dataset == "dtld" else OPENLANE
+    if args.dataset == "openlane":
+        splits = {k: [(lab, root) for lab, root in v if root.rsplit("_", 1)[-1] in args.subsets] for k, v in splits.items()}
+        splits = {k: v for k, v in splits.items() if v}
     recs = {k: [r for lab, root in v for r in load_records(lab, root)] for k, v in splits.items()}
     class_names = sorted({box_class(b) for r in recs["train"] for b in r["boxes"]})
     unseen = collections.Counter(box_class(b) for k in recs if k not in ("train", "fit", "valid") for r in recs[k] for b in r["boxes"]

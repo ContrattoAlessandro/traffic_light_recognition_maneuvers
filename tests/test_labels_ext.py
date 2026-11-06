@@ -77,3 +77,23 @@ def test_lisa_size_filter_is_per_kind():
 def test_lisa_drops_conflicts_and_arrow_only_frames():
     assert lisa(("go", [0, 0, 10, 30]), ("stop", [20, 0, 30, 30]))["conflict"]
     assert not lisa(("goLeft", [0, 0, 10, 30]))["kept"]
+
+
+def test_dtld_openlane_protocol_right_turn_needs_dedicated_signal():
+    # circle governs straight/left/right under German rules; US/OpenLane protocol: right = none
+    rec = labels_dtld.to_openlane_protocol(dtld(lamp(0, "circle", "red"), lamp(1, "circle", "red")))
+    assert rec["color"] == {"straight": "red", "left": "red", "right": "none", "uturn": "red"}
+    assert rec["kept"] and rec["near_turn"] == "dedicated"
+    # a dedicated right arrow still sets right
+    rec = labels_dtld.to_openlane_protocol(dtld(lamp(0, "circle", "red"), lamp(1, "arrow_right", "green")))
+    assert rec["color"]["right"] == "green" and rec["color"]["straight"] == "red"
+
+
+def test_dtld_openlane_protocol_ignores_off_lamps():
+    # an off lamp drops the DTLD frame but is simply not a light in the OpenLane protocol
+    old = dtld(lamp(0, "circle", "green", relevant=False), lamp(1, "arrow_left", "off"))
+    assert not old["kept"]
+    rec = labels_dtld.to_openlane_protocol(old)
+    assert rec["kept"] and rec["had_unknown"] and rec["color"]["left"] == "green"
+    # route-review mismatches stay dropped
+    assert not labels_dtld.to_openlane_protocol(dtld(lamp(0, "circle", "green"), rule_ok=False))["kept"]

@@ -5,6 +5,7 @@ For every ``epoch_<n>_ema.pth`` in the run (or only ``--epochs``):
 2. pick the score threshold that maximizes combined tune TSS (val is never used for this);
 3. write val metrics at that threshold to ``<run>/val_log.jsonl``, in the format of the
    direction-aware model's log, plus val TSS over the whole threshold grid (diagnostic only).
+``--dataset openlane_A`` / ``openlane_B`` (single-subset runs) pick it on that subset's tune split only.
 ``--dataset dtld`` picks the threshold on the DTLD tune split and reports DTLD test.
 With ``--tune-only`` (tuning runs trained on the fit split) only the tune split is loaded and scored,
 and the log is ``<run>/tune_log.jsonl``.
@@ -38,6 +39,13 @@ PRESETS = {
                   "B_tune": (f"{L}/tune/subset_B_train_tune.jsonl", f"{R}/subset_B")},
                  {"A": (f"{L}/subset_A_val.jsonl", f"{R}/subset_A"),
                   "B": (f"{L}/subset_B_val.jsonl", f"{R}/subset_B")}),
+    # single-subset runs: the threshold comes from the training subset's own tune split, both vals are reported
+    "openlane_A": ({"A_tune": (f"{L}/tune/subset_A_train_tune.jsonl", f"{R}/subset_A")},
+                   {"A": (f"{L}/subset_A_val.jsonl", f"{R}/subset_A"),
+                    "B": (f"{L}/subset_B_val.jsonl", f"{R}/subset_B")}),
+    "openlane_B": ({"B_tune": (f"{L}/tune/subset_B_train_tune.jsonl", f"{R}/subset_B")},
+                   {"A": (f"{L}/subset_A_val.jsonl", f"{R}/subset_A"),
+                    "B": (f"{L}/subset_B_val.jsonl", f"{R}/subset_B")}),
     "dtld": ({"DTLD_tune": (f"{L}/tune/dtld_train_tune.jsonl", f"{DTLD}/train")},
              {"DTLD_test": (f"{L}/dtld_test.jsonl", f"{DTLD}/test")}),
 }

@@ -227,3 +227,141 @@ p ∈ {stop, go} for each maneuver d ∈ {straight, left, right, U-turn}.
 7. **Training and evaluation on val.** Needs the GPU.
 
 Phases 0–6 don't need the GPU.
+
+## D*_US: DTLD with the OpenLane-V2 label protocol (2026-11-05)
+
+`tools/make_dtld_us.py` → `data/labels/dtld_us_{train,test}.jsonl` (+ `tune/dtld_us_train_{fit,tune}.jsonl`),
+audit in `data/labels/dtld_us_audit.json`. Each record goes through `labels_dtld.to_openlane_protocol`.
+
+**Protocol audit, OpenLane-V2 (`dtsu/labels.py`) vs DTLD (`dtsu/labels_dtld.py`).**
+
+| Step | OpenLane-V2 | DTLD (German labels) | D*_US |
+|---|---|---|---|
+| Light → maneuvers | `topology_lcte` links + lane geometry | lamps serving each route (`serving`: pictogram, relevance flag, size rule) | same as DTLD: these per-lamp links are the analogue of `lcte` |
+| Relevant lights | lights of ego-direction lanes at the nearest junction | front vehicle lamps at the ego intersection (≥ 0.6 × median relevant height) | same as DTLD |
+| Straight / left / U-turn | `assign_directions`: most specific light wins; left ← straight; U-turn ← left | own resolver: arrows before circles; left ← straight; U-turn = left | **`assign_directions`** |
+| Right | dedicated right-only signal, else none (US) | arrow, else circle (German) | **dedicated only (US)** |
+| Conflict | disagreement among the most specific lights | any disagreement among a route's lamps | **most specific only** |
+| Lights without a color | unknown-attribute elements are not lights (469/470 unlinked in a 300-frame sample) | frame dropped | **ignored** |
+| red_yellow | does not occur | red | red |
+| Frame filter | ≥ 1 relevant colored light, no conflict | + no unknown, + route review (`rule_ok`) | ≥ 1 relevant colored light, no conflict, + route review |
+
+What the audit shows (test; train is the same in proportion):
+- On the 11,347 frames both versions keep, straight, left and U-turn are identical. Only right changes (green → none 6,814, red → none 3,081, yellow → none 311).
+- 154 frames are added (11,501 kept): 131 that had an off lamp, 23 conflicts that the specificity rule settles. None are lost.
+- Right is 96.5% none, against 96.6% in OpenLane A+B. Straight is 65% green / 29% red / 2.4% none (OpenLane: 54 / 37 / 6.5).
+- Oracle: ground-truth lamps through `assign_scored` with the US rule reproduce all D*_US labels (0 mismatches).
+- What stays different, because it comes from the annotations, not the rules:
+  - the link source (HD-map topology vs pictogram + route);
+  - OpenLane's `generic` and U-turn lights, which DTLD doesn't have;
+  - box conventions, which matter for detection metrics, not for TSS.
+- The run trained on subset_B only has no `right|yellow` class. That touches 30 D*_US test frames, which stay in its test set (`--keep-all`), so every run is scored on the same frames.
+
+## Cross-subset / cross-dataset protocol (2026-11-05, `tools/run_rfdetr_cross.sh`)
+
+| Train | Test | Measures |
+|---|---|---|
+| A | A, B, D*_US | in-domain A + A→B + A→D* |
+| B | B, A, D*_US | in-domain B + B→A + B→D* |
+| A+B | A, B, D*_US | mixed in-domain + zero-shot D* |
+
+Every run uses the same settings:
+- source fit split, RF-DETR Medium at 1024, default lr, 4 epochs;
+- the threshold is picked on the source's own tune split, per epoch;
+- the reported epoch is the best on source tune TSS;
+- images are squeezed to the square, as in training.
+
+A+B = `runs/tune_rfdetr/r1_m_default` (already this recipe). A-only and B-only use `make_rfdetr_coco.py --subsets`; their classes come from that subset's train split (45 and 35 classes).
+
+### Results (2026-11-05)
+
+Each run is reported at its best source-tune epoch and that epoch's source-tune threshold. The D*_US scores use that same threshold. Scores are TSS / Acc_color / False-Go. D*_US is the official DTLD test split (11,501 frames). "no-right" leaves out right, which is 96.5% none.
+
+| Train (epoch, thr) | A val | B val | D*_US | D*_US no-right |
+|---|---|---|---|---|
+| A (2, 0.20) | **0.900** / 0.915 / 0.178 | 0.789 / 0.822 / 0.288 | 0.755 / 0.774 / 0.323 | 0.731 / 0.715 / 0.313 |
+| B (2, 0.15) | 0.827 / 0.839 / 0.327 | **0.904** / 0.921 / 0.102 | 0.782 / 0.796 / 0.219 | 0.767 / 0.746 / 0.208 |
+| A+B (1, 0.20) | **0.905** / 0.917 / 0.145 | **0.918** / 0.932 / 0.098 | **0.827** / 0.852 / 0.213 | **0.814** / 0.814 / 0.201 |
+
+Color accuracy per direction (straight / left / right):
+
+| Train | A val | B val | D*_US |
+|---|---|---|---|
+| A | 0.886 / 0.899 / 0.978 | 0.724 / 0.815 / 0.935 | 0.700 / 0.722 / 0.953 |
+| B | 0.804 / 0.789 / 0.976 | 0.888 / 0.923 / 0.950 | 0.743 / 0.747 / 0.948 |
+| A+B | 0.891 / 0.902 / 0.975 | 0.916 / 0.930 / 0.952 | 0.824 / 0.810 / 0.964 |
+
+Findings:
+- **The cross-subset gap is large and roughly symmetric.** A→B loses 11.5 TSS points against B in-domain; B→A loses 7.8 against A in-domain. Moving to the other subset also doubles False-Go (A→B 0.29, B→A 0.33).
+- **Mixing helps both subsets.** A+B matches A in-domain on A (+0.5 TSS) and beats B in-domain on B (+1.4), with the lowest False-Go on each, despite also having the fewest epochs (best at epoch 1).
+- **Zero-shot to Germany (D*_US) costs 8–15 TSS points.** The ranking is A+B (0.827) > B (0.782) > A (0.755). Data diversity matters more than any single source. Straight and left lose the most, while right is easy because it is almost always none.
+- **Tuning the threshold on DTLD barely helps.** It changes TSS by at most +0.001, so the drop is not a calibration problem.
+- **The drop is mostly False-Go** (0.21–0.32 against 0.10–0.18 in-domain). It could come from wrong colors on detected German lamps or from missed lamps; the per-light OOD perception test should separate the two.
+
+## OOD perception per light (2026-11-05, `tools/run_rfdetr_perception.sh`)
+
+These datasets have no relevance labels, so each annotated light is matched to the run's detections without looking at the class. Matching is greedy by score. Each run uses its best source-tune epoch and threshold: A e2 / 0.20, B e2 / 0.15, A+B e1 / 0.20, DTLD e4 / 0.25.
+
+Two matching criteria:
+- **center**: each box's center lies inside the other box.
+- **IoU ≥ 0.5**: the usual overlap test.
+
+LISA and BDD100K boxes are about twice as wide as the lamp-only boxes of OpenLane, DTLD and ATLAS. IoU is strict for them, so center matching is the main number. Off, wait-on and none lights are ignored: neither misses nor false positives.
+
+Detection: AP with center matching (AP with IoU ≥ 0.5 in brackets), then recall and precision at the run's threshold.
+
+| Model | ATLAS (6,169) | S2TLD (13,317) | BDD100K val (18,538) | LISA test (57,649) |
+|---|---|---|---|---|
+| A | 0.483 (0.333) R 0.63 P 0.57 | 0.687 (0.649) R 0.89 P 0.63 | 0.642 (0.385) R 0.63 P 0.73 | 0.514 (0.232) R 0.44 P 0.75 |
+| B | 0.509 (0.422) R 0.64 P 0.51 | 0.630 (0.588) R 0.94 P 0.49 | 0.647 (0.344) R 0.83 P 0.44 | 0.555 (0.164) R 0.86 P 0.44 |
+| A+B | 0.487 (0.359) R 0.65 P 0.56 | 0.608 (0.560) R 0.93 P 0.54 | **0.662** (0.366) R 0.78 P 0.57 | 0.573 (0.151) R 0.78 P 0.58 |
+| DTLD | **0.697** (0.567) R 0.69 P 0.71 | **0.812** (0.712) R 0.84 P 0.64 | 0.461 (0.103) R 0.53 P 0.47 | **0.750** (0.064) R 0.74 P 0.69 |
+
+Color of matched lights (center matching): accuracy, then recall of yellow.
+
+| Model | ATLAS | S2TLD | BDD100K | LISA |
+|---|---|---|---|---|
+| A | 0.951 / 0.13 | 0.934 / 0.32 | 0.944 / 0.09 | 0.941 / 0.12 |
+| B | 0.935 / 0.79 | 0.940 / 0.36 | 0.934 / 0.20 | 0.972 / 0.29 |
+| A+B | 0.959 / 0.59 | 0.958 / 0.61 | 0.956 / 0.18 | 0.913 / 0.68 |
+| DTLD | 0.900 / 0.93 | **0.985** / 0.83 | **0.968** / 0.48 | **0.985** / 0.51 |
+
+Breakdowns (center AP / recall):
+- **LISA day / night.** A drops from 0.733 / 0.87 to 0.427 / 0.25 at night, B from 0.752 / 0.90 to 0.467 / 0.85, A+B from 0.750 / 0.90 to 0.487 / 0.73, DTLD from 0.838 / 0.86 to 0.710 / 0.69.
+- **BDD100K.** Day AP is 0.70–0.75 for the OpenLane models (DTLD 0.60); night AP is 0.57–0.61 (DTLD 0.34).
+- **ATLAS cameras.** The wide camera is hardest for every model, with AP 0.43–0.45 for OpenLane and 0.61 for DTLD.
+- **S2TLD.** The 1920×1080 images are much harder than the 1280×720 ones, worst for DTLD (0.47 vs 0.87).
+
+Findings:
+- **Detection transfers by camera and box convention more than by country.** The DTLD model is the best detector wherever lights are drawn as lamps and seen up close: ATLAS (Germany, same convention), S2TLD and LISA. It is the worst on BDD100K, which has small dashcam lights and many night frames. The OpenLane models are flatter across datasets (center AP 0.48–0.69).
+- **No OpenLane model is the best detector everywhere.** A leads on S2TLD, B on ATLAS, and A+B on BDD100K and LISA, all within 0.08 AP of each other. B runs at higher recall and lower precision on S2TLD, BDD and LISA, partly because its threshold is lower (0.15).
+- **Green is near-solved everywhere (recall ≥ 0.94), and red mostly is (≥ 0.85, except A+B at LISA night, 0.77). Yellow is the weak color.**
+  - The A model calls most yellow lights red (yellow recall 0.09–0.32).
+  - B, A+B and DTLD vary from 0.18 to 0.93 by dataset.
+  - BDD100K yellow is poor for every model (≤ 0.48).
+  - DTLD is the most stable (0.48–0.93).
+- **Night is the main detection failure.** The A model loses most of its LISA recall at night, and DTLD loses about 45% of its BDD AP (0.60 → 0.34). Small (10–20 px) LISA night lights separate the models most: A finds 1% of them, B 73%, A+B 46%, DTLD 37%.
+- **IoU ≥ 0.5 understates LISA and BDD by 2–10×.** For DTLD on LISA it gives 0.064 against 0.750 with center matching. Use center AP when comparing across datasets, and IoU AP only within a box convention.
+
+### Arrow direction (ATLAS, LISA)
+
+The test covers annotated arrows that a run matches (center criterion) and calls relevant. It checks the run's predicted moves, without uturn and generic, against the pictogram's directions:
+- **exact**: the moves equal the pictogram's directions;
+- **contain**: the moves include them.
+
+`gt_to_pred_moves` in the JSON counts each (arrow, moves) pair.
+
+| Model | ATLAS exact / contain (n) | LISA day exact / contain (n) | LISA night exact / contain (n) |
+|---|---|---|---|
+| A | 0.19 / 0.59 (1,041) | 0.17 / 0.72 (2,065) | 0.00 / 0.08 (348) |
+| B | 0.23 / 0.53 (897) | 0.01 / 0.80 (1,851) | 0.00 / 0.03 (577) |
+| A+B | 0.18 / 0.48 (1,127) | 0.08 / 0.68 (1,994) | 0.00 / 0.01 (692) |
+| DTLD | **0.43 / 0.84** (1,560) | **0.49** / 0.61 (1,743) | 0.00 / 1.00 (786) |
+
+Findings:
+- **The OpenLane models don't read the pictogram; they guess the lane set.**
+  - A light's class is the set of maneuvers of the lanes it controls (HD-map topology), so a left arrow usually comes out as left+straight. Its color still applies to left.
+  - In 40–50% of cases on ATLAS, the predicted moves don't even include the arrow's direction: left → straight, left → right+straight, right → straight. Those errors would put the arrow's color on the wrong direction.
+- **The DTLD model is the only one with pictogram-based moves**, because a DTLD lamp's moves come from the route its arrow serves. It gets the exact moves 2–3× more often. Its main error is calling an arrow a circle (left → left+right+straight), which keeps the arrow's direction (contain 0.84 on ATLAS).
+- **At night no model recognizes arrows.** DTLD calls 784 of 786 LISA night arrows a circle (left+right+straight). The OpenLane models give moves without left (A+B: generic 383, straight 164, right+straight 131 out of 692).
+- Per light, moves are much weaker than color (color accuracy ≥ 0.9 against exact moves ≤ 0.5). This motivates a factorized pictogram head (shape: circle / left / straight / right / …) that can be trained on any dataset with pictograms (DTLD, ATLAS, LISA), separately from the relevance and moves heads.
