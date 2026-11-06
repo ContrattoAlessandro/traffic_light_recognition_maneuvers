@@ -1,0 +1,232 @@
+{
+ "labels_file": "annotations/openlane_pictograms_v1.json",
+ "items": 1172,
+ "label_counts": {
+  "circle": 962,
+  "arrow_left": 112,
+  "arrow_straight": 41,
+  "other": 39,
+  "unclear": 17,
+  "arrow_uturn": 1
+ },
+ "qc": {
+  "pairs": 59,
+  "agreement": 1.0,
+  "kappa": 1.0
+ },
+ "A": {
+  "frames": 2220,
+  "dependent_frames": 189,
+  "primary": {
+   "tss": 0.9666666666666667,
+   "ci95": [
+    0.9666666666666667,
+    0.9666666666666667
+   ],
+   "acc_color": 0.9724099099099099,
+   "acc_pass": 0.9856981981981981,
+   "em": 0.9418918918918919,
+   "frames_D": 189,
+   "frames_N": 87
+  },
+  "sensitivity": {
+   "tss": 0.9658033033033032,
+   "ci95": [
+    0.9658033033033032,
+    0.9658033033033032
+   ],
+   "acc_color": 0.9711711711711711,
+   "acc_pass": 0.9843468468468468,
+   "em": 0.9418918918918919,
+   "frames_D": 184,
+   "frames_N": 84
+  },
+  "circle": {
+   "tss": 0.9465465465465466,
+   "ci95": [
+    0.9465465465465466,
+    0.9465465465465466
+   ],
+   "acc_color": 0.9557432432432432,
+   "acc_pass": 0.9690315315315315,
+   "em": 0.9148648648648648,
+   "frames_D": 189,
+   "frames_N": 87
+  },
+  "ideal": {
+   "tss": 0.9939939939939939,
+   "ci95": [
+    0.9939939939939939,
+    0.9939939939939939
+   ],
+   "acc_color": 0.9960585585585585,
+   "acc_pass": 0.9980855855855856,
+   "em": 0.9878378378378379,
+   "frames_D": 189,
+   "frames_N": 87
+  },
+  "failures": {
+   "D | circle-only head on a left-turn lane": 39,
+   "D | circle-only head on a right-turn lane": 28,
+   "D | lane-specific heads / other": 25,
+   "D | T-junction (no straight) light": 20,
+   "D | light labelled other": 11,
+   "D | arrow disagrees with topology": 6
+  },
+  "turn_only_lights": 269,
+  "turn_only_share_arrow": 0.2825278810408922,
+  "pictogram_by_topology_moves": {
+   "generic": {
+    "circle": 38,
+    "other": 4,
+    "arrow_left": 1,
+    "unclear": 1
+   },
+   "generic+left": {
+    "circle": 4
+   },
+   "generic+left+straight": {
+    "circle": 1
+   },
+   "generic+straight": {
+    "circle": 6
+   },
+   "left": {
+    "arrow_left": 66,
+    "circle": 59,
+    "unclear": 5,
+    "other": 1
+   },
+   "left+right": {
+    "circle": 40
+   },
+   "left+right+straight": {
+    "circle": 96
+   },
+   "left+straight": {
+    "circle": 37,
+    "other": 1
+   },
+   "left+uturn": {
+    "arrow_left": 10
+   },
+   "right": {
+    "circle": 78,
+    "other": 10
+   },
+   "right+straight": {
+    "circle": 103,
+    "other": 6,
+    "unclear": 1
+   },
+   "straight": {
+    "circle": 119,
+    "arrow_left": 4,
+    "other": 4,
+    "unclear": 1
+   },
+   "straight+uturn": {
+    "arrow_left": 5
+   }
+  }
+ },
+ "B": {
+  "frames": 1565,
+  "dependent_frames": 114,
+  "primary": {
+   "tss": 0.9589338539817773,
+   "ci95": [
+    0.9380182011811404,
+    0.9675186368477103
+   ],
+   "acc_color": 0.9675566712307927,
+   "acc_pass": 0.987220447284345,
+   "em": 0.9220244434301942,
+   "frames_D": 114,
+   "frames_N": 63
+  },
+  "sensitivity": {
+   "tss": 0.9573211822832103,
+   "ci95": [
+    0.935573773785842,
+    0.9661874334398296
+   ],
+   "acc_color": 0.9652778505211335,
+   "acc_pass": 0.9851437699680511,
+   "em": 0.9215419263604462,
+   "frames_D": 107,
+   "frames_N": 61
+  },
+  "circle": {
+   "tss": 0.9629392971246007,
+   "ci95": [
+    0.9629392971246007,
+    0.9629392971246007
+   ],
+   "acc_color": 0.9752396166134185,
+   "acc_pass": 0.9864217252396166,
+   "em": 0.9271565495207668,
+   "frames_D": 114,
+   "frames_N": 63
+  },
+  "ideal": {
+   "tss": 1.0,
+   "ci95": [
+    1.0,
+    1.0
+   ],
+   "acc_color": 1.0,
+   "acc_pass": 1.0,
+   "em": 1.0,
+   "frames_D": 114,
+   "frames_N": 63
+  },
+  "failures": {
+   "D | circle-only head on a right-turn lane": 50,
+   "D | circle-only head on a left-turn lane": 40,
+   "D | light labelled other": 5,
+   "D | T-junction (no straight) light": 2,
+   "D | lane-specific heads / other": 2,
+   "N | light labelled other": 1
+  },
+  "turn_only_lights": 170,
+  "turn_only_share_arrow": 0.1588235294117647,
+  "pictogram_by_topology_moves": {
+   "generic": {
+    "circle": 25
+   },
+   "left": {
+    "circle": 65,
+    "arrow_left": 26,
+    "unclear": 2
+   },
+   "left+right": {
+    "circle": 3
+   },
+   "left+right+straight": {
+    "circle": 9,
+    "other": 1
+   },
+   "left+straight": {
+    "circle": 43,
+    "other": 2
+   },
+   "right": {
+    "circle": 68,
+    "unclear": 4,
+    "other": 1,
+    "arrow_uturn": 1
+   },
+   "right+straight": {
+    "circle": 17,
+    "arrow_straight": 2
+   },
+   "straight": {
+    "circle": 151,
+    "arrow_straight": 39,
+    "other": 9,
+    "unclear": 3
+   }
+  }
+ }
+}

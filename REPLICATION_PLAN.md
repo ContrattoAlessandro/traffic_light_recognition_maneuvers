@@ -365,3 +365,159 @@ Findings:
 - **The DTLD model is the only one with pictogram-based moves**, because a DTLD lamp's moves come from the route its arrow serves. It gets the exact moves 2–3× more often. Its main error is calling an arrow a circle (left → left+right+straight), which keeps the arrow's direction (contain 0.84 on ATLAS).
 - **At night no model recognizes arrows.** DTLD calls 784 of 786 LISA night arrows a circle (left+right+straight). The OpenLane models give moves without left (A+B: generic 383, straight 164, right+straight 131 out of 692).
 - Per light, moves are much weaker than color (color accuracy ≥ 0.9 against exact moves ≤ 0.5). This motivates a factorized pictogram head (shape: circle / left / straight / right / …) that can be trained on any dataset with pictograms (DTLD, ATLAS, LISA), separately from the relevance and moves heads.
+
+## Pictogram + rules vs joint classes: pre-registered protocol (2026-11-06)
+
+This section was written before any pictogram was annotated and before any new model was trained. Its hypotheses, metrics, data use and decision rules are fixed. Any later change will be added below as a dated amendment with its reason, never edited in place.
+
+### Question
+
+Does reading each light's pictogram and applying fixed traffic rules (with a learned fallback) predict per-direction signals better than the current joint `<moves>|<color>` classes, whose moves come from HD-map topology? "Better" has three parts:
+- in-domain accuracy;
+- transfer to other subsets and countries;
+- per-light behavior that matches what the lamp shows.
+
+### What is already known, without annotation (`tools/audit_pictogram_rules.py`)
+
+These use ground-truth relevance and color; only each light's moves are replaced.
+
+| | A val TSS | B val TSS |
+|---|---|---|
+| every light is a circle | 0.9465 | 0.9629 |
+| every turn-only light is an arrow of its own directions (ceiling) | 0.9940 | 1.0000 |
+| frames whose label depends on the pictogram | 189 / 2,220 (20 segments) | 114 / 1,565 (13 segments) |
+
+The rest of A val (27 frames) cannot be fixed by turn-only arrows. Those frames have lights with different topology moves that all cover straight: lane-specific circle heads or straight arrows.
+
+### H1: Rule oracle on OpenLane-V2 (annotation)
+
+**Annotation sample.** Built by `tools/make_pictogram_pool.py` with seed 0 and fixed before labelling. Three strata:
+- **D:** every relevant light in every dependent val frame (A 189, B 114). This stratum is complete, so its result is exact.
+- **N:** a simple random sample of 150 of the other kept val frames, split in proportion to subset size (A 87 of 2,031, B 63 of 1,451), with all their relevant lights. It estimates how often a real arrow breaks a frame that the all-circle rule gets right.
+- **QC:** 5% of the items are shown a second time, to measure the annotator's self-agreement.
+
+**Blinding.** The annotator sees only the crop, a wider context crop, and the light's annotated color (needed to pick which lamp of a head is meant). The topology moves, the stratum, the subset and the frame's labels are hidden, and items are shuffled.
+
+**Classes.** circle, arrow_left, arrow_straight, arrow_right, arrow_straight_left, arrow_straight_right, arrow_uturn, other (not a vehicle signal: pedestrian, bike, bus or tram), unclear.
+
+**Rules.** US, `assign_scored` with `near_turn = dedicated`, mapping each pictogram to moves:
+- circle → generic (governs straight, and left / U-turn by inheritance);
+- each arrow → its own directions;
+- other → light dropped;
+- unclear → circle in the primary analysis. As a sensitivity check, frames with an unclear light are excluded instead.
+
+**Primary metric.** Oracle TSS on A val and B val, estimated as:
+- the exact result on stratum D, plus
+- the N-sample mean, weighted by the size of the non-dependent part.
+
+The 95% interval comes from a segment-cluster bootstrap of the N sample (10,000 draws, seed 0).
+
+**Also reported:**
+- the share of turn-only lights that are arrows;
+- the oracle failures by type (circle-only dedicated head, lane-specific circles, T-junction, …);
+- the QC self-agreement (Cohen's κ).
+
+The oracle is an upper bound for a pictogram method with perfect perception. It is not a model result.
+
+### H2–H4: Learned models
+
+**Arms.**
+- **J (joint):** the current RF-DETR joint classes. This is the baseline already run (tag `baseline-joint-classes`).
+- **F (factorized hybrid):** RF-DETR with these heads:
+  - light;
+  - color (3-way);
+  - relevance;
+  - moves (multi-label: straight / left / right / U-turn / generic, as in J);
+  - pictogram (the classes above).
+
+  Decoding:
+  - pictogram + rules where the pictogram head is confident and the light is an arrow;
+  - the learned moves head for circles;
+  - the learned moves head wherever the pictogram is unclear or below the confidence threshold.
+
+  The confidence threshold is picked on the tune split.
+- **J′ (control):** J's existing scores decoded through F's marginalization (no training). It separates the effect of the decoding from that of the new heads.
+
+**Pictogram supervision.** DTLD train and the ATLAS train split. On OpenLane and DTLD-US frames the pictogram loss is masked. The OpenLane pictogram annotations are never used for training. ATLAS test and LISA stay pure out-of-distribution sets.
+
+**Kept identical to J:**
+- RF-DETR Medium at 1024, squeeze resize, 4 epochs, lr 1e-4 / encoder 1.5e-4, batch 4 × grad-accum 4;
+- the same fit / tune splits;
+- epoch and threshold picked on the source tune TSS only.
+
+The val sets and the DTLD test set are never used to choose anything.
+
+**Seeds.** 3 seeds per arm and training set (J will be re-run with 2 more seeds, so both arms have 3).
+
+**Hypotheses and tests.** All are paired on the same frames: the difference of the seed-averaged per-frame scores between F and J, with a segment-cluster bootstrap 95% interval (10,000 draws).
+
+| | Training | Test | Primary metric | F is "better" if |
+|---|---|---|---|---|
+| H2 in-domain | A+B | A val, B val | TSS | the CI of ΔTSS is above 0, or above −0.005 (non-inferior) with H3 or H4 met |
+| H3 transfer | A, B, A+B | the other subset, D*_US test | TSS | the CI of ΔTSS is above 0 on at least 2 of the 4 transfer cells and below 0 on none |
+| H4 per-light OOD | A+B, DTLD | ATLAS test, LISA test | exact arrow-moves accuracy (center matching) | the CI of Δ is above 0 |
+
+**Secondary metrics:** False-Go (the safety metric; F must not increase it beyond the CI), Acc_color, EM, per-direction accuracy, and center-AP. Center-AP checks that the extra heads don't cost detection.
+
+**Multiple comparisons.** H2–H4 are judged together. The paper claims an improvement only if H2 holds and at least one of H3 or H4 holds. Everything else is reported as exploratory.
+
+**Reported whatever the outcome:**
+- all cells, including the ones where F is worse;
+- the oracle (H1) next to the learned results, to separate "the rules are limited" from "the pictogram head is not accurate enough";
+- all seeds.
+
+**Pool as built** (`tools/make_pictogram_pool.py`, seed 0, before labelling). It has 1,231 items:
+- A: D 527, N 174;
+- B: D 315, N 156;
+- QC repeats: 59.
+
+Overlapping boxes (IoU ≥ 0.8) are merged into one item only when they have the same color, because a head with a red ball and a green arrow lit can be two OpenLane elements.
+
+The key `data/annotation/pictogram_v1/items.jsonl` has sha256 prefix `d4ddf7951e3fad36`. Labels go to `annotations/openlane_pictograms_v1.json` (tracked) and are scored by `tools/score_pictogram_oracle.py`, written and tested on synthetic labels before any real label existed:
+- all-circle labels reproduce the "every light is a circle" row exactly (0.9465 / 0.9629);
+- topology-derived arrows give 0.9895 / 0.9988;
+- random labels give 0.75 / 0.82 with κ ≈ 0.
+
+### H1 results: rule oracle (2026-11-06)
+
+**Order of events.** These file timestamps (local time) show that the protocol, the pool and the scoring code all existed before the labels:
+- protocol: 09:30
+- pool: 09:29
+- scoring code: 09:28
+- labels exported: 09:50
+
+The scoring ran unchanged as pre-registered. Labels: `annotations/openlane_pictograms_v1.json`, sha256 prefix `b6a485e0b9254c5c`. All 1,231 items are labelled. Full output: `results/pictogram_oracle_v1.json`.
+
+| | A val | B val |
+|---|---|---|
+| every light a circle (no pictogram) | 0.9465 | 0.9629 |
+| **pictogram + rules oracle (primary)** | **0.9667** (bootstrap CI degenerate: 0 / 87 N-frames fail) | **0.9589** [0.9380, 0.9675] |
+| conservative bound: one-sided 95% upper bound on the N failure rate (exact binomial) | ≥ 0.9489 | ≥ 0.9317 |
+| sensitivity: frames with an unclear light left out | 0.9658 | 0.9573 |
+| ceiling: every turn-only light an arrow | 0.9940 | 1.0000 |
+| topology labels (what J learns) | 1 | 1 |
+| learned J model (A+B, for scale) | 0.905 | 0.918 |
+
+**Labels.** circle 962, arrow_left 112, arrow_straight 41, other 39, unclear 17, arrow_uturn 1, out of 1,172 lights. No right or two-way arrows. QC self-agreement: 59 / 59 (κ = 1.0).
+
+Findings:
+- **Most dedicated turn signals in OpenLane-V2 are not arrows.** Only 28% of the lights whose lanes only turn are arrows on A, and 16% on B. Light instances linked only to left lanes: arrow_left 66 against circle 59 on A, 26 against 65 on B. None of those linked only to right lanes is an arrow (A: 78 circles; B: 68 circles).
+  - The share of arrows grows with box height: 12% under 25 px, 16% at 25–40 px, 33% at 40–60 px, 39% at 60 px and above. Part of this may be arrows too small to read at OpenLane's resolution. Even at 60 px and above, 61% are circles.
+  - So circle-only dedicated heads, which the pictogram cannot tell apart from the main signal, are the norm here. This is the US case predicted in the review.
+- **The pictogram recovers only part of what topology gives.** On A it closes 43% of the gap between "all circles" and the ceiling (+0.020 TSS). On B it closes none: 0.9589 against 0.9629, inside the CI. That B point estimate comes from a single N frame (segment 11048) where a light labelled other was dropped, weighted 23× by the extrapolation.
+- **Oracle failures** (dependent frames still wrong):
+
+  | Cause | A | B |
+  |---|---|---|
+  | circle-only head on a left-turn lane | 39 | 40 |
+  | circle-only head on a right-turn lane | 28 | 50 |
+  | lane-specific heads | 25 | 2 |
+  | T-junction light (no straight) | 20 | 2 |
+  | light labelled other | 11 | 5 |
+  | arrow disagreeing with topology | 6 | 0 |
+
+**Implications for H2–H4.** The protocol is unchanged; this is the reading of H1.
+- A pure pictogram + rules system is capped about 3–4 TSS points below the topology labels on OpenLane-V2. It cannot replace the learned moves there.
+- The hybrid (F) is therefore the right design: rules for arrows, a learned moves head for circles.
+- The cap (≈ 0.96) is well above today's learned models (≈ 0.91), so it doesn't limit F yet.
+- In the random N frames, arrows are only 3 / 174 (A) and 5 / 156 (B) relevant lights. They are about 13% only in the sample as a whole, which is enriched with turn-only lights. Any in-domain gain from the pictogram head (H2) should therefore be small. If F helps, it should show mostly in transfer and OOD arrow reading (H3, H4), where datasets have more arrows and no topology.
