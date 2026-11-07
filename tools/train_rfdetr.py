@@ -206,7 +206,24 @@ class EpochReport(Callback):
             trainer.should_stop = True
 
 
-def patch_rfdetr(out_dir, stop_after=None, report_dir=None):
+class Factorize(Callback):
+    """Exp 6 arm F: swaps in the factorized head and loss (dtsu/factorized.py) before the optimizer and EMA exist."""
+
+    def __init__(self, class_names):
+        self.class_names = class_names
+
+    def setup(self, trainer, pl_module, stage):
+        from dtsu.factorized import factorize, factorize_criterion
+
+        net = getattr(pl_module.model, "_orig_mod", pl_module.model)
+        factorize(net)
+        net.to(next(net.backbone.parameters()).device)
+        factorize_criterion(pl_module.criterion, self.class_names)
+        print(f"factorized head: {type(net).__name__}, criterion {type(pl_module.criterion).__name__}, "
+              f"losses {pl_module.criterion.losses}", flush=True)
+
+
+def patch_rfdetr(out_dir, stop_after=None, report_dir=None, factorized_classes=None):
     import rfdetr.datasets.coco as coco
     import rfdetr.training as training
 
@@ -226,6 +243,8 @@ def patch_rfdetr(out_dir, stop_after=None, report_dir=None):
 
     def build_trainer_with_saver(*args, **kwargs):
         trainer = build_trainer(*args, **kwargs)
+        if factorized_classes is not None:
+            trainer.callbacks.insert(0, Factorize(factorized_classes))
         trainer.callbacks.append(SaveEMAEachEpoch(out_dir, stop_after))
         if report_dir:  # after the saver, so a STOP still keeps this epoch's weights
             trainer.callbacks.append(EpochReport(out_dir, report_dir))
@@ -249,6 +268,9 @@ def main():
     ap.add_argument("--grad-ckpt", action="store_true", help="gradient checkpointing (less memory, slower)")
     ap.add_argument("--stop-after", type=int, help="end after this many epochs (resumable to --epochs)")
     ap.add_argument("--resume", help="a full Lightning checkpoint, e.g. <out-dir>/last.ckpt")
+    ap.add_argument("--factorized", action="store_true",
+                    help="Exp 6 arm F: one light class + pictogram / color / junction heads (dtsu/factorized.py)")
+    ap.add_argument("--seed", type=int, help="RF-DETR training seed (default: none, as in the earlier runs)")
     ap.add_argument("--report", action="store_true",
                     help="per-epoch overfitting report on valid/ and the train probe test/ (see EpochReport)")
     args = ap.parse_args()
@@ -258,7 +280,8 @@ def main():
         json.dump(vars(args), f, indent=1)
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
-    patch_rfdetr(args.out_dir, args.stop_after, args.dataset_dir if args.report else None)
+    classes = json.load(open(os.path.join(args.dataset_dir, "class_names.json"))) if args.factorized else None
+    patch_rfdetr(args.out_dir, args.stop_after, args.dataset_dir if args.report else None, classes)
 
     import rfdetr
 
@@ -282,6 +305,7 @@ def main():
         progress_bar=None,
         tensorboard=False,
         resume=args.resume,
+        **({"seed": args.seed} if args.seed is not None else {}),
     )
 
 

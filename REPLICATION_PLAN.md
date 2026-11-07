@@ -682,3 +682,340 @@ Mix vs A+B on A+B pooled: False-Go −0.002 [−0.029, +0.022], False-Stop −0.
 Outputs:
 - `runs/rfdetr_m_mix/`: `val_log.jsonl`, `val_log_mix.jsonl`, `per_direction_mix.json`, `bootstrap_vs_r1_m_default.json`, `bootstrap_vs_rfdetr_m_dtld.json`;
 - `*_mix.*` files in `runs/tune_rfdetr/r1_m_default/` and `runs/rfdetr_m_dtld/`.
+
+## Audit: junction lights + pictogram + color rule (2026-11-06, `tools/audit_junction_rule.py`)
+
+**Question.** A candidate design detects every vehicle signal of the junction approach (not only the ego lane's), with its pictogram and color. An arrow sets its own maneuvers; every other maneuver takes the circles' color, and the HD map gives the maneuvers the lane allows. How often does a frame make this rule fail? Every frame with at least one colored junction light is counted, including the frames the benchmark drops.
+
+**Failure cases:**
+- circles of different colors;
+- arrows for the same maneuver with different colors;
+- an unreadable pictogram on a light whose color differs from the others;
+- on OpenLane, an answer that contradicts the topology label.
+
+**Pictogram sources.**
+- OpenLane-V2 has pictograms only for the 1,231 annotated val lights.
+- The other OpenLane frames with lights of more than one color fall into two groups:
+  - **Benchmark conflict frames** (two equally specific lights governing the same maneuver with different colors). These are counted as failures (lane-specific heads).
+  - **The rest.** Their failures are estimated from the failure rate of the labelled val frames in the same region.
+- DTLD has its own pictograms. Junction lights there are the relevant lamps plus non-relevant front lamps of at least 0.6× the median relevant height. The relevant-only scope is given as a lower bound.
+
+| Region | Frames with junction lights | One color only | Failing frames (estimate) [bounds] | Drives / sessions with a failing frame |
+|---|---|---|---|---|
+| OpenLane A (US, Argoverse 2) | 12,468 | 96.3% | 2.0% [1.2%, 3.2%] | 26 / 593 (4%) |
+| OpenLane B Boston | 6,052 | 94.4% | 4.9% [4.9%, 5.4%] | 27 / 232 (12%) |
+| OpenLane B Singapore | 2,808 | 91.8% | 8.2% [7.3%, 8.2%] | 23 / 123 (19%) |
+| DTLD (Germany), junction lamps | 39,234 | 82.4% (arrows resolve another 13.6%) | 4.1% (circles 3.9%, arrows 0.2%) | 305 / 2,089 (15%) |
+| DTLD, relevant lamps only | 39,070 | 97.6% (arrows 0.6%) | 1.8% | – |
+
+**How to read it.**
+- **US and Singapore.** Almost all multi-color frames are circles disagreeing: lane-specific circle heads, and circle-only turn heads. Arrows separate the colors in only 60 labelled A frames and 13 Boston frames. No labelled Singapore frame is resolved by arrows.
+- **Germany (DTLD).** Arrows do the job in 13.6% of frames, as expected. Circle disagreements remain in 3.9%:
+  - red+green 1,133;
+  - green+yellow 192;
+  - red+yellow 180;
+  - all three 14.
+
+  Pairs involving yellow are mostly heads changing state a moment apart. The junction scope depends on the size heuristic, so this needs a visual check.
+- **Frames vs drives.** Frames are consecutive, so a single junction contributes many failing frames. Per drive, the rule meets at least one failing situation in 4% of Argoverse drives, 12% of Boston drives, 19% of Singapore drives and 15% of DTLD sessions.
+
+Output: `results/junction_rule_audit.json`, which includes example images per failure type.
+
+## Exp 6: junction lights with pictogram, relevance and color on DTLD, joint classes vs factorized head (2026-11-06, design fixed before any code or result)
+
+**Question.** Each model detects every traffic light, with its pictogram, its color and whether it belongs to the junction the ego is approaching. Fixed rules then turn these into per-maneuver signals. Does a factorized head (one light class plus separate pictogram, relevance and color outputs) beat joint `<pictogram>|<relevance>|<color>` classes when everything else is the same?
+
+**Data.** DTLD only (Germany), every frame of the existing session splits:
+- fit: 25,635 frames, 1,330 sessions;
+- tune: 2,890 frames, 148 sessions;
+- test (official): 12,453 frames, 632 sessions.
+
+**Boxes.** Every front-facing DTLD lamp with a visible color (red_yellow counts as red). Off and unknown-state lamps and lamps not facing the camera are left out, as in the existing DTLD baseline.
+- **Pictogram:** circle, arrow_left, arrow_right, arrow_straight, arrow_straight_left, unknown (DTLD could not tell), or other (pedestrian, bicycle, pedestrian_bicycle and tram signals).
+- **Relevance, junction or not:** the automatic label of `dtsu/labels_dtld.vehicle_group`. A lamp is junction-relevant when it is a route lamp (DTLD relevant), or another front-facing vehicle lamp at least 0.6× the median route-lamp height in that frame. Non-vehicle pictograms are never junction lamps.
+  - Known limitation, accepted: this label sometimes includes lamps of the next junction, and DTLD's route flag itself sometimes covers them (manual review of 50 failing frames, see the audit above).
+- **Color:** red, yellow or green.
+
+**Rule (same for ground truth and predictions).** The rule uses only the junction lamps.
+- An arrow sets the color of its own maneuvers: straight, left, right, or straight and left.
+- Every maneuver without an arrow takes the circle color. German convention: the circle also governs the right turn. U-turn follows left.
+- unknown pictograms count as circles.
+- Predictions: per maneuver, the highest-scoring candidate decides (arrows first, then circles).
+- Ground truth: a frame is scored when it has at least one junction lamp and the rule gives one answer. That excludes frames where junction circles disagree, arrows of one maneuver disagree, or an unknown pictogram disagrees (as `tools/audit_junction_rule.py` counts them). Excluded frames are reported.
+- The HD map's allowed maneuvers are not available, so all four maneuvers are scored.
+
+**Arms.** Both use RF-DETR Medium at 1024, squeeze resize, the recipe of the DTLD baseline (lr 1e-4, encoder 1.5e-4, batch 4 × grad-accum 4, no flips or crops, photometric jitter), 6 epochs, seed 0. They differ only in the head:
+- **J (joint):** one class per `<pictogram>|<relevance>|<color>` seen in fit. Score = the top class probability.
+- **F (factorized):** one class "light" (IA-BCE, as RF-DETR's class loss), plus three linear heads on the same decoder features:
+  - pictogram (7-way cross-entropy);
+  - color (3-way cross-entropy);
+  - junction relevance (binary cross-entropy).
+
+  The attribute losses are computed on the Hungarian-matched queries of every decoder layer, weight 1 each. Matching uses the light score and the boxes. Score = light probability, attributes = argmax.
+
+**Selection.** For each arm, the epoch and score threshold (grid 0.05–0.95) with the best TSS on tune. Class-agnostic NMS 0.5. Test is never used to choose anything.
+
+**Metrics on DTLD test.**
+- **Primary:** TSS of the rule's per-maneuver colors on the scored frames, with False-Go next to it.
+- **Per light**, at the selected threshold, with IoU ≥ 0.5 matching:
+  - detection recall and precision;
+  - on matched lights: pictogram accuracy (overall, and recall for each arrow class), color accuracy, junction-relevance accuracy and F1, and all three right together.
+- **Secondary:** arrow-direction accuracy on ATLAS test and LISA test, the out-of-domain arrow check of Amendment 1.
+
+**Comparison.** F − J, paired on the same frames, with a session-cluster bootstrap 95% CI (10,000 draws, seed 0).
+- F is "better" if the TSS CI is above 0 and False-Go does not rise by more than 0.01.
+- Per-light differences are reported with their CIs as secondary.
+
+Single seed, so every result is preliminary until seeds are added.
+
+**Implementation note (2026-11-06, before training, no result seen).** F's light logit (decoder and two-stage encoder heads) starts from the pretrained COCO "traffic light" row of RF-DETR's class head. A plain resize to one class keeps row 0, an unused COCO id with a very negative bias. A 20-step smoke run then had no score above 0.002, while the untrained F with the traffic-light row scores DTLD lights at about 0.8. J keeps RF-DETR's own resize: rows 0–29 of the pretrained head, one per joint class. The attribute heads start from PyTorch's default init.
+
+
+### Exp 6 results (2026-11-08, single seed)
+
+Runs: `runs/exp6_picto_J`, `runs/exp6_picto_F` (`tools/run_exp6.sh`). Scoring: `tools/eval_picto.py`, comparison: `tools/compare_picto.py` → `runs/exp6_picto_F/compare_vs_J.json`.
+
+**Selection on tune.**
+
+| Arm | Tune TSS by epoch (0–5) | Selected epoch / threshold | Tune TSS |
+|---|---|---|---|
+| J | 0.943, 0.944, **0.945**, 0.941, 0.943, 0.940 | 2 / 0.30 | 0.9450 |
+| F | 0.940, **0.946**, 0.941, 0.943, 0.941, 0.941 | 1 / 0.40 | 0.9458 |
+
+Both arms peak in the first three epochs and then drift down slightly, so 6 epochs was enough.
+
+**DTLD test.** 11,494 scored frames of 12,453; 57,093 labelled lights. F − J with the session-bootstrap 95% CI.
+
+| Metric | J | F | F − J |
+|---|---|---|---|
+| **Rule TSS** | **0.9510** | 0.9463 | **−0.0047 [−0.0083, −0.0013]** |
+| False-Go | 0.0331 | 0.0379 | +0.0049 [+0.0001, +0.0099] |
+| False-Stop | 0.0219 | 0.0213 | |
+| Exact match (all four maneuvers) | 0.9216 | 0.9133 | |
+| Light recall (IoU ≥ 0.5) | 0.7346 | 0.6884 | −0.0462 [−0.0496, −0.0427] |
+| Light precision | 0.8336 | 0.8715 | +0.0379 [+0.0336, +0.0421] |
+| Pictogram accuracy (matched) | 0.9195 | 0.9218 | +0.0023 [−0.0012, +0.0058] |
+| Color accuracy (matched) | 0.9777 | 0.9829 | +0.0051 [+0.0034, +0.0070] |
+| Junction accuracy (matched) | 0.9606 | 0.9656 | +0.0051 [+0.0021, +0.0080] |
+| All three right (matched) | 0.8834 | 0.8890 | +0.0056 [+0.0013, +0.0099] |
+| arrow_left recall (n ≈ 4,300) | 0.836 | 0.845 | +0.009 [−0.009, +0.027] |
+| arrow_right recall (n ≈ 510) | 0.295 | 0.396 | +0.102 [+0.029, +0.183] |
+| arrow_straight recall (n ≈ 2,000) | 0.584 | 0.575 | −0.009 [−0.041, +0.022] |
+
+**Verdict by the pre-registered rule: F is not better.** The TSS CI lies entirely below 0: the factorized head is slightly worse on the rule (−0.5 points), and False-Go rises by 0.5 points (within the 0.01 margin). The head alone brings no improvement on DTLD.
+
+**Post-hoc check of the per-light rows (not pre-registered).** The arms run at different thresholds (0.30 vs 0.40), so their matched lights differ: F matches fewer, easier lights. That inflates F's attribute accuracies and precision. Two checks remove this:
+- **Lights matched by both arms** (38,487), paired, session bootstrap:
+  - pictogram: J 0.927, F 0.924, F − J −0.0025 [−0.0055, +0.0005];
+  - color: 0.983 vs 0.985, +0.0014 [+0.0001, +0.0027];
+  - junction: 0.967 vs 0.967, +0.0006 [−0.0015, +0.0029];
+  - all three: 0.897 vs 0.893, −0.0034 [−0.0070, +0.0002].
+- **Same threshold for both arms:**
+
+  | Threshold | Arm | TSS | False-Go | Recall | Precision | Pictogram | Color | Junction | All three |
+  |---|---|---|---|---|---|---|---|---|---|
+  | 0.30 | J | 0.9510 | 0.0331 | 0.735 | 0.834 | 0.920 | 0.978 | 0.961 | 0.883 |
+  | 0.30 | F | 0.9461 | 0.0365 | 0.717 | 0.800 | 0.917 | 0.979 | 0.963 | 0.880 |
+  | 0.40 | J | 0.9518 | 0.0336 | 0.700 | 0.890 | 0.929 | 0.984 | 0.967 | 0.899 |
+  | 0.40 | F | 0.9463 | 0.0379 | 0.688 | 0.872 | 0.922 | 0.983 | 0.966 | 0.889 |
+
+So the per-light gains of F in the main table are an operating-point effect. At equal thresholds J detects more lights with higher precision, and the attributes of the lights both arms find are equally good. The one difference that survives is arrow_right (494 lights matched by both: J 0.30, F 0.40), a rare class where sharing the "arrow_right" signal across colors and relevance seems to help. arrow_straight goes the other way (0.61 vs 0.58).
+
+**Reading.**
+- With DTLD's amount of data, the 30 joint classes are not starved: most combinations have thousands of boxes. Factorizing the head therefore has little to gain, and the single light class loses some detection quality.
+- The rule TSS is about 0.95 for both. On the lights they find, attributes are right ≥ 92% of the time, so detection (recall about 0.70–0.73 at IoU 0.5) is the larger lever. This breakdown of rule errors was not measured.
+- Arrow pictograms other than left remain weak for both: right 0.3–0.4, straight about 0.58.
+- Single seed: a −0.5-point TSS difference may not survive more seeds.
+
+**Secondary: arrow directions out of domain** (`tools/eval_picto_arrows.py` → `runs/exp6_picto_F/arrows_vs_J.json`). Each arm runs at its selected epoch and threshold. The check covers every annotated arrow with a color that a detection matches under the center criterion. "Exact" means the predicted pictogram's moves equal the arrow's directions; a circle or "other" counts as wrong. The bootstrap is over images, too narrow for the same reason as in amendment 1. Both sets are out of domain for both arms.
+
+| Set | Arrows (recall J / F) | All matched: J → F exact | Called junction: J → F exact |
+|---|---|---|---|
+| ATLAS test | 2,753 (0.66 / 0.61) | 0.383 → 0.401, +0.017 [−0.000, +0.035] | 0.458 → 0.453, −0.005 [−0.027, +0.016] |
+| LISA test | 6,525 (0.75 / 0.75) | 0.153 → **0.259**, **+0.106 [+0.096, +0.116]** | 0.221 → 0.297, +0.075 [+0.063, +0.087] |
+| LISA day | | 0.203 → **0.343**, +0.139 [+0.127, +0.152] | |
+| LISA night | | 0.029 → 0.047, +0.018 [+0.004, +0.031] | |
+
+- **ATLAS: no difference.** Both read about half of the left arrows they match as arrow_left. The rest are mostly missed or called circles.
+- **LISA: F reads arrows better, and its mistakes are safer.** LISA's arrows are almost all left arrows.
+  - J scatters them: circle 1,819, other 1,163, arrow_straight 1,030, arrow_left 704.
+  - F: arrow_left 1,230, circle 3,023, other 517, arrow_straight 27.
+  - J's arrow_straight confusions would put a left-turn color on the straight maneuver. F almost never makes that error and falls back to "circle" instead.
+- **Not comparable with the amendment 1 table:** that one scores the moves of arrows a run calls route-relevant, with a different model and threshold.
+
+**Overall.**
+- On DTLD, in domain, the factorized head is not better. By the pre-registered primary it is slightly worse: TSS −0.5 points, CI below 0.
+- Out of domain on LISA it reads left arrows better (+10 points exact, CI too narrow) and confuses them with straight arrows far less.
+- The head alone is therefore not an improvement on the main metric. Its possible benefit is robustness of the pictogram outside DTLD, which needs seeds (and a cluster-level test) before it can be claimed.
+
+**OOD perception of the Exp 6 arms** (`tools/eval_picto_perception.py`, same metrics as the OOD perception table above; each arm at its DTLD-tune epoch and threshold, J e2 / 0.30, F e1 / 0.40). Center AP (IoU ≥ 0.5 AP in brackets), recall / precision at the threshold, color accuracy and yellow recall of matched lights (center matching). Arrows: exact moves on matched arrows the arm assigns to the junction.
+
+| Set | Arm | AP center (IoU) | R / P | Color / yellow R | Arrow exact (n) |
+|---|---|---|---|---|---|
+| ATLAS test | J | 0.613 (0.525) | 0.69 / 0.55 | 0.953 / 0.87 | 0.458 (1,448) |
+| ATLAS test | F | 0.630 (0.531) | 0.64 / 0.64 | 0.957 / 0.95 | 0.453 (1,480) |
+| LISA test | J | 0.736 (0.078) | 0.72 / 0.72 | 0.992 / 0.60 | 0.221 (3,060) |
+| LISA test | F | 0.747 (0.075) | 0.65 / 0.79 | 0.997 / 0.86 | 0.297 (4,139) |
+| LISA day | J / F | 0.836 / 0.841 | 0.90 / 0.75 · 0.90 / 0.79 | 0.996 / 0.999 | 0.306 / 0.395 |
+| LISA night | J / F | 0.706 / 0.716 | 0.64 / 0.70 · 0.53 / 0.79 | 0.989 / 0.996 | 0.008 / 0.053 |
+
+- **Detection is close for the two arms** (AP within 0.02). F trades recall for precision at its higher threshold.
+- **Against the earlier DTLD maneuver model** (center AP 0.697 ATLAS, 0.750 LISA):
+  - ATLAS detection is lower for both Exp 6 arms (0.61–0.63); LISA is the same.
+  - Color is better: ATLAS 0.95 vs 0.90; LISA 0.99 vs 0.985.
+- **F's yellow recall is higher on both sets** (ATLAS 0.95 vs 0.87, LISA 0.86 vs 0.60), the one clear per-light advantage of the factorized color head out of domain.
+- Night arrows on LISA are essentially unreadable for both models.
+
+Review page: `tools/make_picto_gallery.py` → `data/review_picto` (100 images: 34 DTLD test, half right and half wrong by the label, plus 33 ATLAS and 33 LISA, half with an annotated arrow; J model).
+
+**Exp 6 models on OpenLane-V2 A val and B val** (`tools/eval_picto_openlane.py`; trained on DTLD only, each arm at its DTLD-tune epoch and threshold). The junction rule's per-maneuver colors are scored against the benchmark labels two ways:
+- **all four directions as predicted:** unfair to the rule, which colors every maneuver when it sees a junction light, while the label says "none" for maneuvers no light governs;
+- **map-masked:** directions labelled "none" are set to "none", i.e. the HD map's allowed maneuvers are assumed known, as in the junction-rule audit. This leaks a little label information.
+
+U-turn follows left. The benchmark records mark every B val frame as right-hand traffic, so Singapore's U-turn is also tied to left.
+
+| Model | A val TSS all / masked | A val False-Go | B val TSS all / masked | B val False-Go |
+|---|---|---|---|---|
+| Exp 6 J | 0.496 / **0.848** | 0.308 | 0.508 / **0.886** | 0.198 |
+| Exp 6 F | 0.496 / 0.843 | 0.312 | 0.501 / 0.868 | 0.222 |
+| reference: DTLD maneuver model (Exp 2 J, its own decoder) | 0.866 | | 0.883 | |
+| reference: A+B (in domain) | 0.905 | | 0.918 | |
+
+- **Even with the map mask, the DTLD-only junction model is below the in-domain OpenLane model.**
+  - On A val (Argoverse, US) it is also below the earlier DTLD maneuver model.
+  - On B val (nuScenes) it is equal to it.
+- **False-Go is high**, mostly because red lights are missed.
+  - J on A val: 650 red-labelled directions predicted as go. Of these, 383 had no junction light found ("none"), 134 were predicted green and 133 yellow.
+  - B val: 194 / 100 / 102.
+  - This is a detection and relevance transfer problem (portrait Argoverse frames, US signal heads), not a rule problem: the rule oracle with ground-truth lights reaches 0.95–0.96 TSS.
+- **F is slightly below J on both sets**, consistent with DTLD.
+
+**AWSIM video** (`tools/run_video_picto.py`, J at 0.30): `runs/awsim/AWSIM_only_picto_J.mp4`, with a 4-frame sample sheet next to it.
+- Junction lights are found in 2,509 of 7,076 frames; the mixed model found relevant lights in 2,650.
+- Straight is red in 223 frames, against 61 for the mixed model.
+- Almost every detection is a circle. Some wrong arrows appear: one false "left arrow" on a pole sets straight and right to none for a moment.
+
+## Exp 7: one factorized model on DTLD + ATLAS + OpenLane-V2 with partial labels, against the moves model (2026-11-07, design fixed before any code or result)
+
+**Question.** Exp 6 showed that a factorized head brings nothing when every label is present. Its real advantage is that each attribute loss can be switched off where a dataset lacks that label, so one model can learn from datasets that each label only part of the target. Does a factorized pictogram / junction / color model trained this way beat the moves model on transfer while staying close in domain? If yes, it becomes the thesis's main result.
+
+**Training data (F7).** Every source keeps its own fit split; LISA, S2TLD and BDD100K stay test-only.
+
+| Source | Frames | Pictogram | Junction | Color |
+|---|---|---|---|---|
+| DTLD fit (Exp 6 export, all frames) | 25,635 | yes | yes (automatic label) | yes |
+| ATLAS train, 85% of sessions (seed 0, the same split as the pictogram crops of amendment 1) | about 25,700 | yes | **masked** | yes |
+| OpenLane-V2 A fit + B fit (kept frames, as the moves models) | 14,977 | **masked** | yes: the label builder's "relevant" (linked to a lane of the ego approach) | yes |
+
+- **Boxes.** Lamps with a red, yellow or green state (red_yellow → red). ATLAS "off" lamps are left out, as DTLD's are.
+  - ATLAS arrow_straight_right becomes an eighth pictogram class: the rule gives it straight and right.
+  - Known label conflict, accepted: only DTLD labels pedestrian, bike and tram signals (as "other"). On ATLAS and OpenLane they are unlabelled background.
+- **Model.** RF-DETR Medium at 1024, the Exp 6 factorized head with the pictogram head widened to 8, light logit from the COCO traffic-light row.
+  - A missing attribute is stored as −1 and drops out of that loss (cross-entropy ignore index, junction BCE masked).
+  - Detection and color losses use every box.
+  - Recipe as Exp 6 (lr 1e-4 / 1.5e-4, batch 4 × accum 4, seed 0), 5 epochs (Exp 6 peaked at epochs 1–2, and the set is 2.6× larger).
+
+**Comparison model (M).** The Exp 5 mixed moves model `runs/rfdetr_m_mix` (OpenLane A+B fit + a D*_US fit sample; epoch 1, threshold 0.25, as already selected). It is the moves model trained on the closest data. M is not retrained.
+
+**Selection of F7.** Epoch and threshold that maximise the mean of three tune TSS values:
+- DTLD tune (junction rule);
+- A tune (map-masked);
+- B tune (map-masked).
+
+ATLAS's held-out sessions have no target and are not used. Test sets are never used to choose anything.
+
+**Decoding.**
+- F7 uses the junction rule: arrows set their own maneuvers, the circle sets the rest including right, and U-turn follows left.
+- M uses its own decoder (`assign_scored`): US rule ("dedicated") on OpenLane, and German ("signal") on DTLD test.
+
+**In-domain endpoints**, with paired F7 − M differences and a segment / session cluster bootstrap 95% CI (10,000 draws, seed 0):
+1. **A val and B val, map-masked TSS for both models.** Directions labelled "none" are set to "none" in both predictions, i.e. the HD map's allowed maneuvers are assumed known. This puts the two decoders on the same footing; M's unmasked native TSS is reported as a reference.
+2. **DTLD test, junction-rule ground truth** (the 11,494 scored frames of Exp 6), TSS for both. M was trained on route relevance (D*_US), a narrower target than the junction label, so this cell is slightly against M; that is recorded here.
+3. False-Go on the same cells.
+
+**Transfer endpoints** (out of domain for both models):
+4. **LISA test arrow directions.** Exact moves on matched arrows (center criterion) that the model calls relevant or junction: M's moves against F7's pictogram moves. Image bootstrap: LISA has 4 sequences, so the CI is too narrow, as in amendment 1.
+5. **Detection, center AP** on LISA test, S2TLD and BDD100K val. Color accuracy of matched lights is secondary.
+6. ATLAS test is reported but is not a transfer cell, because ATLAS train is in F7's training data. The AWSIM video is qualitative.
+
+**Decision rule.** F7 is "the stronger thesis result" when all of these hold:
+- **(a) In domain is non-inferior:** on each of A val, B val and DTLD test, the lower CI bound of ΔTSS is above −0.01.
+- **(b) False-Go does not rise:** no ΔFalse-Go above +0.01 in those cells.
+- **(c) Transfer gains:**
+  - the LISA arrow-exact ΔCI is above 0;
+  - the mean center AP over LISA, S2TLD and BDD100K is not lower than M's by more than 0.02.
+
+Otherwise the moves model stays the main result, and F7 is reported as the generalization study.
+
+Single seed for both, so everything is preliminary until seeds are added.
+
+### Exp 7 results (2026-11-07, single seed, `tools/eval_exp7.py` → `runs/exp7_multi_F/exp7_eval/result.json`)
+
+**Training.** 67,140 images (DTLD 25,635, ATLAS 26,528, OpenLane A 8,956, B 6,021), 217,158 boxes. The pictogram is labelled on 166,263 boxes and the junction on 167,936. 5 epochs ran without error in about 8 h. RF-DETR's own validation mAP stays near zero, as for Exp 6 F; it does not read the factorized head.
+
+**Selection.** The mean tune TSS rose to the last epoch, which was selected: epoch 4, threshold 0.20 (DTLD tune 0.943, A tune 0.951, B tune 0.960, mean 0.951).
+
+| Epoch | Best threshold | DTLD tune | A tune | B tune | Mean |
+|---|---|---|---|---|---|
+| 0 | 0.25 | 0.941 | 0.916 | 0.937 | 0.931 |
+| 1 | 0.40 | 0.941 | 0.938 | 0.960 | 0.946 |
+| 2 | 0.30 | 0.940 | 0.942 | 0.952 | 0.945 |
+| 3 | 0.25 | 0.944 | 0.948 | 0.951 | 0.948 |
+| **4** | **0.20** | 0.943 | 0.951 | 0.960 | **0.951** |
+
+**In domain** (paired F7 − M, cluster bootstrap 95% CI):
+
+| Set | Frames | F7 TSS | M TSS | ΔTSS [CI] | F7 False-Go | M False-Go | ΔFalse-Go [CI] |
+|---|---|---|---|---|---|---|---|
+| A val (map-masked) | 2,220 | 0.934 | 0.928 | +0.005 [−0.008, +0.018] | 0.138 | 0.146 | −0.008 [−0.053, +0.033] |
+| B val (map-masked) | 1,565 | 0.945 | 0.931 | +0.014 [−0.009, +0.041] | 0.072 | 0.092 | −0.019 [−0.053, +0.017] |
+| DTLD test (junction GT) | 11,494 | 0.951 | 0.933 | **+0.018 [+0.013, +0.024]** | 0.028 | 0.040 | **−0.011 [−0.017, −0.006]** |
+
+M's unmasked native TSS is 0.915 on A val and 0.921 on B val. F7 on DTLD test (0.951) equals the DTLD-only Exp 6 J model (0.951), so adding ATLAS and OpenLane cost nothing on DTLD. The DTLD cell is slightly against M by design (see the protocol).
+
+**Transfer.**
+
+| Set | F7 center AP | M center AP | F7 color acc. | M color acc. | F7 yellow recall | M yellow recall |
+|---|---|---|---|---|---|---|
+| LISA test | **0.663** | 0.597 | **0.995** | 0.903 | 0.76 | 0.90 |
+| S2TLD | **0.844** | 0.741 | 0.992 | 0.981 | 0.83 | 0.83 |
+| BDD100K val | **0.669** | 0.641 | 0.968 | 0.967 | 0.34 | 0.28 |
+| *ATLAS test (in domain for F7)* | *0.769* | *0.642* | *0.983* | *0.974* | *0.79* | *0.71* |
+
+Mean center AP over LISA, S2TLD and BDD100K: F7 0.725, M 0.660 (+0.065). M's LISA color accuracy is pulled down by red recall (0.81); F7's red recall is 0.998.
+
+**Arrow directions** (matched arrows the model calls junction/relevant; exact moves; image bootstrap):
+
+| Set | F7 exact (n) | M exact (n) | Δ [CI] |
+|---|---|---|---|
+| LISA test | 0.234 (3,786) | **0.466** (3,198) | **−0.231 [−0.252, −0.211]** |
+| *ATLAS test (in domain for F7)* | ***0.663*** (1,749) | 0.421 (1,486) | +0.243 [+0.211, +0.274] |
+
+Why F7 loses on LISA (exploratory tally of the cached detections). LISA's arrows are almost all left arrows (5,121 of 5,226 matched).
+- **F7 reads most as circles:** circle-junction 2,743 (54%), circle-non-junction 492, arrow_left-junction 844, arrow_left-non-junction 493, "other" 420.
+- **M answers "left" directly:** left|red 1,052, left|green 393, left+straight 736. It also calls 1,982 of them irrelevant, which leaves them out of its denominator.
+
+This is the Exp 6 F failure (LISA left arrows → circle) again, and ATLAS training did not remove it, although ATLAS arrows are now read well. A likely cause, not tested: LISA's small, dim US left arrows sit in multi-lamp vertical heads, unlike ATLAS's German arrow lamps. M sidesteps the pictogram by predicting the maneuver, which the left-turn bay geometry of US OpenLane data supports.
+
+**Decision (pre-registered rule).**
+
+| Criterion | Result |
+|---|---|
+| (a) in domain non-inferior (lower CI > −0.01 on A val, B val, DTLD test) | **met**: −0.008, −0.009, +0.013 |
+| (b) no False-Go rise above +0.01 | **met**: all three differences negative |
+| (c1) LISA arrow-exact CI above 0 | **not met**: −0.231 [−0.252, −0.211] |
+| (c2) mean OOD center AP ≥ M − 0.02 | **met**: 0.725 vs 0.660 |
+
+**F7 is not "the stronger thesis result" under the pre-registered rule**, because it fails the LISA arrow criterion, and fails it clearly. The moves model stays the main result. F7 is reported as the generalization study. Its result is strong but split:
+- **Where F7 is better:**
+  - in domain, it is at least as good as M everywhere and better on DTLD test;
+  - it has lower False-Go;
+  - it detects lights better out of domain (+0.065 mean center AP) with better color.
+- **Where F7 is worse:** reading US left arrows, the one transfer cell that tests the pictogram itself.
+
+The pictogram route generalizes perception, not arrow reading across countries. The LISA-arrow and A/B-val cells are single seed, with narrow or wide CIs respectively, as noted.
+
+**AWSIM video (qualitative).** Produced with `tools/run_video_picto.py --run runs/exp7_multi_F` at 0.20 and saved as `runs/awsim/AWSIM_only_picto_F7.mp4`, with a sample sheet beside it. Compared with Exp 6 J:
+- F7 marks junction lights in more frames: 3,370 of 7,076 vs 2,509.
+- It reports straight red in fewer frames: 144 vs 223.
+- It reads more right arrows: 187 detections vs 46. Some are weak (0.28–0.34) on lamps that look round.

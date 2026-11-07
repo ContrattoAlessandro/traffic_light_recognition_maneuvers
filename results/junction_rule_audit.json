@@ -1,0 +1,204 @@
+{
+ "openlane": {
+  "A (US)": {
+   "frames_with_junction_light": 12468,
+   "benchmark_conflict": 107,
+   "by_split": {
+    "train": {
+     "ok_single_color": 9895,
+     "ok_arrows": 0,
+     "fail_circles_disagree": 0,
+     "fail_arrows_disagree": 0,
+     "fail_unreadable": 0,
+     "fail_rule_vs_label": 0,
+     "multi_color_unlabelled": 330
+    },
+    "val": {
+     "ok_single_color": 2115,
+     "ok_arrows": 60,
+     "fail_circles_disagree": 33,
+     "fail_arrows_disagree": 0,
+     "fail_unreadable": 4,
+     "fail_rule_vs_label": 7,
+     "multi_color_unlabelled": 24
+    }
+   },
+   "ok_single_color": 12010,
+   "ok_arrows": 60,
+   "fail_circles_disagree": 33,
+   "fail_arrows_disagree": 0,
+   "fail_unreadable": 4,
+   "fail_rule_vs_label": 7,
+   "multi_color_unlabelled": 354
+  },
+  "B Singapore": {
+   "frames_with_junction_light": 2808,
+   "benchmark_conflict": 191,
+   "by_split": {
+    "train": {
+     "ok_single_color": 2108,
+     "ok_arrows": 0,
+     "fail_circles_disagree": 0,
+     "fail_arrows_disagree": 0,
+     "fail_unreadable": 0,
+     "fail_rule_vs_label": 0,
+     "multi_color_unlabelled": 175
+    },
+    "val": {
+     "ok_single_color": 469,
+     "ok_arrows": 0,
+     "fail_circles_disagree": 14,
+     "fail_arrows_disagree": 0,
+     "fail_unreadable": 0,
+     "fail_rule_vs_label": 0,
+     "multi_color_unlabelled": 42
+    }
+   },
+   "ok_single_color": 2577,
+   "ok_arrows": 0,
+   "fail_circles_disagree": 14,
+   "fail_arrows_disagree": 0,
+   "fail_unreadable": 0,
+   "fail_rule_vs_label": 0,
+   "multi_color_unlabelled": 217
+  },
+  "B Boston": {
+   "frames_with_junction_light": 6052,
+   "benchmark_conflict": 298,
+   "by_split": {
+    "train": {
+     "ok_single_color": 4646,
+     "ok_arrows": 0,
+     "fail_circles_disagree": 0,
+     "fail_arrows_disagree": 0,
+     "fail_unreadable": 0,
+     "fail_rule_vs_label": 0,
+     "multi_color_unlabelled": 315
+    },
+    "val": {
+     "ok_single_color": 1069,
+     "ok_arrows": 13,
+     "fail_circles_disagree": 0,
+     "fail_arrows_disagree": 0,
+     "fail_unreadable": 0,
+     "fail_rule_vs_label": 0,
+     "multi_color_unlabelled": 9
+    }
+   },
+   "ok_single_color": 5715,
+   "ok_arrows": 13,
+   "fail_circles_disagree": 0,
+   "fail_arrows_disagree": 0,
+   "fail_unreadable": 0,
+   "fail_rule_vs_label": 0,
+   "multi_color_unlabelled": 324
+  }
+ },
+ "openlane_examples": {
+  "A (US) | fail_circles_disagree": [
+   "A/val/10007/image/ring_front_center/315967856949927221.jpg",
+   "A/val/10100/image/ring_front_center/315972334849927215.jpg",
+   "A/val/10100/image/ring_front_center/315972335349927209.jpg",
+   "A/val/10100/image/ring_front_center/315972335849927222.jpg",
+   "A/val/10100/image/ring_front_center/315972336349927220.jpg"
+  ],
+  "A (US) | fail_unreadable": [
+   "A/val/10040/image/ring_front_center/315976319849927222.jpg",
+   "A/val/10040/image/ring_front_center/315976320849927212.jpg",
+   "A/val/10040/image/ring_front_center/315976321849927216.jpg",
+   "A/val/10040/image/ring_front_center/315976322849927218.jpg"
+  ],
+  "A (US) | fail_rule_vs_label": [
+   "A/val/10118/image/ring_front_center/315971609149927210.jpg",
+   "A/val/10118/image/ring_front_center/315971609649927213.jpg",
+   "A/val/10146/image/ring_front_center/315966814849927220.jpg",
+   "A/val/10146/image/ring_front_center/315966815349927209.jpg",
+   "A/val/10146/image/ring_front_center/315966815849927214.jpg"
+  ],
+  "B Singapore | fail_circles_disagree": [
+   "B/val/11149/image/CAM_FRONT/1542799752012460.jpg",
+   "B/val/11149/image/CAM_FRONT/1542799752512460.jpg",
+   "B/val/11149/image/CAM_FRONT/1542799753012460.jpg",
+   "B/val/11149/image/CAM_FRONT/1542799753912460.jpg",
+   "B/val/11149/image/CAM_FRONT/1542799754412460.jpg"
+  ]
+ },
+ "dtld": {
+  "junction": {
+   "frames_with_junction_light": 39234,
+   "by_split": {
+    "train": {
+     "ok_single_color": 22462,
+     "ok_arrows": 3696,
+     "fail_circles_disagree": 1024,
+     "fail_arrows_disagree": 59,
+     "fail_unreadable": 0,
+     "fail_rule_vs_label": 0,
+     "multi_color_unlabelled": 0
+    },
+    "test": {
+     "ok_single_color": 9854,
+     "ok_arrows": 1640,
+     "fail_circles_disagree": 495,
+     "fail_arrows_disagree": 4,
+     "fail_unreadable": 0,
+     "fail_rule_vs_label": 0,
+     "multi_color_unlabelled": 0
+    }
+   },
+   "ok_single_color": 32316,
+   "ok_arrows": 5336,
+   "fail_circles_disagree": 1519,
+   "fail_arrows_disagree": 63,
+   "fail_unreadable": 0,
+   "fail_rule_vs_label": 0,
+   "multi_color_unlabelled": 0
+  },
+  "relevant only": {
+   "frames_with_junction_light": 39070,
+   "by_split": {
+    "train": {
+     "ok_single_color": 26562,
+     "ok_arrows": 153,
+     "fail_circles_disagree": 400,
+     "fail_arrows_disagree": 33,
+     "fail_unreadable": 0,
+     "fail_rule_vs_label": 0,
+     "multi_color_unlabelled": 0
+    },
+    "test": {
+     "ok_single_color": 11572,
+     "ok_arrows": 88,
+     "fail_circles_disagree": 259,
+     "fail_arrows_disagree": 3,
+     "fail_unreadable": 0,
+     "fail_rule_vs_label": 0,
+     "multi_color_unlabelled": 0
+    }
+   },
+   "ok_single_color": 38134,
+   "ok_arrows": 241,
+   "fail_circles_disagree": 659,
+   "fail_arrows_disagree": 36,
+   "fail_unreadable": 0,
+   "fail_rule_vs_label": 0,
+   "multi_color_unlabelled": 0
+  }
+ },
+ "dtld_examples": {
+  "fail_circles_disagree": [
+   "Berlin/Berlin1/2015-04-17_10-52-00/DE_BBBR667_2015-04-17_10-52-03-968594_k0.tiff",
+   "Berlin/Berlin1/2015-04-17_10-59-24/DE_BBBR667_2015-04-17_10-59-26-433528_k0.tiff",
+   "Berlin/Berlin1/2015-04-17_10-59-24/DE_BBBR667_2015-04-17_10-59-27-102369_k0.tiff",
+   "Berlin/Berlin1/2015-04-17_10-59-24/DE_BBBR667_2015-04-17_10-59-27-769932_k0.tiff",
+   "Berlin/Berlin1/2015-04-17_11-00-07/DE_BBBR667_2015-04-17_11-00-10-101034_k0.tiff"
+  ],
+  "fail_arrows_disagree": [
+   "Bochum/Bochum1/2015-04-21_17-34-43/DE_BBBR667_2015-04-21_17-34-44-145713_k0.tiff",
+   "Bochum/Bochum1/2015-04-21_17-34-43/DE_BBBR667_2015-04-21_17-34-46-885064_k0.tiff",
+   "Bochum/Bochum1/2015-04-21_17-34-43/DE_BBBR667_2015-04-21_17-34-47-215088_k0.tiff",
+   "Bochum/Bochum1/2015-04-21_17-34-43/DE_BBBR667_2015-04-21_17-34-47-611605_k0.tiff",
+   "Bochum/Bochum1/2015-04-21_17-34-43/DE_BBBR667_2015-04-21_17-34-48-747558_k0.tiff"
+  ]
+ }
+}

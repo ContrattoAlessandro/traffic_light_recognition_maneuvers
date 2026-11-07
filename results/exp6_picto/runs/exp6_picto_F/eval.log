@@ -1,0 +1,70 @@
+[2026-11-07 00:48:30] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-07 00:48:30] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+epoch 0: tune TSS 0.9397 @ 0.25
+[2026-11-07 00:49:51] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-07 00:49:51] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+epoch 1: tune TSS 0.9458 @ 0.4
+[2026-11-07 00:51:11] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-07 00:51:11] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+epoch 2: tune TSS 0.9413 @ 0.4
+[2026-11-07 00:52:31] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-07 00:52:31] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+epoch 3: tune TSS 0.9425 @ 0.4
+[2026-11-07 00:53:52] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-07 00:53:52] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+epoch 4: tune TSS 0.9407 @ 0.35
+[2026-11-07 00:55:12] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-07 00:55:12] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+epoch 5: tune TSS 0.9408 @ 0.35
+selected epoch 1, threshold 0.4 (tune TSS 0.9458)
+[2026-11-07 00:56:32] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-07 00:56:32] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+{
+ "frames": 12453,
+ "scored_frames": 11494,
+ "rule": {
+  "acc_color": 0.9527144597181137,
+  "acc_pass": 0.9730076561684357,
+  "em": 0.9132590917000174,
+  "tss": 0.9463270691955223,
+  "false_go": 0.037936940937638775,
+  "false_stop": 0.021282229503855957
+ },
+ "lights": {
+  "gt_lights": 57093,
+  "detections": 45099,
+  "recall": 0.6884206470145202,
+  "precision": 0.8715049114171046,
+  "picto_acc": 0.9218400162833299,
+  "color_acc": 0.9828516181559129,
+  "junction_acc": 0.9656269082027275,
+  "all_three_acc": 0.8890189293710564,
+  "junction_f1": 0.9761530722115334,
+  "picto_recall_by_class": {
+   "circle": {
+    "n": 24712,
+    "acc": 0.9681935901586274
+   },
+   "arrow_left": {
+    "n": 4238,
+    "acc": 0.8449740443605475
+   },
+   "arrow_right": {
+    "n": 497,
+    "acc": 0.3963782696177062
+   },
+   "arrow_straight": {
+    "n": 1957,
+    "acc": 0.5748594787940725
+   },
+   "arrow_straight_left": {
+    "n": 1,
+    "acc": 0.0
+   },
+   "other": {
+    "n": 7899,
+    "acc": 0.937207241422965
+   }
+  }
+ }
+}

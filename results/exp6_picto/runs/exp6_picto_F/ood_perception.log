@@ -1,0 +1,42 @@
+C:\Users\alexa\Desktop\One_Perception_All_Maneuvers\.venv\Lib\site-packages\torch\jit\_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+C:\Users\alexa\Desktop\One_Perception_All_Maneuvers\.venv\Lib\site-packages\pydantic\main.py:129: PretrainWeightsCompatibilityWarning: RFDETRMediumConfig was instantiated with pretrain_weights=None. The model will be initialised from scratch, which typically produces lower accuracy than fine-tuning from the published checkpoint ('rf-detr-medium.pth').
+  'validate_assignment': lambda model, name, val: model.__pydantic_validator__.validate_assignment(model, name, val),  # pyright: ignore[reportAssignmentType]
+C:\Users\alexa\Desktop\One_Perception_All_Maneuvers\.venv\Lib\site-packages\pydantic\main.py:280: PretrainWeightsCompatibilityWarning: RFDETRMediumConfig was instantiated with pretrain_weights=None. The model will be initialised from scratch, which typically produces lower accuracy than fine-tuning from the published checkpoint ('rf-detr-medium.pth').
+  validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+[2026-11-07 11:41:33] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-07 11:41:33] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+atlas  all          J: AP center 0.613 (IoU 0.525) R 0.692 P 0.552 | color 0.953 yellow R 0.87 | arrows matched 1824, junction 1448, exact 0.458
+atlas  front_medium J: AP center 0.659 (IoU 0.587) R 0.744 P 0.530 | color 0.930 yellow R 0.95 | arrows matched 686, junction 555, exact 0.468
+atlas  front_tele   J: AP center 0.638 (IoU 0.568) R 0.771 P 0.521 | color 0.953 yellow R 0.778 | arrows matched 685, junction 483, exact 0.462
+atlas  front_wide   J: AP center 0.566 (IoU 0.433) R 0.560 P 0.638 | color 0.985 yellow R 0.875 | arrows matched 453, junction 410, exact 0.439
+[2026-11-07 11:42:59] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-07 11:42:59] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+atlas  all          F: AP center 0.630 (IoU 0.531) R 0.637 P 0.641 | color 0.957 yellow R 0.952 | arrows matched 1677, junction 1480, exact 0.453
+atlas  front_medium F: AP center 0.683 (IoU 0.595) R 0.679 P 0.647 | color 0.928 yellow R 1.0 | arrows matched 624, junction 560, exact 0.48
+atlas  front_tele   F: AP center 0.681 (IoU 0.594) R 0.730 P 0.587 | color 0.963 yellow R 0.875 | arrows matched 646, junction 534, exact 0.457
+atlas  front_wide   F: AP center 0.559 (IoU 0.428) R 0.502 P 0.725 | color 0.989 yellow R 1.0 | arrows matched 407, junction 386, exact 0.407
+[2026-11-07 11:44:22] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-07 11:44:22] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+lisa   all          J: AP center 0.736 (IoU 0.078) R 0.722 P 0.718 | color 0.992 yellow R 0.597 | arrows matched 4861, junction 3060, exact 0.221
+lisa   day          J: AP center 0.836 (IoU 0.038) R 0.897 P 0.748 | color 0.996 yellow R 0.957 | arrows matched 3452, junction 2188, exact 0.306
+lisa   night        J: AP center 0.706 (IoU 0.137) R 0.643 P 0.701 | color 0.989 yellow R 0.0 | arrows matched 1409, junction 872, exact 0.008
+[2026-11-07 11:51:17] [WARNING] rf-detr - Using a different number of positional encodings than DINOv2, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+[2026-11-07 11:51:17] [WARNING] rf-detr - Using patch size 16 instead of 14, which means we're not loading DINOv2 backbone weights. This is not a problem if finetuning a pretrained RF-DETR model.
+lisa   all          F: AP center 0.747 (IoU 0.075) R 0.646 P 0.791 | color 0.997 yellow R 0.861 | arrows matched 4902, junction 4139, exact 0.297
+lisa   day          F: AP center 0.841 (IoU 0.031) R 0.900 P 0.790 | color 0.999 yellow R 0.995 | arrows matched 3510, junction 2946, exact 0.395
+lisa   night        F: AP center 0.716 (IoU 0.152) R 0.531 P 0.792 | color 0.996 yellow R 0.145 | arrows matched 1392, junction 1193, exact 0.053
+atlas  all          F: AP center 0.630 (IoU 0.531) R 0.637 P 0.641 | color 0.957 yellow R 0.952 | arrows matched 1677, junction 1480, exact 0.453
+atlas  all          J: AP center 0.613 (IoU 0.525) R 0.692 P 0.552 | color 0.953 yellow R 0.87 | arrows matched 1824, junction 1448, exact 0.458
+atlas  front_medium F: AP center 0.683 (IoU 0.595) R 0.679 P 0.647 | color 0.928 yellow R 1.0 | arrows matched 624, junction 560, exact 0.48
+atlas  front_medium J: AP center 0.659 (IoU 0.587) R 0.744 P 0.530 | color 0.930 yellow R 0.95 | arrows matched 686, junction 555, exact 0.468
+atlas  front_tele   F: AP center 0.681 (IoU 0.594) R 0.730 P 0.587 | color 0.963 yellow R 0.875 | arrows matched 646, junction 534, exact 0.457
+atlas  front_tele   J: AP center 0.638 (IoU 0.568) R 0.771 P 0.521 | color 0.953 yellow R 0.778 | arrows matched 685, junction 483, exact 0.462
+atlas  front_wide   F: AP center 0.559 (IoU 0.428) R 0.502 P 0.725 | color 0.989 yellow R 1.0 | arrows matched 407, junction 386, exact 0.407
+atlas  front_wide   J: AP center 0.566 (IoU 0.433) R 0.560 P 0.638 | color 0.985 yellow R 0.875 | arrows matched 453, junction 410, exact 0.439
+lisa   all          F: AP center 0.747 (IoU 0.075) R 0.646 P 0.791 | color 0.997 yellow R 0.861 | arrows matched 4902, junction 4139, exact 0.297
+lisa   all          J: AP center 0.736 (IoU 0.078) R 0.722 P 0.718 | color 0.992 yellow R 0.597 | arrows matched 4861, junction 3060, exact 0.221
+lisa   day          F: AP center 0.841 (IoU 0.031) R 0.900 P 0.790 | color 0.999 yellow R 0.995 | arrows matched 3510, junction 2946, exact 0.395
+lisa   day          J: AP center 0.836 (IoU 0.038) R 0.897 P 0.748 | color 0.996 yellow R 0.957 | arrows matched 3452, junction 2188, exact 0.306
+lisa   night        F: AP center 0.716 (IoU 0.152) R 0.531 P 0.792 | color 0.996 yellow R 0.145 | arrows matched 1392, junction 1193, exact 0.053
+lisa   night        J: AP center 0.706 (IoU 0.137) R 0.643 P 0.701 | color 0.989 yellow R 0.0 | arrows matched 1409, junction 872, exact 0.008
