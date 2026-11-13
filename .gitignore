@@ -9,3 +9,8 @@ __pycache__/
 *.pt
 *.ckpt
 !results/*/runs/
+
+# thesis build output and Overleaf export
+thesis/build/
+thesis/build.out
+thesis_overleaf.zip

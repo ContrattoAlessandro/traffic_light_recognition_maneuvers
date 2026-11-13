@@ -6,7 +6,9 @@ does not label, which the factorized loss ignores:
 - ATLAS train, the 85% of sessions not held out (seed 0, the split of tools/make_pictogram_crops.py):
   pictogram and color, junction "?"; "off" lamps are left out, red_yellow -> red;
 - OpenLane-V2 A fit + B fit (kept frames, as the moves models): junction = the label builder's "relevant",
-  color, pictogram "?".
+  color, pictogram "?";
+- with --add-bdd (Exp 8) BDD100K train, the frames with at least one light where every light has a color:
+  color only, pictogram and junction "?".
 valid/ (RF-DETR's own per-epoch mAP log only) = DTLD tune + OpenLane A tune + B tune. Model selection uses
 the tune records directly (tools/eval_multi_picto.py). Images are referenced by absolute path.
 """
@@ -69,16 +71,30 @@ def openlane(split):
     return out
 
 
+def bdd_train():
+    """Exp 8: frames with at least one light where every light has a color (color "none" boxes fit neither target nor background)."""
+    out = []
+    for line in open(os.path.join(TLD, "datasets", "lamps", "bdd100k_train.jsonl")):
+        r = json.loads(line)
+        if r["lamps"] and all(lp["state"] in STATE for lp in r["lamps"]):
+            out.append({"source": "bdd", "image": os.path.join(TLD, r["image"]), "size": (r["width"], r["height"]),
+                        "boxes": [(lp["box"], class_name(UNKNOWN, None, STATE[lp["state"]])) for lp in r["lamps"]]})
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", default="data/rfdetr_coco_multi_picto")
     ap.add_argument("--limit", type=int, help="first N frames per source and folder (smoke tests)")
+    ap.add_argument("--add-bdd", action="store_true", help="Exp 8: also BDD100K train clean frames (color only)")
     args = ap.parse_args()
 
     at, n_held, n_ses = atlas_train()
     print(f"ATLAS train: {len(at)} frames from {n_ses - n_held} of {n_ses} sessions")
     folders = {"train": {"dtld": dtld("train"), "atlas": at, "openlane": openlane("train")},
                "valid": {"dtld": dtld("valid"), "openlane": openlane("valid")}}
+    if args.add_bdd:
+        folders["train"]["bdd"] = bdd_train()
     if args.limit:
         folders = {k: {s: v[: args.limit] for s, v in f.items()} for k, f in folders.items()}
     folders = {k: [r for v in f.values() for r in v] for k, f in folders.items()}

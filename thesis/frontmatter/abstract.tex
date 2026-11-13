@@ -1,0 +1,29 @@
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+An automated vehicle approaching a signalized intersection does not need the color of every traffic
+light in view; it needs to know whether its intended maneuver---straight, left, right or U-turn---is
+permitted. This thesis studies this \emph{maneuver-level} formulation of traffic signal understanding,
+in which one front-camera image is mapped to a signal color and a stop/go decision for each maneuver.
+
+The work has three objectives. First, it replicates the direction-aware model of Zou et al., a
+Swin-Tiny network in which learnable direction queries attend to a global image token and to region
+tokens from an auxiliary traffic-light detector; since the original labels are not public, they are
+rebuilt from the lane and traffic-element topology of OpenLane-V2. Second, it compares this end-to-end
+design with a structured alternative, in which a real-time detector (RF-DETR) classifies each light by
+the maneuvers it controls and an explicit rule assigns colors to maneuvers. Third, it tests transfer
+across countries, traffic rules and cameras, using new compatible labels for the DriveU (Germany) and
+LISA (United States) traffic light datasets and a per-light evaluation on ATLAS.
+
+The replication reaches a Traffic Signal Score (TSS) of 0.889 on OpenLane-V2 subset A against 0.880
+published, with a higher False-Go rate (0.164 vs 0.137); a ConvNeXt V2 backbone brings no gain. The
+structured baseline, a third smaller, scores 0.894, and a segment-level paired bootstrap finds no
+significant difference. Trained on DTLD it reaches a test TSS of 0.958 at 22\,ms per frame; it
+transfers well to LISA by day (0.951) but drops at night (0.861), and its False-Go rate doubles on
+Argoverse~2 images. Right-turn signals, yellow lights, small distant lights and country-specific label
+conventions emerge as the main open problems, and the safety-relevant errors concentrate exactly where
+aggregate metrics do not look.
+
+\vspace{0.5cm}
+\noindent\textbf{Keywords:} traffic light recognition, autonomous driving, signal intent, DETR,
+Swin Transformer, OpenLane-V2, domain shift, replication study.

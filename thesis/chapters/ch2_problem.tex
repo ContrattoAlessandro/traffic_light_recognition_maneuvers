@@ -1,0 +1,161 @@
+\chapter{Maneuver-Level Signal Understanding: An In-Depth Analysis}
+\label{ch:problem}
+
+This chapter examines the task itself before any model is trained. It gives a formal definition
+(\cref{sec:prob-def}), explains how the abstract notion of ``the signal that governs a maneuver'' is
+made concrete in labels and why this depends on traffic rules (\cref{sec:prob-semantics}), discusses
+the characteristics of the data that make the task hard (\cref{sec:prob-challenges}), analyses the
+evaluation metrics and what they do not show (\cref{sec:prob-metrics}), and contrasts the two model
+designs compared in this thesis (\cref{sec:prob-paradigms}).
+
+\section{Task definition}
+\label{sec:prob-def}
+
+Let $I$ be a front-camera image and $\dirs=\{\text{straight},\text{left},\text{right},\text{U-turn}\}$
+the set of maneuvers. The task is to predict, for every $d\in\dirs$,
+\begin{align}
+  c_d &\in \mathcal{C} = \{\text{none},\text{red},\text{yellow},\text{green}\}, \\
+  p_d &\in \mathcal{P} = \{\text{stop},\text{go}\}.
+\end{align}
+The color $c_d$ is the state of the signal that governs maneuver $d$ for the ego vehicle at the next
+intersection, or \emph{none} when no signal governs it. The passability is defined by the color through
+the rule of Zou et al.\ (legend of their Fig.~2):
+\begin{equation}
+  p_d = \begin{cases} \text{stop} & \text{if } c_d = \text{red},\\ \text{go} & \text{otherwise.}\end{cases}
+  \label{eq:pass-rule}
+\end{equation}
+Yellow therefore counts as \emph{go}, and so does \emph{none}: a maneuver without a governing signal is
+not prohibited by a signal, even if other rules (yield, give way) apply. The model still predicts $p_d$
+with a separate head, which the original paper motivates with the possibility of learning exceptions;
+\cref{sec:res-perdir} shows that in practice the two outputs are almost perfectly coupled.
+
+A frame-level label is the tuple $y = \big((c_d, p_d)\big)_{d\in\dirs}$. Since $p_d$ is a function of
+$c_d$, the label space has $4^4=256$ possible states, of which only a few dozen occur in practice
+because maneuvers are strongly correlated: left and U-turn almost always share a signal, and straight
+and left share it whenever there is no dedicated left arrow.
+
+\section{Label semantics and traffic rules}
+\label{sec:prob-semantics}
+
+The definition above hides the hardest part of the problem: deciding \emph{which} light governs a
+maneuver. In OpenLane-V2 this has to be derived from the lane graph, and several choices have to be
+made. The rules adopted in this thesis, detailed in \cref{sec:method-labels} and
+\cref{app:labels}, follow a hierarchy of specificity:
+\begin{enumerate}
+  \item \textbf{Straight} takes the color of the lights that control the straight lane or that are
+        generic (circular) lights of the approach.
+  \item \textbf{Left} takes a left-specific light if one exists, and otherwise inherits the straight
+        signal.
+  \item \textbf{U-turn} takes a U-turn light if one exists, and otherwise inherits the left signal.
+  \item \textbf{Right} takes only a \emph{dedicated} right-turn light; without one it is \emph{none}.
+\end{enumerate}
+The fourth rule encodes the US convention that a right turn on red is permitted
+(\cref{sec:bg-signals}). It has two consequences that recur throughout the thesis. First, right is
+\emph{none} in about 97\% of the OpenLane-V2 frames, so its color accuracy is dominated by a trivial
+majority class. Second, the rare dedicated red right arrow, which is the one case where turning right
+is actually forbidden, is extremely under-represented.
+
+The convention also does not transfer. Under German rules (DTLD) the right turn obeys the circle when
+there is no right arrow; applying the US rule there would declare most right turns unconstrained and
+would be wrong. The DTLD labels in this thesis therefore use a second convention (\emph{signal}: right
+takes a right arrow if present, otherwise the circle) and record it per frame, so that both training
+and evaluation apply the correct rule. Right-turn labels thus mean different things across datasets,
+which matters when models are evaluated out of distribution (\cref{sec:res-ood}).
+
+A further subtlety concerns the left-hand traffic scenes of nuScenes (Singapore). A strict mirroring of
+the rules (left becomes the near turn, right the far turn) would be the natural choice, but, as
+shown in \cref{sec:res-labels}, it does not reproduce the label distribution of the original paper,
+whereas applying US rules everywhere does. The replication therefore follows the US convention for
+comparability, at the price of a known inconsistency: in Singapore a green right arrow yields
+right~$=$~none.
+
+\section{Characteristics and challenges of the data}
+\label{sec:prob-challenges}
+
+\paragraph{Small objects.} Traffic lights at the stop line of the next intersection are often 10--30
+pixels tall in a 2048-pixel image, and they shrink by a factor of two to three when the image is
+resized to a size a network can process. \Cref{sec:res-atlas} quantifies how strongly detection
+recall depends on this height.
+
+\paragraph{Relevance.} A frame can contain lights of the ego lane, of neighboring lanes with different
+maneuvers, of the opposite approach (seen from the side), and of the next intersection. Lights of a far
+intersection can have a different color from the near ones, and the label builder has to decide which
+intersection is ``next''. When the most specific relevant lights disagree in color, the situation is
+ambiguous and such frames are excluded from the benchmark.
+
+\paragraph{Class imbalance.} Beyond the right-turn imbalance, yellow is rare (about 3\% of straight
+labels) and short-lived, and \emph{none} for straight (T-junctions, turn-only lanes) is rare as well.
+Rare classes carry little weight in pooled accuracy but include some of the most consequential
+decisions.
+
+\paragraph{Correlated frames.} The datasets consist of driving sequences sampled at 2\,Hz or more.
+Consecutive frames usually show the same lights in the same state, so the effective number of
+independent samples is closer to the number of intersection approaches than to the number of frames.
+This has to be taken into account when comparing models statistically (\cref{sec:method-eval}).
+
+\paragraph{Domain shift.} Lights differ in housing, size, mounting (overhead versus side poles) and
+color rendition between countries and cameras; night images change their appearance completely; and
+the camera geometry (portrait Argoverse~2 images, wide DTLD images, 4:3 LISA images) changes the scale
+and aspect ratio at which lights appear after resizing.
+
+\section{Evaluation metrics and their blind spots}
+\label{sec:prob-metrics}
+
+The metrics follow Eqs.~4--7 of Zou et al. For $N$ frames with predictions $\hat c_{i,d}$, $\hat
+p_{i,d}$:
+\begin{align}
+  \acccolor &= \frac{1}{4N}\sum_{i=1}^{N}\sum_{d\in\dirs} \mathbb{1}[\hat c_{i,d} = c_{i,d}], \\
+  \accpass &= \frac{1}{4N}\sum_{i=1}^{N}\sum_{d\in\dirs} \mathbb{1}[\hat p_{i,d} = p_{i,d}], \\
+  \EM &= \frac{1}{N}\sum_{i=1}^{N} \prod_{d\in\dirs} \mathbb{1}[\hat c_{i,d}=c_{i,d} \wedge \hat p_{i,d}=p_{i,d}], \\
+  \TSS &= \tfrac{1}{3}\left(\acccolor + \accpass + \EM\right),
+\end{align}
+and, pooling over frames and directions,
+\begin{equation}
+  \FG = P(\hat p = \text{go} \mid p = \text{stop}), \qquad \FS = P(\hat p = \text{stop} \mid p = \text{go}).
+\end{equation}
+
+The Traffic Signal Score (TSS) is a convenient single number, but it has properties worth making
+explicit:
+\begin{itemize}
+  \item \textbf{Trivial directions inflate it.} Because right is \emph{none} in $\sim$97\% of frames, a
+        model that never predicts anything else for right gains almost a quarter of $\acccolor$ and
+        $\accpass$ for free. For this reason, out-of-distribution results are also reported without the
+        right direction.
+  \item \textbf{It is symmetric in the errors that matter asymmetrically.} Predicting \emph{go} for a
+        red signal (False-Go) can cause a collision; predicting \emph{stop} for a green one (False-Stop)
+        causes an unnecessary stop and possibly a rear-end risk, but is generally the safer failure.
+        TSS weights both equally. The False-Go and False-Stop rates are therefore reported alongside.
+  \item \textbf{Pooling hides directions.} False-Go is pooled over directions, so the rare
+        right-turn stops barely influence it even if the model misses all of them. Per-direction
+        results are necessary to see this.
+  \item \textbf{Accuracy and passability are coupled.} Under \cref{eq:pass-rule}, $\accpass\ge\acccolor$
+        whenever the predicted passability follows the predicted color, because some color errors
+        (green vs yellow vs none) do not change passability.
+\end{itemize}
+To make the per-direction numbers interpretable, each is compared with a \emph{majority} baseline: the
+accuracy of always predicting that direction's most frequent color.
+
+\section{Two design paradigms}
+\label{sec:prob-paradigms}
+
+Two ways of solving the task are compared in this thesis.
+
+\paragraph{End-to-end (direction-aware).} The network maps the image directly to the 4$\times$2
+outputs. Relevance, association and traffic rules are learned implicitly from data. An auxiliary
+detector supplies localized evidence, but its output is consumed as features, not as decisions. The
+advantages are flexibility (context such as lane markings or road layout can be used without being
+modeled) and a single training objective. The drawbacks are opacity---it is hard to know \emph{why} a
+maneuver was declared free---and the fact that the traffic rules are baked into the weights: a change
+of convention requires relabeling and retraining.
+
+\paragraph{Structured (detector + rules).} A detector predicts, for each light, a class that encodes
+both its color and the set of ego maneuvers it controls (for instance \code{left+straight|red}, or
+\code{irrelevant|green} for lights of other lanes or junctions). A fixed rule then assigns colors to
+maneuvers with the same specificity hierarchy used to build the labels. When the detector is perfect,
+this pipeline reproduces every label exactly (an ``oracle'' property verified in
+\cref{sec:method-rfdetr}), so all its errors are detection, classification and relevance errors. The
+advantages are interpretability, the possibility of changing the rule at inference time (US versus
+German right turns) and the reuse of mature detection architectures. The drawbacks are the larger,
+sparser class space and the dependence on a score threshold.
+
+The empirical comparison of the two paradigms is the subject of \cref{sec:res-rfdetr}.

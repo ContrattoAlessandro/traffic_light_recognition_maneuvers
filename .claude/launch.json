@@ -48,6 +48,12 @@
       "runtimeExecutable": "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\.venv\\Scripts\\python.exe",
       "runtimeArgs": ["-m", "http.server", "8772", "--bind", "127.0.0.1", "--directory", "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\review_picto"],
       "port": 8772
+    },
+    {
+      "name": "review-vzc",
+      "runtimeExecutable": "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["-m", "http.server", "8773", "--bind", "127.0.0.1", "--directory", "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\review_vzc"],
+      "port": 8773
     }
   ]
 }

@@ -1,0 +1,204 @@
+\chapter{Label Construction Rules}
+\label{app:labels}
+
+\section{OpenLane-V2}
+
+The label builder (\code{dtsu/labels.py}) processes each frame as follows.
+
+\begin{enumerate}
+  \item \textbf{Traffic elements.} Read the front-image traffic elements and their attribute: 1 red,
+        2 green, 3 yellow for circular lights; 4--12 for arrow types (left, right, straight, U-turn and
+        their combinations).
+  \item \textbf{Ego approach lanes.} Select lane centerlines that start ahead of the ego vehicle and are
+        aligned with its heading (within $60^\circ$).
+  \item \textbf{Maneuver per lane.} From each approach lane, follow \code{topology_lclc} to the first
+        junction lane being entered; the entering lane may start up to 3\,m behind the ego vehicle
+        (\code{ENTERING_X = -3 m}). Classify the heading change along that lane: $|\Delta\psi|\le30^\circ$
+        straight, $|\Delta\psi|>135^\circ$ U-turn, otherwise left or right by the sign of $\Delta\psi$.
+  \item \textbf{Relevant lights.} Through \code{topology_lcte}, collect the lights linked to the selected
+        lanes of the nearest junction (within 10\,m). If the ego vehicle has passed the stop line, use
+        approach lanes ending within 30\,m behind it.
+  \item \textbf{Assignment.} For each relevant light, record the set of maneuvers it controls. Then:
+        straight $\leftarrow$ straight-specific or generic lights; left $\leftarrow$ left-specific lights,
+        else straight; U-turn $\leftarrow$ U-turn-specific lights, else left; right $\leftarrow$ lights
+        that control only the right turn, else \emph{none}. Among candidates, the most specific light
+        (fewest controlled maneuvers) wins.
+  \item \textbf{Conflicts and filter.} Equally specific candidates with different colors mark a conflict
+        and drop the frame. Frames without any relevant colored light are dropped.
+  \item \textbf{Traffic side.} US (right-hand) rules are applied to all frames, including Singapore. A
+        mirrored variant for left-hand traffic is kept for analysis only.
+\end{enumerate}
+Each record stores the image path, the four colors and passabilities, the traffic side, the
+right-turn convention (\code{near_turn}) and all light boxes with their controlled maneuvers and a
+relevance flag (used by the structured baseline).
+
+\section{DTLD}
+
+\begin{enumerate}
+  \item Consider front-facing vehicle lamps (circles and arrows); pedestrian and other lamps are
+        ignored.
+  \item The ego intersection's lamps are the relevant ones plus non-relevant lamps at least 0.6 times
+        the median height of the relevant ones.
+  \item A route with its own arrow (left, right, straight, straight-left) is served by that arrow; a
+        route without an arrow is served by the circles.
+  \item States: red and red--yellow $\to$ red, yellow $\to$ yellow, green $\to$ green; off or unknown
+        lamps give no color, and a direction whose lamps all lack one drops the frame.
+  \item Directions: straight, left and right take their lamps' colors; left without lamps inherits
+        straight; U-turn inherits left (DTLD has no U-turn signals). Right uses the German convention
+        (\code{near_turn = "signal"}).
+\end{enumerate}
+
+\section{LISA}
+
+\begin{enumerate}
+  \item Lights are grouped by kind (circle, left arrow, straight arrow).
+  \item A light is at the ego intersection if its height is at least 0.6 times that of the tallest light
+        of the same kind in the frame.
+  \item Directions follow the OpenLane-V2 rules under the US convention; right is always \emph{none}.
+  \item Frames with conflicts or with arrows only are dropped.
+\end{enumerate}
+
+\chapter{Hyperparameters}
+\label{app:hparams}
+
+\begin{table}[h]
+\centering
+\caption{Training settings of the direction-aware model.}
+\label{tab:hparams-dam}
+\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Setting & Value \\
+\midrule
+Backbone & Swin-T \code{swin_tiny_patch4_window7_224} (ImageNet-1k), LayerNorm per output stage, drop-path 0.1 \\
+Neck & FPN, 256 channels, P2--P5 \\
+Detector & DETR, 6 encoder layers (P5), 6 decoder layers (P3, P4, encoded P5), 50 queries, 3 classes \\
+ROI tokens & $K=16$, RoIAlign on P2, $7\times7$ \\
+Direction attention & 4 queries, 8 heads, 1 layer + LayerNorm + FFN \\
+Loss & $\lambda_c=1$, $\lambda_p=1$, $\lambda_d=0.2$; DETR: class + $5\,L_1$ + $2\,$GIoU, auxiliary losses \\
+Optimizer & AdamW, lr $10^{-4}$ (backbone $10^{-5}$), weight decay $10^{-4}$ \\
+Schedule & cosine over 24 epochs, 500 warm-up iterations, stopped after epoch 14 \\
+Gradient clipping & 0.1 \\
+Batch & 4 (one canvas shape per batch) \\
+Input & long side 1024, aspect kept, padded to a multiple of 32 \\
+Augmentation & brightness and contrast jitter $[0.75, 1.25]$; no flips, no hue shift \\
+Precision & fp16 backbone/FPN, bf16 detector, fp32 ROI/direction branch, TF32 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Training settings of the structured RF-DETR baseline.}
+\label{tab:hparams-rfdetr}
+\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Setting & Value \\
+\midrule
+Model & RF-DETR Medium, 34.6M parameters, fine-tuned from the released weights \\
+Classes & \code{<moves>|<color>}: 46 (OpenLane-V2 A+B), 24 (DTLD) \\
+Resolution & 1024$\times$1024 square resize, no multi-scale, no scale jitter \\
+Augmentation & brightness and contrast jitter; no flips, no crops \\
+Optimizer & library default; lr $10^{-4}$, encoder lr $1.5\cdot10^{-4}$, EMA weights evaluated \\
+Batch & 4, gradient accumulation 4 \\
+Epochs & 4 (OpenLane-V2), 15 with per-epoch report (DTLD) \\
+Inference & score threshold 0.20 (OpenLane-V2, from tuning), 0.25 (DTLD, from tune split); class-agnostic NMS at IoU 0.5 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\chapter{Per-Epoch Results}
+\label{app:epochs}
+
+\begin{table}[h]
+\centering
+\caption{TSS per epoch on subset A, subset B and A+B val, direction-aware model with both backbones, and
+subset A False-Go.}
+\label{tab:epochs}
+\small
+\begin{tabular}{@{}r cccc cccc@{}}
+\toprule
+ & \multicolumn{4}{c}{Swin-T} & \multicolumn{4}{c}{ConvNeXtV2-T} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}
+Epoch & A & B & A+B & $\FG_A$ & A & B & A+B & $\FG_A$ \\
+\midrule
+0 & 0.891 & 0.910 & 0.899 & 0.124 & 0.863 & 0.886 & 0.872 & 0.169 \\
+1 & 0.893 & 0.895 & 0.894 & 0.182 & 0.875 & 0.904 & 0.887 & 0.181 \\
+2 & 0.888 & 0.925 & 0.903 & 0.223 & 0.890 & 0.916 & 0.900 & 0.150 \\
+3 & 0.896 & 0.927 & 0.909 & 0.145 & 0.886 & 0.908 & 0.895 & 0.228 \\
+4 & 0.904 & 0.928 & 0.914 & 0.107 & 0.884 & 0.908 & 0.894 & 0.183 \\
+5 & 0.899 & 0.936 & 0.914 & 0.170 & 0.895 & 0.922 & 0.906 & 0.192 \\
+6 & 0.899 & 0.926 & 0.910 & 0.139 & 0.890 & 0.905 & 0.896 & 0.222 \\
+7 & 0.904 & 0.937 & 0.918 & 0.112 & 0.893 & 0.900 & 0.896 & 0.204 \\
+8 & 0.899 & 0.928 & 0.911 & 0.105 & 0.896 & 0.928 & 0.909 & 0.174 \\
+9 & 0.893 & 0.912 & 0.901 & 0.189 & 0.884 & 0.919 & 0.898 & 0.241 \\
+10 & 0.908 & 0.927 & 0.916 & 0.132 & 0.892 & 0.914 & 0.901 & 0.186 \\
+11 & 0.887 & 0.891 & 0.889 & 0.212 & 0.879 & 0.912 & 0.893 & 0.209 \\
+12 & 0.903 & 0.920 & 0.910 & 0.135 & 0.891 & 0.910 & 0.899 & 0.188 \\
+13 & 0.897 & 0.912 & 0.903 & 0.141 & 0.905 & 0.932 & 0.916 & 0.112 \\
+14 & 0.889 & 0.911 & 0.898 & 0.164 & 0.894 & 0.919 & 0.905 & 0.194 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{RF-DETR-M on OpenLane-V2 val per epoch (threshold 0.20). The reported model is epoch 3.}
+\label{tab:rfdetr-epochs}
+\small
+\begin{tabular}{@{}rccccc@{}}
+\toprule
+Epoch & TSS A & TSS B & TSS A+B & $\FG$ A+B & $\FS$ A+B \\
+\midrule
+0 & 0.909 & 0.919 & 0.913 & 0.113 & 0.029 \\
+1 & 0.900 & 0.919 & 0.908 & 0.133 & 0.025 \\
+2 & 0.902 & 0.913 & 0.907 & 0.135 & 0.021 \\
+3 & 0.895 & 0.914 & 0.903 & 0.130 & 0.024 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\chapter{Reproducing the Results}
+\label{app:repro}
+
+All commands run from the repository root. Data paths assume OpenLane-V2 under
+\code{data/OpenLane-V2/} and DTLD, LISA and ATLAS under the directory given by the \code{DATASETS}
+environment variable.
+
+\begin{lstlisting}
+# OpenLane-V2 labels (per subset and split)
+python -m dtsu.labels --root data/OpenLane-V2/subset_A --split train \
+  --data-dict data/OpenLane-V2/subset_A/data_dict_subset_A.json \
+  --out data/labels/subset_A_train.jsonl
+# DTLD and LISA labels, fit/tune splits
+bash tools/build_ext_labels.sh
+# unit tests (labels, metrics)
+python -m pytest tests
+# direction-aware model, Swin-T (resumable) and per-direction evaluation
+bash tools/run_full.sh
+python tools/eval_directions.py
+# backbone ablation
+bash tools/run_convnextv2.sh
+# RF-DETR: tuning, final OpenLane-V2 run, DTLD run
+bash tools/run_rfdetr_tuning.sh
+bash tools/run_rfdetr.sh
+bash tools/run_rfdetr_dtld.sh
+# paired segment-level bootstrap
+python tools/bootstrap_compare.py
+# out-of-distribution evaluation of the DTLD model
+python tools/eval_rfdetr_ood.py --target lisa --epoch 4 --source-threshold 0.25
+python tools/eval_rfdetr_ood.py --target openlane --epoch 4 --source-threshold 0.25
+python tools/eval_rfdetr_atlas.py --epoch 4 --threshold 0.25
+# figures of this thesis
+python thesis/make_figures.py
+\end{lstlisting}
+
+The main outputs are:
+\begin{itemize}
+  \item \code{runs/swin_t_AB/}: checkpoint, final and per-epoch metrics, per-direction results;
+  \item \code{runs/convnextv2_t_AB/}: backbone ablation;
+  \item \code{runs/rfdetr_m_AB/}, \code{runs/rfdetr_m_dtld/}: structured baseline, including
+        \code{ood_lisa/}, \code{ood_openlane/} and \code{ood_atlas/};
+  \item \code{runs/bootstrap_swin_vs_rfdetr.json}: bootstrap comparison.
+\end{itemize}

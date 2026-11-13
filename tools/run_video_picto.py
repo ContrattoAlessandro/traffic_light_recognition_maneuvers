@@ -30,14 +30,16 @@ def main():
     ap.add_argument("video")
     ap.add_argument("--out", required=True)
     ap.add_argument("--arm", choices=("J", "F"), default="J")
-    ap.add_argument("--run", help="run folder (default runs/exp6_picto_<arm>); the Exp 7 run reads its selection from exp7_eval/")
+    ap.add_argument("--run", help="run folder (default runs/exp6_picto_<arm>); the Exp 7 and Exp 8 runs read their selection from exp7_eval/ and exp8_eval/")
     ap.add_argument("--dataset-dir", default="data/rfdetr_coco_dtld_picto")
     ap.add_argument("--threshold", type=float)
     ap.add_argument("--batch", type=int, default=8)
     args = ap.parse_args()
 
     run = args.run or f"runs/exp6_picto_{args.arm}"
-    if os.path.exists(os.path.join(run, "exp7_eval", "result.json")):
+    if os.path.exists(os.path.join(run, "exp8_eval", "result.json")):
+        sel = json.load(open(os.path.join(run, "exp8_eval", "result.json")))["selection"]["F8"]
+    elif os.path.exists(os.path.join(run, "exp7_eval", "result.json")):
         sel = json.load(open(os.path.join(run, "exp7_eval", "result.json")))["F7"]
     else:
         sel = json.load(open(os.path.join(run, "picto_eval", "result.json")))

@@ -1019,3 +1019,194 @@ The pictogram route generalizes perception, not arrow reading across countries. 
 - F7 marks junction lights in more frames: 3,370 of 7,076 vs 2,509.
 - It reports straight red in fewer frames: 144 vs 223.
 - It reads more right arrows: 187 detections vs 46. Some are weak (0.28–0.34) on lamps that look round.
+
+### Exp 7 follow-up checks (2026-11-09, exploratory, no training)
+
+These checks were chosen after the Exp 7 results were known, so they do not change the decision above. F7 is epoch 4 at 0.20, M is epoch 1 at 0.25. Code: `tools/exp7_checks.py`, outputs `runs/exp7_multi_F/exp7_eval/checks_*.json`. VZC: `tools/eval_vzc.py`, output `runs/vzc_eval/result.json`.
+
+**DTLD test on route labels** (the target M trained on, German rule; 11,126 frames in both the route labels and the junction-scored set). TSS: F7 0.9519, M 0.9522, difference −0.0002 [−0.0055, +0.0051]. False-Go 0.030 vs 0.034, difference −0.004 [−0.011, +0.003]. The two models tie, so the Exp 7 DTLD gain of +0.018 came from scoring on F7's own target.
+
+**OpenLane without using the labels.** F7 is decoded with the US rule (right only from a right arrow, left falls back on straight, as M's decoder). The optional mask comes only from lane topology: a maneuver is blanked when no lane of the ego approach at the nearest junction leads to it, keeping the benchmark's inheritance. It uses no traffic light. No junction lies ahead in 476 of the 2,220 A val frames; those are not masked. Threshold 0.20; the tune-selected 0.25 changes these by at most 0.002.
+
+| Set | F7 label mask (Exp 7) | F7 US rule | F7 US rule + topology | M native | M + topology | F7 US rule + topology − M native |
+|---|---|---|---|---|---|---|
+| A val | 0.934 | 0.918 | 0.926 | 0.915 | 0.921 | +0.011 [−0.004, +0.028] |
+| B val | 0.945 | 0.895 | 0.901 | 0.921 | 0.919 | −0.019 [−0.050, +0.007] |
+
+Against the topology mask, the label mask added 0.8 point on A val and 4.4 points on B val. Without it, F7 is not non-inferior on B val by the Exp 7 margin (lower bound −0.050, margin −0.01); A val still passes.
+
+**Center AP, F7 − M** (2,000 draws; LISA in blocks of 100 consecutive frames, S2TLD and BDD100K by image):
+
+| Set | F7 | M | Difference [CI] |
+|---|---|---|---|
+| LISA test | 0.663 | 0.597 | +0.066 [+0.034, +0.097] |
+| S2TLD | 0.844 | 0.741 | +0.103 [+0.096, +0.110] |
+| BDD100K val | 0.669 | 0.641 | +0.028 [+0.021, +0.036] |
+| Mean of the three | 0.725 | 0.660 | +0.066 [+0.055, +0.076] |
+
+**LISA arrows, F7 − M** (block bootstrap, 10,000 draws). "Exact" requires the light to be called relevant. "Reading" ignores the relevance call.
+
+| Measure | All: F7 / M, difference [CI] | Day: F7 / M, difference [CI] | Night: F7 / M, difference [CI] |
+|---|---|---|---|
+| Exact, of arrows called relevant (Exp 7 criterion) | 0.234 / 0.466, −0.231 [−0.351, −0.088] | 0.241 / 0.615, −0.373 [−0.487, −0.236] | 0.205 / 0.004, +0.201 [+0.076, +0.393] |
+| Exact, of matched arrows | 0.170 / 0.273, −0.104 [−0.186, −0.012] | 0.208 / 0.422, −0.214 [−0.309, −0.103] | 0.089 / 0.002, +0.087 [+0.035, +0.151] |
+| Reading, of matched arrows | 0.264 / 0.273, −0.009 [−0.119, +0.112] | 0.256 / 0.422, −0.166 [−0.278, −0.037] | 0.281 / 0.002, +0.279 [+0.145, +0.424] |
+
+The Exp 7 criterion still fails with the wider CI. M's advantage is all in daytime. M reads almost no arrows at night (3 exact of 781 called relevant). F7's pictogram head only saw German arrow labels, while M trained on US scenes, so this comparison mixes architecture with data.
+
+**False-Go causes** (label red, prediction not red, first cause that applies; share of each model's False-Go directions):
+
+| Set | Model | False-Go directions | Red not found | Found, called not relevant | Relevant, wrong color | Relevant and red, decoder chose another light |
+|---|---|---|---|---|---|---|
+| A val | F7 | 292 | 28% | 18% | 17% | 37% |
+| A val | M | 309 | 35% | 21% | 36% | 7% |
+| B val | F7 | 145 | 16% | 65% | 13% | 6% |
+| B val | M | 184 | 27% | 45% | 10% | 19% |
+| DTLD test (junction labels) | F7 | 447 | 21% | 19% | 7% | 52% |
+| DTLD test (junction labels) | M | 623 | 27% | 14% | 7% | 52% |
+
+Decoder choice is F7's largest cause on A val (37%, against 7% for M), consistent with the junction scope letting a light of another lane decide. That link was not tested directly. Relevance is the largest cause on B val for both. The DTLD row is on F7's own target.
+
+**Latency** (RTX 5070, bf16, batch 1, median of 300 frames): F7 21.8 ms network / 36.9 ms with JPEG decode and resize, 34.4 M parameters. M 21.5 ms / 36.1 ms, 34.6 M parameters. No practical difference.
+
+**Corrections to the Exp 7 reading above.**
+- "It has lower False-Go" holds only on DTLD test (junction labels); on A val and B val the CIs include 0, and on route labels the difference is not significant.
+- "In domain, it is at least as good as M everywhere" holds only with the label mask or on F7's own target. The tables here are the fair comparison.
+- The Exp 6 results heading says 2026-11-08; those runs finished on 2026-11-07.
+
+## VZC-TLD: all RF-DETR models on a US dataset with native relevance (2026-11-09, exploratory, no training)
+
+VZC-TLD (Trinci et al., local copy at Hugging Face revision `083bc5d`) has 2,988 labelled frames from 2,856 sessions: 2,390 in its train split and 598 in its test split. No model trained on it, so both splits are unseen; the table uses all frames. Each light has a box, a color (62% of boxes are "unknown", treated as ignore boxes for detection and color) and a relevance flag. The image label is RR (relevant red or yellow, 1,681), RG (relevant green, 911) or NoR (no relevant colored light, 396). Always answering RR scores 0.563.
+
+Each model uses its own source-selected epoch and threshold, with nothing tuned on VZC. Relevance definitions differ: lane topology (A, B, A+B, mix), route (DTLD), junction (Exp 6, Exp 7). VZC's "applies to the vehicle's current direction" is closest to route and stricter than junction. Image decision: the highest-scoring light the model calls relevant; red or yellow = stop, green = go, nothing = no relevant light (acts as go). False-Go = P(not stop | RR), False-Stop = P(stop | RG).
+
+| Model | Center AP | R / P | Color / yellow R | Relevant: P / R / F1 | Decision accuracy [CI] | False-Go [CI] | False-Stop |
+|---|---|---|---|---|---|---|---|
+| A | 0.783 | 0.70 / 0.89 | 0.829 / 0.07 | 0.34 / 0.76 / 0.47 | 0.726 [0.710, 0.742] | 0.170 [0.152, 0.188] | 0.192 |
+| B | 0.777 | 0.80 / 0.72 | 0.806 / 0.50 | 0.28 / 0.64 / 0.39 | 0.671 [0.655, 0.688] | 0.187 [0.169, 0.206] | 0.346 |
+| A+B | 0.804 | 0.78 / 0.82 | 0.861 / 0.29 | 0.35 / 0.75 / 0.47 | 0.744 [0.728, 0.759] | 0.195 [0.177, 0.214] | 0.144 |
+| DTLD | 0.668 | 0.57 / 0.82 | 0.899 / 0.73 | 0.29 / 0.68 / 0.41 | 0.733 [0.717, 0.748] | 0.148 [0.131, 0.165] | 0.210 |
+| **Mix (M)** | **0.818** | 0.72 / 0.87 | 0.904 / 0.41 | 0.33 / 0.75 / 0.46 | 0.754 [0.739, 0.769] | 0.189 [0.171, 0.208] | **0.103** |
+| Exp 6 J | 0.728 | 0.58 / 0.86 | 0.913 / 0.72 | 0.31 / 0.65 / 0.42 | 0.723 [0.707, 0.739] | 0.161 [0.143, 0.178] | 0.233 |
+| Exp 6 F | 0.764 | 0.59 / 0.90 | 0.916 / 0.69 | 0.29 / 0.67 / 0.41 | 0.739 [0.724, 0.755] | 0.167 [0.148, 0.185] | 0.190 |
+| **Exp 7 F (F7)** | 0.790 | 0.74 / 0.78 | 0.905 / 0.64 | 0.32 / 0.79 / 0.45 | **0.768** [0.753, 0.783] | **0.111** [0.096, 0.126] | 0.184 |
+
+F7 − M on the image decision (paired session bootstrap, 10,000 draws):
+- Accuracy: +0.014, CI [−0.001, +0.029].
+- False-Go: −0.078, CI [−0.096, −0.061].
+- False-Stop: +0.081, CI [+0.056, +0.106].
+
+Decoding the straight maneuver instead gives the same pattern: accuracy 0.756 vs 0.746, False-Go 0.168 vs 0.233, False-Stop 0.123 vs 0.046. The official test split alone (598 frames) also agrees, with wider CIs: F7 accuracy 0.769, False-Go 0.097, False-Stop 0.216; M 0.746, 0.215, 0.097.
+
+Reading:
+- **Detection transfer to VZC favours OpenLane-trained models** (M 0.818, A+B 0.804). F7 (0.790) does not lead here, unlike LISA, S2TLD and BDD100K. No CI was computed for these AP values.
+- **Relevance does not transfer.** Precision of "relevant" is 0.28–0.35 for every model, against VZC's narrower definition (12% of annotated lights are relevant). No model here should be claimed to solve relevance in the US.
+- **F7 trades stops for goes.** It has the lowest False-Go (0.111, significantly below M), but False-Stop rises by a similar amount. It runs at a lower threshold than M and calls more lights relevant (recall 0.79 vs 0.75), a plausible cause not tested. This is an operating-point difference, not an accuracy win: the accuracy difference is not significant.
+- Single seed for every model.
+
+## Exp 8: F7 plus BDD100K train, for night and horizontal lights (2026-11-09, design fixed before any training or result)
+
+**Question.** Does adding BDD100K train to the Exp 7 data improve detection at night and on horizontal lights, without losing the in-domain decisions? Only perception can improve here: BDD100K has no junction or pictogram label, so nothing new teaches relevance or arrows.
+
+**Measured before fixing the design** (exploratory, no training):
+
+| Item | Finding |
+|---|---|
+| Night in the Exp 7 training set | About 0.3% of frames. ATLAS and OpenLane A 0 of 400 sampled frames, OpenLane B 3.7%, DTLD 0 of 24 checked by eye. A brightness classifier calibrated on BDD100K's time-of-day labels reads 40% on DTLD, but that is DTLD's dark exposure: the frames are daytime. |
+| Horizontal lights (w > 1.2 h) in the Exp 7 training set | 8,736 of 217,158 boxes, 95% from OpenLane (A 21%, B 11%, DTLD 0.3%, ATLAS 0.07%). |
+| F7 at night, BDD100K val | AP 0.596, recall 0.76, precision 0.40, 3.0 false positives per image (day: 0.743, 0.78, 0.57, 0.7). LISA night: AP 0.531, recall 0.70, precision 0.49. |
+| BDD100K annotation quality | A visual review of 96 F7 detections above 0.5 with no matching box, 48 night and 48 day: many are real lights left unlabelled, and some labels cover only the lit bulb, so the measured precision is a lower bound. |
+| S2TLD by resolution | 720p: 4,564 frames, 56 of 11,191 lights horizontal (0.5%). 1080p: 1,222 frames, 1,030 of 2,125 horizontal (48%). The two groups share no session. |
+| Bosch dev | 5,093 labelled frames, 12 sessions, 54 of 10,029 lights horizontal, 1,270 left arrows. |
+
+**Training data (F8).** The Exp 7 set unchanged, plus one source.
+
+| Source | Frames | Pictogram | Junction | Color |
+|---|---|---|---|---|
+| Exp 7 set | 67,140 | as Exp 7 | as Exp 7 | yes |
+| BDD100K train, clean frames | 18,851 (night 13,477, dawn/dusk 1,134, day 4,222, undefined 18) | **masked** | **masked** | yes |
+
+- **Clean frame:** at least one annotated light, and every annotated light has a color. This removes the frames with color "none" boxes, which are unusable as targets or as background, and needs no ignore mechanism. It leaves 64,096 lights, 6,202 of them horizontal, so the horizontal boxes in training rise by 71%, and night frames reach about 16%.
+- **Frames with no annotated light are excluded** (30,626 frames): given the annotation gaps they cannot be trusted as negatives.
+- **Boxes stay as annotated.** The rescaling of `box_convention.json` was rejected after visual review on 2026-10-26, and ATLAS was also trained raw in Exp 7. Evaluation uses center matching.
+- **Not added, and why:**
+  - S2TLD 720p has almost no horizontal lights, and the 1080p group is the only clean horizontal test, so neither is trained on.
+  - Bosch brings neither night nor horizontal lights. It addresses US arrows, a different question.
+  - VZC, LISA and BDD100K val stay test-only.
+- **Accepted label noise:** unlabelled lights in clean BDD frames train as background, and bulb-only boxes conflict with the head boxes of other sources. The guards below would catch the harm.
+- **Model and recipe:** exactly F7's (RF-DETR Medium at 1024, factorized head with 8 pictograms, lr 1e-4 / 1.5e-4, batch 4 × accum 4, seed 0, 5 epochs). Expected time about 10 h. `valid/` is unchanged.
+
+**Selection, the same rule for F8 and F7.** Epoch and threshold that maximise the mean of DTLD tune (junction rule), A tune and B tune (US rule + lane topology mask). The label mask used in Exp 7 is dropped because it leaks the benchmark's answer. Nothing is selected on a test set.
+
+**F7 under this rule, computed before F8 was trained.** Epoch 3, threshold 0.25 (DTLD tune 0.944, A tune 0.936, B tune 0.900, mean 0.927). Best mean by epoch: 0.922 / 0.922 / 0.921 / 0.927 / 0.922. Exp 7 selected epoch 4, threshold 0.20 under the label mask, so the F7 comparator here is not the F7 checkpoint and threshold reported in Exp 7, and its numbers will differ from that section.
+
+**Endpoints, F8 − F7, paired.** Center AP; horizontal AP scores only horizontal lights, with the other lights as ignore boxes. Bootstrap 95% CI: blocks of 100 consecutive frames on LISA and S2TLD, sessions on VZC, images on BDD100K and ATLAS (2,000 draws, seed 0).
+
+| Role | Cell | In F8's training domain? |
+|---|---|---|
+| Night, decision | LISA test night | no |
+| Night, reported | BDD100K val night | yes |
+| Horizontal, decision | S2TLD 1080p horizontal | no |
+| Horizontal, reported | VZC horizontal, BDD100K val horizontal | VZC no, BDD yes |
+| Daytime, decision guard | LISA test day | no |
+| Reported | BDD100K val day and all, S2TLD 720p, VZC all, ATLAS test | ATLAS and BDD yes |
+
+Recall, precision (lower bound where annotation is incomplete) and color accuracy are reported at each model's own threshold. LISA arrow reading is reported as a check, not a goal.
+
+**In-domain guards** (segment / session bootstrap, 10,000 draws): TSS and False-Go on A val and B val (US rule + topology mask) and DTLD test (junction labels).
+
+**Decision rule.** F8 replaces F7 as the perception model only if all of these hold:
+- **(a)** ΔTSS lower CI above −0.01 on A val, B val and DTLD test;
+- **(b)** ΔFalse-Go at most +0.01 on those three;
+- **(c)** LISA night ΔAP lower CI above 0;
+- **(d)** S2TLD 1080p horizontal ΔAP lower CI above 0;
+- **(e)** LISA day ΔAP lower CI above −0.02.
+
+BDD100K val is reported but cannot decide: F8 trained on its domain and label style. Single seed for both models, so everything is preliminary until seeds are added.
+
+### Exp 8 results (2026-11-10)
+
+Run `runs/exp8_bdd_F`, result in `runs/exp8_bdd_F/exp8_eval/result.json`. Training took 8 h 42 min, evaluation 1 h 04 min.
+
+**Outcome: F8 does not replace F7 under the rule above.** (c), (d) and (e) hold; (a) and (b) fail, both on B val only.
+
+| Condition | Result | Holds? |
+|---|---|---|
+| (a) ΔTSS lower CI above −0.01 | A val +0.003, B val **−0.036**, DTLD test −0.002 | no |
+| (b) ΔFalse-Go at most +0.01 | A val +0.008, B val **+0.051**, DTLD test +0.001 | no |
+| (c) LISA night ΔAP lower CI above 0 | +0.043 | yes |
+| (d) S2TLD 1080p horizontal ΔAP lower CI above 0 | +0.083 | yes |
+| (e) LISA day ΔAP lower CI above −0.02 | −0.009 | yes |
+
+**Selection.** F8: epoch 3, threshold 0.45 (DTLD tune 0.945, A tune 0.948, B tune 0.913, mean 0.935; best mean by epoch 0.935 / 0.927 / 0.927 / 0.935 / 0.932). F7: epoch 3, threshold 0.25, as fixed above.
+
+**In-domain guards**, F8 vs F7, with paired 95% CIs of the difference.
+
+| Set | Frames | TSS F8 / F7 | ΔTSS (95% CI) | False-Go F8 / F7 | ΔFalse-Go (95% CI) | False-Stop F8 / F7 |
+|---|---|---|---|---|---|---|
+| A val (US rule + topology) | 2,220 | 0.937 / 0.924 | +0.013 (+0.003, +0.023) | 0.107 / 0.099 | +0.008 (−0.018, +0.034) | 0.014 / 0.026 |
+| B val (US rule + topology) | 1,565 | 0.908 / 0.908 | +0.000 (−0.036, +0.027) | 0.138 / 0.087 | +0.051 (−0.010, +0.142) | 0.010 / 0.016 |
+| DTLD test (junction labels) | 11,494 | 0.950 / 0.949 | +0.001 (−0.002, +0.004) | 0.033 / 0.031 | +0.001 (−0.003, +0.006) | 0.020 / 0.022 |
+
+**Perception**, center AP, F8 / F7. Recall, precision and color are at each model's own threshold; precision is a lower bound where annotation is incomplete.
+
+| Cell | In F8's domain? | Lights | AP F8 / F7 | ΔAP (95% CI) | Recall F8 / F7 | Precision F8 / F7 | Color F8 / F7 |
+|---|---|---|---|---|---|---|---|
+| LISA night (decision) | no | 39,629 | 0.714 / 0.635 | +0.079 (+0.043, +0.114) | 0.641 / 0.701 | 0.732 / 0.597 | 0.998 / 0.993 |
+| LISA day (decision guard) | no | 18,020 | 0.847 / 0.843 | +0.004 (−0.009, +0.019) | 0.900 / 0.914 | 0.791 / 0.685 | 0.998 / 0.996 |
+| S2TLD 1080p horizontal (decision) | no | 1,031 | 0.424 / 0.283 | +0.140 (+0.083, +0.191) | 0.697 / 0.621 | 0.371 / 0.218 | 0.974 / 0.983 |
+| S2TLD 1080p | no | 2,126 | 0.706 / 0.591 | +0.114 (+0.047, +0.187) | 0.758 / 0.720 | 0.569 / 0.399 | 0.978 / 0.992 |
+| S2TLD 720p | no | 11,191 | 0.895 / 0.890 | +0.005 (−0.002, +0.011) | 0.933 / 0.925 | 0.749 / 0.622 | 0.997 / 0.994 |
+| VZC horizontal | no | 637 | 0.631 / 0.414 | +0.217 (+0.181, +0.253) | 0.589 / 0.551 | 0.597 / 0.215 | 0.915 / 0.863 |
+| VZC all | no | 9,812 | 0.872 / 0.814 | +0.057 (+0.050, +0.064) | 0.640 / 0.732 | 0.961 / 0.846 | 0.942 / 0.909 |
+| BDD val night | yes | 10,553 | 0.843 / 0.608 | +0.235 (+0.223, +0.246) | 0.721 / 0.731 | 0.840 / 0.480 | 0.984 / 0.980 |
+| BDD val day | yes | 6,542 | 0.878 / 0.757 | +0.121 (+0.112, +0.130) | 0.770 / 0.775 | 0.859 / 0.640 | 0.971 / 0.959 |
+| BDD val all | yes | 18,538 | 0.857 / 0.680 | +0.178 (+0.171, +0.185) | 0.740 / 0.748 | 0.848 / 0.534 | 0.977 / 0.970 |
+| BDD val horizontal | yes | 1,680 | 0.325 / 0.079 | +0.246 (+0.223, +0.267) | 0.560 / 0.490 | 0.277 / 0.064 | 0.948 / 0.930 |
+| ATLAS test | yes | 6,169 | 0.766 / 0.774 | −0.008 (−0.014, −0.002) | 0.670 / 0.731 | 0.917 / 0.807 | 0.984 / 0.982 |
+
+**LISA arrow reading (check, not a goal).** Exact reading on matched arrows: F8 0.151 (n = 3,920), F7 0.321 (n = 4,583), difference −0.170 (−0.182, −0.157). F8 reads LISA arrows about half as well as F7.
+
+**Reading.** BDD100K train improved the two targets out of domain, night on LISA and horizontal lights on S2TLD and VZC. The gains come with a higher selected threshold, so recall falls at the operating point on LISA night, VZC all and ATLAS while precision rises. On B val, the point ΔFalse-Go fails the +0.01 limit and the ΔTSS interval is too wide to pass; the ΔFalse-Go interval includes 0. Not tested: why False-Go rose on B val. Single seed for both models.
+
+**AWSIM video (qualitative, no labels).** `tools/run_video_picto.py --run runs/exp8_bdd_F` at 0.45, saved as `runs/awsim/AWSIM_only_picto_F8.mp4` with a sample sheet beside it. Compared with the Exp 7 F7 video (epoch 4, threshold 0.20), over 7,076 frames: junction lights in 2,693 frames vs 3,370; straight red in 279 vs 144; straight yellow in 107 vs 39; straight green in 2,305 vs 3,121; no straight color in 4,385 vs 3,772; right-arrow detections 0 vs 187. The straight color differs in 1,622 frames. The two videos use different thresholds, so part of the drop in detections comes from the threshold.

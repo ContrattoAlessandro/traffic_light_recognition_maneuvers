@@ -1,0 +1,148 @@
+\chapter{Discussion and Future Perspectives}
+\label{ch:discussion}
+
+This chapter interprets the results of \cref{ch:method}. It compares them with the original paper and
+the wider literature (\cref{sec:disc-compare}), discusses their theoretical and practical implications
+(\cref{sec:disc-implications}), states the limitations of the work (\cref{sec:disc-limits}) and proposes
+directions for future research (\cref{sec:disc-future}).
+
+\section{Comparison with previous work}
+\label{sec:disc-compare}
+
+\paragraph{Confirmations.} The central result of Zou et al.\ holds: a direction-aware model with a
+Swin-Tiny backbone reaches a TSS of about 0.88--0.90 on OpenLane-V2, and it does so with labels rebuilt
+independently from the public annotations. That the reconstructed label distribution matches the
+paper's Fig.~3 for almost every class suggests that the label semantics---specificity hierarchy, U-turn
+inheriting left, right governed only by dedicated signals---were recovered correctly. The replication
+also confirms, indirectly, that maneuver-level prediction from a single image is feasible without HD
+maps, which map-based systems~\cite{fairfield2011traffic,possatti2019traffic,polley2025atlas} rely on,
+and without the annotated lane metadata of earlier map-free work~\cite{langenberg2019deep}.
+
+\paragraph{Differences.} Three discrepancies remain. The False-Go rate of the replication is higher
+than published (0.164 vs 0.137), although its mean over epochs (0.146) is close; the paper does not
+state how its checkpoint was selected, and the strong epoch-to-epoch variation observed here suggests
+that this choice alone can move False-Go by several points. The benchmark contains about 29\% fewer
+frames than the paper's, for reasons that cannot be determined without the original filtering rules.
+Finally, the paper describes its data as Subset-A, which its own frame counts contradict; the evidence
+collected here (frame counts, color mix, right-turn distribution under US rules) points to A+B.
+
+\paragraph{The value of the direction queries.} The most consequential finding concerns RQ3. The
+original paper reports that the direction-aware model outperforms structured pipelines. In this work, a
+structured pipeline built on a modern real-time detector~\cite{robinson2025rfdetr} performs at least as
+well, with no significant difference in any metric. The two findings are not necessarily in conflict. The
+strongest structured baseline in the paper is TLD-READY~\cite{polley2024tldready}, a pipeline designed
+for per-light relevance on German roads and adapted to the four-maneuver output with a fallback to the
+circular signal; it reaches a TSS of 0.842 and a False-Go rate of 0.302. The structured model used here
+reaches 0.894 and 0.156 on the same subset, because its classes encode the maneuvers each light
+controls and therefore mirror the label rules exactly, so that a perfect detector would be a perfect
+predictor.
+What the comparison does show is that, on this benchmark, the end-to-end design is not \emph{necessary}
+to reach the published accuracy, and that the benefit attributed to direction queries depends on how
+strong the structured alternative is. This is in line with the broader experience in detection that
+well-tuned, strongly pretrained detectors~\cite{zhao2024detrs,chen2024lwdetr} are hard to beat.
+
+\paragraph{Backbones.} Replacing Swin-Tiny with ConvNeXt V2-Tiny did not help, despite the latter's
+slightly higher ImageNet accuracy~\cite{woo2023convnext}. For this task, the backbone appears not to be the
+bottleneck: errors concentrate in a few hard cases (right-turn reds, yellow, straight \emph{none}) that
+are limited by data and label semantics rather than by feature quality.
+
+\section{Theoretical and practical implications}
+\label{sec:disc-implications}
+
+\paragraph{Aggregate scores hide the safety-critical cases.} The right-turn analysis shows that a model
+can reach state-of-the-art TSS while failing on nearly every forbidden right turn, because these cases
+are rare and pooled metrics weight them by frequency. The same holds, to a lesser degree, for yellow and
+for straight \emph{none}. Benchmarks for this task should therefore report per-direction results,
+class-wise recall of the rare states and, ideally, a False-Go rate per maneuver. The TSS, which weighs
+False-Go and False-Stop equally and lets the trivial right direction contribute a quarter of the
+accuracies, is a poor proxy for safety on its own.
+
+\paragraph{Label conventions are part of the model.} The meaning of a right-turn label differs between
+the US and Germany, and the choice of convention changes the right-turn distribution from 97\% \emph{none}
+to 63\% green. An end-to-end model internalizes whichever convention it is trained on. A structured
+pipeline can change the rule at inference time, which is a practical argument for keeping the traffic
+rules explicit, especially for systems meant to operate in more than one country.
+
+\paragraph{Training stability matters as much as architecture.} Two implementation details not
+mentioned in the original paper---a reduced weight for the auxiliary detection loss and a normalization
+of the backbone outputs---decided whether the model trained at all. Without them, the same architecture
+oscillated between TSS values of 0.62 and 0.86 or diverged. This is a reminder that replication requires
+much more than the architectural description, and that reported results implicitly depend on such
+choices.
+
+\paragraph{Detection is the bottleneck out of distribution.} The ATLAS results show that most errors of a
+transferred model begin with lights that are not detected, and that detection depends steeply on light
+size. In the structured pipeline, a missed red light becomes a \emph{go} decision by default, which
+explains the high False-Go on Argoverse~2 images. A safer design would treat ``no relevant light
+found'' near an intersection as uncertain rather than as permission, as the map-based ATLAS framework
+does by mapping an unknown signal-group state to red~\cite{polley2025atlas}. The same work shows that a
+tele camera and a wide-angle camera are the practical answer to the size problem, and that a detector
+trained on DTLD alone is clearly weaker on ATLAS images than one that also saw ATLAS data (mAP@50 about
+0.53 versus 0.7); the per-light results obtained
+here with a different detector point the same way. Trinci et al.~\cite{trinci2026color} likewise found
+that relevance models do not transfer between DTLD and US data, so the transfer gaps measured in this
+thesis appear to be a property of the data rather than of a particular architecture.
+
+\paragraph{Cost and deployability.} The structured model runs at 22\,ms per frame on a consumer GPU and
+needs only a few epochs of fine-tuning, which makes it a realistic component for an embedded perception
+stack. Its explicit intermediate output (which lights were found and what they control) also supports
+monitoring and debugging, an important property for safety arguments.
+
+\section{Limitations}
+\label{sec:disc-limits}
+
+\begin{itemize}
+  \item \textbf{Reconstructed labels.} The benchmark is a reconstruction. Its rules were validated against
+        the published distribution and by spot-checking about 80 frames across datasets, but no full
+        manual quality control was done. Some label noise certainly remains, and the left~$=$~none
+        mismatch shows a systematic difference from the original.
+  \item \textbf{Single seeds and stopped schedules.} Each configuration was trained once. The
+        epoch-to-epoch variation of the direction-aware model (TSS standard deviation 0.006, False-Go range
+        0.105--0.212) is of the same order as the differences between models, and the cosine schedule was
+        stopped at 14 of 24 epochs. Conclusions about small differences are therefore limited to ``no
+        significant difference''.
+  \item \textbf{Evaluation on the validation split.} OpenLane-V2's test split has no usable annotations,
+        so, as in the original paper, the validation split is the evaluation set. Model selection was
+        kept away from it, but it is still a split that has been looked at during development.
+  \item \textbf{Asymmetric comparison.} The RF-DETR baseline uses a stronger pretraining (DINOv2-derived backbone, detection pretraining)
+        than the ImageNet-1k Swin-Tiny, and its class encoding is tailored to the label rules.
+  \item \textbf{Size-based relevance on LISA.} LISA has no relevance labels, so the ego intersection's
+        lights were identified by their size. Trinci et al.~\cite{trinci2026color} show that the
+        largest light is a poor relevance cue in the United States; the LISA labels are therefore
+        noisier than those of OpenLane-V2 and DTLD, and the LISA results should be read as an
+        approximate measure of transfer.
+  \item \textbf{Convention mismatch in Singapore.} For comparability, US rules were applied to left-hand
+        traffic scenes, which is semantically incorrect for those frames.
+  \item \textbf{Single frames.} All models see one image. Flashing signals, occlusions and the short
+        yellow phase cannot be resolved reliably without temporal context.
+  \item \textbf{Scope of the replication.} Only the paper's best configuration was replicated; its other
+        backbones, its structured baselines and its language-model baselines were not.
+\end{itemize}
+
+\section{Future research directions}
+\label{sec:disc-future}
+
+\begin{itemize}
+  \item \textbf{Safety-oriented training and evaluation.} Class-balanced or cost-sensitive losses that
+        penalize False-Go more than False-Stop, and benchmark protocols with per-direction and
+        per-class reporting, would align optimization with the actual risk.
+  \item \textbf{Rule-aware models.} Conditioning the model on the applicable traffic convention (country,
+        left- or right-hand traffic), or keeping the rules explicit as in the structured pipeline, would
+        let a single model operate across jurisdictions and label the Singapore scenes correctly.
+  \item \textbf{Temporal models.} Aggregating evidence over a short sequence would stabilize predictions,
+        handle occlusions, and allow flashing and phase-change states to be modeled.
+  \item \textbf{Multi-dataset training.} The DTLD and LISA labels built here use compatible conventions,
+        so mixed training across countries and illumination conditions is the natural next experiment,
+        with LISA's night sequences as the main robustness test. ATLAS, BSTLD, S$^2$TLD and BDD100K
+        could add pictograms, cameras, weather and countries to the detector's training data, and
+        VZC-TLD, the only US dataset with relevance labels, would allow an image-level test of the
+        stop/go decision outside Germany.
+  \item \textbf{Small-object detection.} Higher input resolution around the horizon, tiled inference or
+        a dedicated tele camera (as on ATLAS) target the steepest failure mode observed here.
+  \item \textbf{Uncertainty.} Calibrated confidence for each maneuver, and an explicit ``unknown'' output
+        when no relevant light is found at an approaching intersection, would allow a planner to act
+        conservatively instead of defaulting to \emph{go}.
+  \item \textbf{Fusion with maps and topology.} Where maps or online topology
+        predictions~\cite{li2023graph,wu2024topomlp} are available, they could supply the relevance that
+        single-image models must currently infer.
+\end{itemize}

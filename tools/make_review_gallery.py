@@ -63,7 +63,7 @@ def kept(c, s, b):
     return c, s, b
 
 
-def render(path, dets, out_path):
+def render(path, dets, out_path, show_score=True):
     """dets: list of (moves or None, color, score, xyxy pixel box)."""
     img = Image.open(path).convert("RGB")
     scale = WIDTH / img.width
@@ -76,7 +76,7 @@ def render(path, dets, out_path):
             d.rectangle([x1 - 1, y1 - 1, x2 + 1, y2 + 1], outline=(170, 170, 170), width=1)
             continue
         d.rectangle([x1 - 3, y1 - 3, x2 + 3, y2 + 3], outline=RGB[color], width=3)
-        label = f"{'+'.join(sorted(moves))} | {color} {score:.2f}"
+        label = f"{'+'.join(sorted(moves))} | {color}" + (f" {score:.2f}" if show_score else "")
         tw = d.textlength(label, font=f)
         ty = y1 - 22 if y1 > 24 else y2 + 4
         d.rectangle([x1 - 3, ty, x1 + tw + 3, ty + 18], fill=(0, 0, 0))
