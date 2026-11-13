@@ -1210,3 +1210,87 @@ Run `runs/exp8_bdd_F`, result in `runs/exp8_bdd_F/exp8_eval/result.json`. Traini
 **Reading.** BDD100K train improved the two targets out of domain, night on LISA and horizontal lights on S2TLD and VZC. The gains come with a higher selected threshold, so recall falls at the operating point on LISA night, VZC all and ATLAS while precision rises. On B val, the point ΔFalse-Go fails the +0.01 limit and the ΔTSS interval is too wide to pass; the ΔFalse-Go interval includes 0. Not tested: why False-Go rose on B val. Single seed for both models.
 
 **AWSIM video (qualitative, no labels).** `tools/run_video_picto.py --run runs/exp8_bdd_F` at 0.45, saved as `runs/awsim/AWSIM_only_picto_F8.mp4` with a sample sheet beside it. Compared with the Exp 7 F7 video (epoch 4, threshold 0.20), over 7,076 frames: junction lights in 2,693 frames vs 3,370; straight red in 279 vs 144; straight yellow in 107 vs 39; straight green in 2,305 vs 3,121; no straight color in 4,385 vs 3,772; right-arrow detections 0 vs 187. The straight color differs in 1,622 frames. The two videos use different thresholds, so part of the drop in detections comes from the threshold.
+
+## Exp 9: class imbalance of the pictogram and color heads (2026-11-13, design fixed before any training code or result)
+
+**Question.** F8 reads rare pictograms and yellow badly. Does correcting the class imbalance in the attribute heads raise pictogram and yellow recall without breaking the in-domain per-maneuver decisions? Exp 6 to 8 trained the heads with plain cross-entropy (weight 1, no class weights), with no rebalanced sampling and no flip. Nothing has corrected the imbalance so far.
+
+**Measured before fixing the design** (`tools/exp8_attributes.py`, `tools/exp9_premeasure.py`; F8 epoch 3 at 0.45, no training; outputs in `runs/exp8_bdd_F/exp8_eval/attributes.json` and `exp9_premeasure.json`):
+
+| Item | Finding |
+|---|---|
+| F8 training pictograms (166,263 labelled boxes; 114,991 boxes have none) | circle 97,601 (58.7%), other 27,932, arrow_left 17,326, arrow_straight 14,989, arrow_right 5,311 (18× rarer than circle), arrow_straight_right 1,693, arrow_straight_left 1,411 (69× rarer) |
+| F8 training colors (281,254 boxes) | green 145,797, red 125,882, yellow 9,575 (13× rarer than red) |
+| F8 pictogram recall, DTLD test | circle 0.970, arrow_left 0.849, arrow_straight 0.575, **arrow_right 0.298**; macro 0.605 |
+| F8 pictogram recall, ATLAS test | circle 0.918, arrow_left 0.669, arrow_right 0.570, arrow_straight 0.760; macro 0.729 |
+| F8 pictogram recall, LISA test | circle 0.93 / 0.99 (day / night), **arrow_left 0.221 / 0.036** |
+| Size or prior? DTLD lamps at least 30 px tall | arrow_left 0.90, arrow_straight 0.68, **arrow_right 0.33**. Right arrows fail even when large, while left arrows of the same size are read, which points to the class prior. Below 20 px most arrows of any type are read as circles: a resolution limit that no loss weight will fix. |
+| LISA left arrows at least 30 px tall | 0.12 (374 of 3,244); 2,662 read as circles. Size is not the cause: LISA's arrows look unlike the training arrows (noted in Exp 7). Imbalance correction is not expected to fix this. |
+| Yellow read as | DTLD test: yellow 1,297, red 135, green 64. BDD100K val: **red 185**, yellow 130. VZC: yellow 380, **green 130**, red 49. |
+| F8 on the hand-labelled OpenLane-V2 val lights | 74 of 904 detected circles are called arrows (8.2%), 49 of them arrow_straight. Arrow_left: 86 of 112 right. False arrows on US and Singapore circles are what sank J+P (amendment 1), and they are the main risk of up-weighting arrows. |
+
+**Arms.** All use the F8 data, recipe, epochs and seed: RF-DETR Medium at 1024, factorized head, lr 1e-4 / 1.5e-4, batch 4 × accum 4, 5 epochs, seed 0. Each arm changes one thing on top of F8 or on top of the previous arm:
+
+| Arm | Change | Cost |
+|---|---|---|
+| **LA** (no training) | F8 with post-hoc logit adjustment: pictogram and color logits − τ · log(training prior), τ ∈ {0, 0.25, 0.5, 0.75, 1}. τ = 0 is F8. | inference that keeps the probabilities, about 1.5 h |
+| **W** | Class-weighted cross-entropy in the pictogram and color heads: w_c ∝ n_c^−0.5, scaled so the count-weighted mean is 1 (PyTorch's weighted mean then keeps the loss scale). Junction loss unchanged (59 / 41 split). | training, about 9 h |
+| **WF** | W plus a horizontal flip (p = 0.5) that swaps the pictogram labels: arrow_left ↔ arrow_right, arrow_straight_left ↔ arrow_straight_right. The weights come from the expected counts after the flip. | training, about 9 h |
+
+**Weights**, fixed now from the F8 training counts. The power 0.5 is not tuned; full inverse frequency would weight arrow_straight_left 69 times a circle.
+
+| | circle | other | arrow_left | arrow_straight | arrow_right | arrow_straight_right | arrow_straight_left | green | red | yellow |
+|---|---|---|---|---|---|---|---|---|---|---|
+| W | 0.601 | 1.124 | 1.427 | 1.534 | 2.577 | 4.565 | 5.000 | 0.883 | 0.950 | 3.444 |
+| WF | 0.596 | 1.113 | 1.749 | 1.520 | 1.749 | 4.723 | 4.723 | 0.883 | 0.950 | 3.444 |
+
+"unknown" has no training box and keeps weight 1.
+
+- **Why a flip now.** It was excluded so far because it swaps arrows. With the labels swapped it is valid for pictograms, and it raises the right-arrow examples from 5,311 to about 11,300 per epoch. It also mirrors the traffic side. The junction flag is geometric (the light governs the ego approach), so it stays valid. OpenLane frames carry no pictogram to swap.
+- **Not done, and why.**
+  - Oversampling rare frames (LVIS repeat factors) changes the source mix and the detection training. That would confound the B val False-Go guard, which F8 already failed.
+  - Focal loss adds a parameter and there is no budget to tune it.
+  - A larger model does not address a class prior. Measured 2026-11-13 on the RTX 5070 at 1024: Nano to Large share the DINOv2-S backbone and are within 15% of each other in speed. The DINOv2-B variant is 2.6× slower and does not fit batch 4 in 12 GB.
+
+**Selection.** The Exp 8 rule, unchanged: the epoch and threshold (and τ for LA) that maximise the mean of DTLD tune TSS (junction rule) and A tune and B tune TSS (US rule + lane topology mask). Pictogram or color recall is never used to select. Nothing is selected on a test set.
+
+**Comparisons.**
+- Each arm against F8, paired, and WF against W to isolate the flip. F7 is reported beside them.
+- Attribute metrics use the lights both models of a pair match above their own thresholds (center matching), so they are not an operating-point effect (as in the Exp 6 check).
+- 95% CI by cluster bootstrap, 2,000 draws, seed 0: segments (DTLD, OpenLane), sessions (VZC), blocks of 100 frames (LISA, S2TLD), images (ATLAS, BDD100K).
+
+**Primary endpoints.**
+- **P1:** pictogram macro recall on DTLD test, over circle, arrow_left, arrow_right, arrow_straight and other. arrow_straight_left has 1 lamp and is left out.
+- **P2:** yellow recall on DTLD test (about 1,500 lamps).
+
+**Guards.**
+- **G1:** ΔTSS lower CI above −0.01 on A val, B val (US rule + topology mask) and DTLD test (junction labels), as in Exp 8.
+- **G2:** ΔFalse-Go at most +0.01 on the same three sets.
+- **G3:** color accuracy on DTLD test, Δ lower CI above −0.005. The yellow weight could turn reds into yellows.
+- **G4:** false-arrow rate on the 904 detected hand-labelled OpenLane circles, Δ at most +0.03 (point estimate, because n is small).
+
+**Reported, not deciding.**
+- ATLAS test macro recall (in domain), and per-class pictogram recall and precision.
+- LISA arrow_left recall (out of domain; not expected to move much).
+- Yellow recall and color accuracy on ATLAS, LISA, S2TLD, VZC and BDD100K val.
+- AP, recall and precision of every Exp 8 perception cell (detection should not change).
+- Pictogram recall by lamp height.
+
+**Decision rule.** An arm succeeds if G1 to G4 hold and P1 or P2 has a lower CI above 0; which one passed is reported. Then:
+- If LA succeeds and no trained arm beats it on P1 and P2 (paired CI above 0), LA is adopted, since it needs no training.
+- Otherwise, among the trained arms that succeed, WF is preferred over W only if WF − W has a P1 lower CI above 0. If not, W is adopted as the simpler change.
+
+The adopted arm becomes the attribute recipe, not the perception model. F8 still fails the Exp 8 B val guard against F7, and Exp 9 does not change that comparison. Single seed, so everything is preliminary until seeds are added.
+
+**Expected, written down to be checked:**
+- arrow_right and arrow_straight recall up on DTLD and ATLAS;
+- circle recall down by one or two points;
+- more false arrows on OpenLane circles;
+- LISA arrow_left nearly unchanged;
+- yellow recall up on DTLD, with BDD100K yellow limited by its labels.
+
+**Implementation (after this section is fixed).**
+- `dtsu/factorized.py`: optional class weights in the pictogram and color cross-entropy.
+- `tools/train_rfdetr.py`: `--class-weights 0.5` (computed from the dataset and saved in `args.json`) and `--flip-swap`. The flip is a transform after the resize that mirrors the image and boxes and permutes the class index. Flipped samples are checked visually before training.
+- `tools/eval_exp9.py`: LA inference with the probabilities kept, the selection, the paired endpoints and the decision.
+- Order: LA, a smoke test of both trained arms, then W, then WF. About 20 h of GPU in all.
