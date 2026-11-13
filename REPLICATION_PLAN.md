@@ -1294,3 +1294,12 @@ The adopted arm becomes the attribute recipe, not the perception model. F8 still
 - `tools/train_rfdetr.py`: `--class-weights 0.5` (computed from the dataset and saved in `args.json`) and `--flip-swap`. The flip is a transform after the resize that mirrors the image and boxes and permutes the class index. Flipped samples are checked visually before training.
 - `tools/eval_exp9.py`: LA inference with the probabilities kept, the selection, the paired endpoints and the decision.
 - Order: LA, a smoke test of both trained arms, then W, then WF. About 20 h of GPU in all.
+
+**Implementation notes** (2026-11-13, recorded before any Exp 9 result; `tools/run_exp9.sh`):
+- **Mirror classes.** The dataset has no `arrow_straight_right|J|*` class (ATLAS, the only source of straight-right arrows, has no junction label), so a flipped `arrow_straight_left|J|*` has no class index. `dtsu.factorized.mirror_classes` appends the 3 missing classes to the criterion's attribute table only; the detection head has one class, so nothing else reads the index.
+- **Checks before training.** Through RF-DETR's own train dataset builder: labels equal the COCO category ids unflipped, and are permuted by the mirror permutation when flipped; flipped images and boxes checked by eye. Weights logged in `args.json` match the table above exactly. Two-epoch smoke runs of W and WF on 160 frames train, save and load.
+- **LA reproduces F8 at τ = 0.** F8 is re-run with probabilities kept (batch composition differs from the Exp 8 caches, bf16): 359 of 360 frame × threshold checks give identical kept detections, pictograms and colors; scores differ by at most 0.005. LA's selection runs on these re-run detections; its comparisons with F8 use the Exp 8 caches of F8.
+- **"unknown" in LA.** It has no training box, so its prior is set to the circle prior (the rule treats unknown as a circle); a zero prior would make τ favour it without limit.
+- **Ties in selection:** lower epoch, then smaller τ, then lower threshold.
+- **"Beats it on P1 and P2"** in the decision rule is read literally: a trained arm beats LA only if both paired lower CIs (arm − LA) are above 0.
+- **G4** uses the hand-labelled OpenLane lights of A val and B val that both models match (center), as the other attribute metrics.

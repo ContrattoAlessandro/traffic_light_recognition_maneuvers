@@ -17,7 +17,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .picto_rules import COLORS, PICTOS, UNKNOWN, parse
+from .picto_rules import COLORS, PICTOS, UNKNOWN, class_name, parse
 
 HEADS = {"picto": len(PICTOS), "color": len(COLORS), "junction": 1}
 IGNORE = -1  # Exp 7: attribute not labelled by the source dataset -> no loss
@@ -128,7 +128,9 @@ def _make_factorized_criterion_class(base):
             for name, col in (("picto", 0), ("color", 1)):
                 ok = tgt[:, col] != IGNORE
                 logits = pa[name][batch_idx, src_idx].float()
-                out[f"loss_{name}"] = F.cross_entropy(logits[ok], tgt[ok, col]) if ok.any() else logits.sum() * 0
+                w = self.attr_weights.get(name)
+                w = None if w is None else w.to(logits.device)[: logits.shape[-1]]
+                out[f"loss_{name}"] = F.cross_entropy(logits[ok], tgt[ok, col], weight=w) if ok.any() else logits.sum() * 0
             ok = tgt[:, 2] != IGNORE
             logit = pa["junction"][batch_idx, src_idx, 0].float()
             out["loss_junction"] = (F.binary_cross_entropy_with_logits(logit[ok], tgt[ok, 2].float()) if ok.any()
@@ -139,10 +141,13 @@ def _make_factorized_criterion_class(base):
     return FactorizedCriterion
 
 
-def factorize_criterion(criterion, class_names, weight=1.0):
+def factorize_criterion(criterion, class_names, weight=1.0, class_weights=None):
+    """class_weights (Exp 9): optional {"picto": [len(PICTOS)], "color": [len(COLORS)]} per-class weights of the
+    cross-entropy (PyTorch's weighted mean, so the loss is normalised by the weights of the targets in the batch)."""
     if getattr(criterion, "attr_table", None) is not None:
         return criterion
     criterion.attr_table = attribute_table(class_names)
+    criterion.attr_weights = {k: torch.tensor(v, dtype=torch.float32) for k, v in (class_weights or {}).items()}
     criterion.num_classes = 1
     criterion.__class__ = _make_factorized_criterion_class(type(criterion))
     criterion.losses = list(criterion.losses) + ["attrs"]
@@ -153,6 +158,39 @@ def factorize_criterion(criterion, class_names, weight=1.0):
         for i in range(n_aux):
             criterion.weight_dict[f"{name}_{i}"] = weight
     return criterion
+
+
+SWAP = {"arrow_left": "arrow_right", "arrow_straight_left": "arrow_straight_right"}
+SWAP.update({v: k for k, v in SWAP.items()})
+
+
+def class_weights(counts, power=0.5):
+    """Exp 9: w_c proportional to n_c ** -power, scaled so the count-weighted mean is 1; classes with no count get 1.
+    counts: {"picto": {name: n}, "color": {name: n}} -> {"picto": [len(PICTOS)], "color": [len(COLORS)]}."""
+    out = {}
+    for head, names in (("picto", PICTOS), ("color", COLORS)):
+        n = {k: float(v) for k, v in counts[head].items() if v}
+        raw = {k: v ** -power for k, v in n.items()}
+        scale = sum(n.values()) / sum(n[k] * raw[k] for k in n)
+        out[head] = [round(raw[k] * scale, 6) if k in raw else 1.0 for k in names]
+    return out
+
+
+def mirror_classes(class_names):
+    """Exp 9: class_names plus the mirrored classes the dataset lacks (e.g. arrow_straight_right|J|green: ATLAS has
+    straight-right arrows but no junction label), and the permutation index -> index of the mirrored light.
+    The extra classes exist only in the criterion's attribute table: the factorized detection head has one class."""
+    ext = list(class_names)
+    for name in class_names:
+        p, j, c = parse(name)
+        m = class_name(SWAP.get(p, p), j, c)
+        if m not in ext:
+            ext.append(m)
+    perm = []
+    for name in ext:
+        p, j, c = parse(name)
+        perm.append(ext.index(class_name(SWAP.get(p, p), j, c)))
+    return ext, perm
 
 
 @torch.no_grad()

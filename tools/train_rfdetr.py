@@ -22,6 +22,7 @@ import torch
 from pytorch_lightning import Callback
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from dtsu import factorized  # noqa: E402
 from dtsu.rfdetr_baseline import Photometric  # noqa: E402
 
 VARIANTS = ("RFDETRNano", "RFDETRSmall", "RFDETRMedium", "RFDETRLarge")
@@ -207,10 +208,13 @@ class EpochReport(Callback):
 
 
 class Factorize(Callback):
-    """Exp 6 arm F: swaps in the factorized head and loss (dtsu/factorized.py) before the optimizer and EMA exist."""
+    """Exp 6 arm F: swaps in the factorized head and loss (dtsu/factorized.py) before the optimizer and EMA exist.
+    Exp 9: optional per-class weights of the pictogram / color cross-entropy; with the flip, class_names includes the
+    mirrored classes the dataset lacks (dtsu.factorized.mirror_classes)."""
 
-    def __init__(self, class_names):
+    def __init__(self, class_names, class_weights=None):
         self.class_names = class_names
+        self.class_weights = class_weights
 
     def setup(self, trainer, pl_module, stage):
         from dtsu.factorized import factorize, factorize_criterion
@@ -218,12 +222,33 @@ class Factorize(Callback):
         net = getattr(pl_module.model, "_orig_mod", pl_module.model)
         factorize(net)
         net.to(next(net.backbone.parameters()).device)
-        factorize_criterion(pl_module.criterion, self.class_names)
+        factorize_criterion(pl_module.criterion, self.class_names, class_weights=self.class_weights)
         print(f"factorized head: {type(net).__name__}, criterion {type(pl_module.criterion).__name__}, "
-              f"losses {pl_module.criterion.losses}", flush=True)
+              f"losses {pl_module.criterion.losses}, {len(self.class_names)} classes in the attribute table, "
+              f"class weights {self.class_weights}", flush=True)
 
 
-def patch_rfdetr(out_dir, stop_after=None, report_dir=None, factorized_classes=None):
+class FlipSwap:
+    """Exp 9: horizontal flip (probability p) of image and boxes that also mirrors the pictogram label
+    (arrow_left <-> arrow_right, arrow_straight_left <-> arrow_straight_right) through a class permutation."""
+
+    def __init__(self, perm, p=0.5):
+        from rfdetr.datasets._torchvision import RandomHorizontalFlip
+
+        self.flip = RandomHorizontalFlip(p=1.0)
+        self.perm = torch.tensor(perm, dtype=torch.long)
+        self.p = p
+
+    def __call__(self, img, target):
+        if torch.rand(()) >= self.p:
+            return img, target
+        img, target = self.flip(img, target)
+        target = dict(target)
+        target["labels"] = self.perm[target["labels"]]
+        return img, target
+
+
+def patch_rfdetr(out_dir, stop_after=None, report_dir=None, factorized_classes=None, class_weights=None, flip_perm=None):
     import rfdetr.datasets.coco as coco
     import rfdetr.training as training
 
@@ -235,6 +260,8 @@ def patch_rfdetr(out_dir, stop_after=None, report_dir=None, factorized_classes=N
             names = [type(t).__name__ for t in pipe.transforms]
             assert not any("Flip" in n or "Crop" in n for n in names), names
             pipe.transforms.insert(1, Photometric())  # after the resize, before ToImage
+            if flip_perm is not None:
+                pipe.transforms.insert(1, FlipSwap(flip_perm))
         return pipe
 
     coco._build_torchvision_pipeline = pipeline_with_photometric
@@ -244,13 +271,38 @@ def patch_rfdetr(out_dir, stop_after=None, report_dir=None, factorized_classes=N
     def build_trainer_with_saver(*args, **kwargs):
         trainer = build_trainer(*args, **kwargs)
         if factorized_classes is not None:
-            trainer.callbacks.insert(0, Factorize(factorized_classes))
+            trainer.callbacks.insert(0, Factorize(factorized_classes, class_weights))
         trainer.callbacks.append(SaveEMAEachEpoch(out_dir, stop_after))
         if report_dir:  # after the saver, so a STOP still keeps this epoch's weights
             trainer.callbacks.append(EpochReport(out_dir, report_dir))
         return trainer
 
     training.build_trainer = build_trainer_with_saver
+
+
+def train_counts(dataset_dir, classes, perm=None):
+    """Exp 9: pictogram and color box counts of train/ (labelled boxes only); with the flip permutation, the expected
+    counts after a flip with p = 0.5 (half of each class moves to its mirror)."""
+    import collections
+
+    from dtsu.picto_rules import UNKNOWN, parse
+
+    coco_json = json.load(open(os.path.join(dataset_dir, "train", "_annotations.coco.json")))
+    n = collections.Counter(a["category_id"] for a in coco_json["annotations"])
+    if perm is not None:
+        flipped = collections.Counter()
+        for k, v in n.items():
+            flipped[k] += v / 2
+            flipped[perm[k]] += v / 2
+        n = flipped
+    out = {"picto": collections.Counter(), "color": collections.Counter()}
+    for k, v in n.items():
+        p, _, c = parse(classes[k])
+        if p != UNKNOWN:
+            out["picto"][p] += v
+        if c != UNKNOWN:
+            out["color"][c] += v
+    return {h: dict(sorted(d.items(), key=lambda x: -x[1])) for h, d in out.items()}
 
 
 def main():
@@ -270,18 +322,31 @@ def main():
     ap.add_argument("--resume", help="a full Lightning checkpoint, e.g. <out-dir>/last.ckpt")
     ap.add_argument("--factorized", action="store_true",
                     help="Exp 6 arm F: one light class + pictogram / color / junction heads (dtsu/factorized.py)")
+    ap.add_argument("--class-weights", type=float, metavar="POWER",
+                    help="Exp 9 (factorized only): weight the pictogram / color cross-entropy by n_c ** -POWER (e.g. 0.5), "
+                         "counted on the train split (after the flip with --flip-swap)")
+    ap.add_argument("--flip-swap", action="store_true",
+                    help="Exp 9 (factorized only): horizontal flip p=0.5 that swaps left / right arrow labels")
     ap.add_argument("--seed", type=int, help="RF-DETR training seed (default: none, as in the earlier runs)")
     ap.add_argument("--report", action="store_true",
                     help="per-epoch overfitting report on valid/ and the train probe test/ (see EpochReport)")
     args = ap.parse_args()
 
+    assert args.factorized or (args.class_weights is None and not args.flip_swap), "--class-weights / --flip-swap need --factorized"
     os.makedirs(args.out_dir, exist_ok=True)
-    with open(os.path.join(args.out_dir, "args.json"), "w") as f:
-        json.dump(vars(args), f, indent=1)
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
     classes = json.load(open(os.path.join(args.dataset_dir, "class_names.json"))) if args.factorized else None
-    patch_rfdetr(args.out_dir, args.stop_after, args.dataset_dir if args.report else None, classes)
+    weights, perm, info = None, None, {}
+    if args.flip_swap:
+        classes, perm = factorized.mirror_classes(classes)
+        info["attribute_classes"] = classes
+    if args.class_weights is not None:
+        info["class_counts"] = train_counts(args.dataset_dir, classes, perm)
+        weights = info["class_weights"] = factorized.class_weights(info["class_counts"], args.class_weights)
+    with open(os.path.join(args.out_dir, "args.json"), "w") as f:
+        json.dump({**vars(args), **info}, f, indent=1)
+    patch_rfdetr(args.out_dir, args.stop_after, args.dataset_dir if args.report else None, classes, weights, perm)
 
     import rfdetr
 

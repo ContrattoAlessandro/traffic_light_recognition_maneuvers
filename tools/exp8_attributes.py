@@ -59,34 +59,49 @@ def virtual_preds(preds):
     return [(s, v // 6, v % 3, (v // 3) % 2, b) for v, s, b in preds]
 
 
-def openlane(name):
+def openlane_items(name):
+    """-> (items, image size) of an OpenLane-V2 set; pictogram None, junction = the label builder's "relevant"."""
     recs = load_records(*SETS[name])
     with Image.open(os.path.join(recs[0]["root"], recs[0]["image"])) as im:
         size = im.size
-    items = [{"boxes": torch.tensor([b["box"] for b in r["boxes"]], dtype=torch.float32).reshape(-1, 4),
+    return [{"boxes": torch.tensor([b["box"] for b in r["boxes"]], dtype=torch.float32).reshape(-1, 4),
               "color": [b["color"] if b["color"] in COLORS else None for b in r["boxes"]], "picto": [None] * len(r["boxes"]),
-              "junction": [bool(b["relevant"]) for b in r["boxes"]], "cluster": r["segment_id"]} for r in recs]
+              "junction": [bool(b["relevant"]) for b in r["boxes"]], "cluster": r["segment_id"]} for r in recs], size
+
+
+def openlane(name):
+    items, size = openlane_items(name)
     return items, frame_preds(torch.load(os.path.join(CACHE, f"e3_{name}.pt"), weights_only=False), size)
 
 
-def dtld():
+DTLD_SIZE = (2048, 1024)
+
+
+def dtld_items():
     recs = [json.loads(l) for l in open("data/rfdetr_coco_dtld_picto/dtld_test_records.jsonl")]
-    items = [{"boxes": torch.tensor([b["box"] for b in r["boxes"]], dtype=torch.float32).reshape(-1, 4),
+    return [{"boxes": torch.tensor([b["box"] for b in r["boxes"]], dtype=torch.float32).reshape(-1, 4),
               "color": [b["color"] for b in r["boxes"]], "picto": [None if b["picto"] == "unknown" else b["picto"] for b in r["boxes"]],
               "junction": [bool(b["junction"]) for b in r["boxes"]], "cluster": r["segment_id"]} for r in recs]
-    return items, frame_preds(torch.load(os.path.join(CACHE, "e3_dtld_test.pt"), weights_only=False), (2048, 1024))
 
 
-def perception(ds):
+def dtld():
+    return dtld_items(), frame_preds(torch.load(os.path.join(CACHE, "e3_dtld_test.pt"), weights_only=False), DTLD_SIZE)
+
+
+def perception_items(ds):
     raw = vzc.load_items() if ds == "vzc" else perc.LOADERS[ds]()
     items = []
     for i, it in enumerate(raw):
         n = len(it["color"])
         cluster = it["session"] if ds == "vzc" else i // 100 if ds in ("lisa", "s2tld") else i
-        items.append({"boxes": it["boxes"], "color": it["color"], "group": it["group"], "cluster": cluster,
+        items.append({"path": it["path"], "boxes": it["boxes"], "color": it["color"], "group": it["group"], "cluster": cluster,
                       "picto": [shape_of(a) for a in it["arrow"]] if ds in ("atlas", "lisa") else [None] * n,
                       "junction": it["relevant"] if ds == "vzc" else [None] * n})
-    return items, virtual_preds(torch.load(os.path.join(CACHE, f"e3_{ds}.pt"), weights_only=False))
+    return items
+
+
+def perception(ds):
+    return perception_items(ds), virtual_preds(torch.load(os.path.join(CACHE, f"e3_{ds}.pt"), weights_only=False))
 
 
 # ------------------------------------------------------------------ per-image tallies, then sums (so the bootstrap is cheap)
