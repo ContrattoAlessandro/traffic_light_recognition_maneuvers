@@ -1303,3 +1303,162 @@ The adopted arm becomes the attribute recipe, not the perception model. F8 still
 - **Ties in selection:** lower epoch, then smaller τ, then lower threshold.
 - **"Beats it on P1 and P2"** in the decision rule is read literally: a trained arm beats LA only if both paired lower CIs (arm − LA) are above 0.
 - **G4** uses the hand-labelled OpenLane lights of A val and B val that both models match (center), as the other attribute metrics.
+
+### Exp 9 results (2026-11-14, single seed)
+
+Runs `runs/exp9_W` and `runs/exp9_WF`; LA caches in `runs/exp9_eval/LA`. Result in `runs/exp9_eval/result.json`, log in `runs/exp9_eval/eval.log`. LA inference took 1 h 04 min, training took 8 h 55 min for each of W and WF, and the evaluation took 1 h 58 min.
+
+**Outcome: no arm is adopted.** None of the three arms passes all four guards.
+
+| Arm | G1 ΔTSS | G2 ΔFalse-Go | G3 color | G4 false arrows | P1 picto macro | P2 yellow | Succeeds? |
+|---|---|---|---|---|---|---|---|
+| LA | holds | holds | holds | holds | no (Δ 0) | no (Δ 0) | no |
+| W | **fails** (A val) | **fails** (A val) | holds | **fails** | no | no | no |
+| WF | **fails** (A val) | **fails** (A val) | holds | holds | **yes** | no | no |
+
+**Selection.**
+- **LA.** Every τ > 0 lowered the tune TSS mean. The best mean by τ was 0.935, 0.934, 0.931, 0.928 and 0.923 for τ = 0, 0.25, 0.5, 0.75 and 1. LA therefore selected τ = 0 at epoch 3 and threshold 0.45, which is F8 itself, so its endpoints are exactly F8's. The rule selects on TSS only, and on these sets TSS does not reward reading rarer classes.
+- **W.** Epoch 1, threshold 0.25. Tune TSS: DTLD 0.944, A 0.936, B 0.918; mean 0.933.
+- **WF.** Epoch 4, threshold 0.35. Tune TSS: DTLD 0.943, A 0.947, B 0.905; mean 0.932.
+- **F8.** Epoch 3, threshold 0.45; tune mean 0.935.
+
+**Guards G1 and G2**, each arm against F8, with paired 95% CIs.
+
+| Set | Arm | TSS arm / F8 | ΔTSS (95% CI) | False-Go arm / F8 | ΔFalse-Go (95% CI) |
+|---|---|---|---|---|---|
+| A val | W | 0.917 / 0.937 | −0.020 (**−0.034**, −0.009) | 0.149 / 0.107 | **+0.042** (+0.009, +0.082) |
+| A val | WF | 0.927 / 0.937 | −0.010 (**−0.019**, −0.002) | 0.128 / 0.107 | **+0.021** (+0.001, +0.045) |
+| B val | W | 0.928 / 0.908 | +0.020 (−0.010, +0.061) | 0.085 / 0.138 | −0.053 (−0.160, +0.023) |
+| B val | WF | 0.920 / 0.908 | +0.013 (−0.019, +0.056) | 0.057 / 0.138 | −0.081 (−0.190, −0.007) |
+| DTLD test | W | 0.950 / 0.950 | +0.000 (−0.003, +0.003) | 0.029 / 0.033 | −0.003 (−0.008, +0.001) |
+| DTLD test | WF | 0.951 / 0.950 | +0.001 (−0.003, +0.004) | 0.035 / 0.033 | +0.002 (−0.004, +0.009) |
+
+**Endpoints and other attribute guards** on DTLD test, measured on lights both models match. P1 here is the 5-class macro on matched lights. The 0.605 in the pre-measurement table is a different average, over all classes at F8's own operating point.
+
+| Comparison | P1 picto macro (95% CI) | P2 yellow recall (95% CI) | G3 color accuracy Δ (95% CI) | G4 OpenLane false arrows |
+|---|---|---|---|---|
+| W vs F8 | 0.736 / 0.726, +0.009 (−0.005, +0.024) | 0.892 / 0.875, +0.017 (−0.001, +0.036) | −0.001 (−0.003, +0.000) | 0.184 / 0.082, **+0.102** |
+| WF vs F8 | 0.776 / 0.729, **+0.048 (+0.032, +0.063)** | 0.889 / 0.880, +0.009 (−0.004, +0.022) | +0.000 (−0.001, +0.002) | 0.052 / 0.081, −0.029 |
+| WF vs W | 0.770 / 0.732, **+0.038 (+0.020, +0.059)** | 0.862 / 0.878, −0.017 (−0.033, −0.001) | — | 0.061 / 0.192, −0.131 |
+| F7 vs F8 | 0.730 / 0.727, +0.004 (−0.013, +0.020) | 0.858 / 0.874, −0.016 (−0.033, +0.001) | −0.000 (−0.002, +0.001) | — |
+
+**Pictogram recall by class**, arm / F8 on matched lights; Δ with 95% CI.
+
+| Set | Class | W | WF |
+|---|---|---|---|
+| DTLD test | circle | 0.962 / 0.970, −0.008 (−0.012, −0.004) | 0.968 / 0.971, −0.003 (−0.006, +0.002) |
+| DTLD test | arrow_left | 0.858 / 0.851, +0.007 (−0.011, +0.024) | 0.859 / 0.851, +0.008 (−0.015, +0.029) |
+| DTLD test | arrow_right (n ≈ 520) | 0.318 / 0.297, +0.021 (−0.044, +0.082) | **0.505 / 0.303, +0.202 (+0.137, +0.273)** |
+| DTLD test | arrow_straight | 0.594 / 0.576, +0.018 (−0.013, +0.050) | 0.602 / 0.577, +0.025 (−0.004, +0.054) |
+| DTLD test | other | 0.946 / 0.938, +0.008 (+0.003, +0.014) | 0.946 / 0.940, +0.006 (−0.002, +0.013) |
+| ATLAS test | macro | 0.730 / 0.730, −0.000 (−0.019, +0.019) | **0.781 / 0.736, +0.045 (+0.022, +0.066)** |
+| ATLAS test | circle | 0.897 / 0.921, −0.023 (−0.036, −0.011) | 0.922 / 0.921, +0.001 (−0.011, +0.012) |
+| ATLAS test | arrow_right | 0.591 / 0.567, +0.024 (−0.030, +0.077) | **0.752 / 0.584, +0.168 (+0.086, +0.243)** |
+| LISA test | arrow_left | 0.196 / 0.175, +0.020 (−0.012, +0.063) | 0.151 / 0.176, −0.025 (−0.050, −0.002) |
+| LISA test | arrow_straight (n = 99) | 0.606 / 0.394, +0.212 (+0.062, +0.353) | 0.485 / 0.394, +0.091 (+0.000, +0.188) |
+
+**WF by lamp height**, DTLD test, picto macro Δ against F8:
+- 0–15 px: +0.159 (+0.015, +0.244).
+- 15–20 px: +0.035 (−0.009, +0.087).
+- 20–30 px: +0.038 (+0.003, +0.076).
+- At least 30 px: +0.050 (+0.034, +0.068).
+
+**W by lamp height:** at least 30 px, +0.006 (−0.011, +0.023).
+
+**Yellow recall and color accuracy elsewhere**, arm / F8 on matched lights:
+
+| Set | W yellow | WF yellow | W color acc Δ | WF color acc Δ |
+|---|---|---|---|---|
+| BDD100K val | 0.450 / 0.406, +0.044 (+0.013, +0.076) | 0.451 / 0.386, +0.065 (+0.032, +0.099) | −0.001 | −0.002 |
+| VZC | 0.642 / 0.684, −0.042 (−0.080, −0.006) | 0.723 / 0.702, +0.021 (−0.018, +0.061) | −0.008 (−0.014, −0.003) | −0.004 |
+| LISA test | 0.839 / 0.909, −0.070 (−0.171, −0.003) | 0.903 / 0.908, −0.005 | −0.002 | −0.000 |
+| S2TLD | 0.982 / 0.982, +0.000 | 0.972 / 0.977, −0.005 | −0.003 (−0.004, −0.001) | −0.001 |
+| A val | 0.728 / 0.752, −0.024 | 0.716 / 0.751, −0.035 (−0.081, +0.010) | −0.001 | +0.000 |
+| B val | 0.880 / 0.870, +0.010 | 0.908 / 0.867, +0.041 (+0.000, +0.141) | +0.005 | +0.007 |
+
+**Hand-labelled OpenLane circles called arrows:**
+- A val: W 0.173 vs F8 0.094; WF 0.040 vs F8 0.094.
+- B val: W 0.203 vs F8 0.064; WF 0.073 vs F8 0.061.
+
+**Perception**, center AP arm / F8; Δ with 95% CI. Detection was not a target.
+
+| Cell | W | WF |
+|---|---|---|
+| LISA night | 0.720 / 0.714, +0.007 (−0.011, +0.023) | 0.731 / 0.714, +0.018 (+0.003, +0.035) |
+| LISA day | 0.870 / 0.847, +0.023 (+0.015, +0.032) | 0.854 / 0.847, +0.008 (−0.000, +0.016) |
+| S2TLD 1080p horizontal | 0.407 / 0.424, −0.017 (−0.089, +0.049) | **0.340 / 0.424, −0.084 (−0.126, −0.017)** |
+| S2TLD 1080p | 0.676 / 0.706, −0.030 (−0.070, +0.012) | 0.683 / 0.706, −0.023 (−0.084, +0.030) |
+| S2TLD 720p | 0.905 / 0.895, +0.011 (+0.006, +0.015) | 0.922 / 0.895, +0.028 (+0.022, +0.033) |
+| VZC horizontal | 0.618 / 0.631, −0.013 (−0.035, +0.008) | 0.641 / 0.631, +0.010 (−0.011, +0.031) |
+| VZC all | 0.874 / 0.872, +0.002 (−0.001, +0.006) | 0.865 / 0.872, −0.007 (−0.011, −0.002) |
+| BDD val all | 0.863 / 0.857, +0.005 (+0.002, +0.008) | 0.858 / 0.857, +0.001 (−0.002, +0.003) |
+| BDD val night | 0.847 / 0.843, +0.004 (−0.000, +0.008) | 0.841 / 0.843, −0.002 (−0.006, +0.002) |
+| BDD val horizontal | 0.314 / 0.325, −0.010 (−0.022, +0.002) | 0.329 / 0.325, +0.004 (−0.008, +0.017) |
+| ATLAS test | 0.758 / 0.766, −0.008 (−0.014, −0.002) | 0.776 / 0.766, +0.010 (+0.004, +0.016) |
+
+**Expectations, checked:**
+- **arrow_right up on DTLD and ATLAS:** yes for WF (+0.20 and +0.17). Not for W, where the change is within noise. arrow_straight rose by 0.02–0.03 in both arms, also within noise.
+- **Circle down by one or two points:** W −0.8 on DTLD and −2.3 on ATLAS. WF is unchanged.
+- **More false arrows on OpenLane circles:** yes for W (8.2% → 18.4%). The opposite for WF (8.1% → 5.2%).
+- **LISA arrow_left nearly unchanged:** yes; W +0.02, WF −0.025.
+- **Yellow up on DTLD:** not confirmed; W +0.017 with a lower CI of −0.001, WF +0.009. BDD100K yellow rose in both arms (+0.04 and +0.07).
+
+**Exploratory, not pre-registered:** WF's A val guard failure is not an effect of its threshold. With WF at epoch 4, A val ΔTSS / ΔFalse-Go against F8 were:
+
+| WF threshold | ΔTSS | ΔFalse-Go |
+|---|---|---|
+| 0.35 | −0.010 | +0.021 |
+| 0.40 | −0.012 | +0.030 |
+| 0.45 (F8's threshold) | −0.012 | +0.034 |
+| 0.50 | −0.015 | +0.044 |
+
+**Reading.**
+- **Class weights alone (W) did little for rare pictograms.** P1 rose by +0.009, which is within noise, and right arrows stayed at about 0.32 even on large lamps. W also tripled the false arrows on OpenLane circles and lowered circle recall. The prior was not the only obstacle: there were too few right-arrow examples to learn from.
+- **The label-swapping flip (WF) is what helped.** It doubled the right-arrow examples. DTLD right-arrow recall rose from 0.30 to 0.50 and ATLAS from 0.58 to 0.75, and WF beats W on P1. False arrows on OpenLane circles fell instead of rising.
+- **Neither arm moved P2.** Yellow recall on DTLD stayed within noise in both, although BDD100K yellow improved.
+- **Both trained arms fail on A val, while B val and DTLD test pass.** On A val, False-Go rose by about +0.02 for WF and +0.04 for W. Not tested: which lights cause the extra False-Go on A val. WF's false arrows on A val circles fell (0.094 → 0.040), so the cause is not false arrows on circles.
+- **WF also lost horizontal lights on S2TLD 1080p** (−0.084 AP).
+- **Caveats.** Single seed. LA was not a real test, because the selection rule never picks τ > 0.
+
+### Exp 9 follow-up: where the extra A val False-Go comes from (2026-11-14, exploratory, no training)
+
+Scripts: `tools/exp9_aval_false_go.py [WF|W]` → `runs/exp9_eval/aval_false_go_{arm}.json`, and `tools/exp9_aval_sheet.py` → `runs/exp9_eval/aval_false_go_{arm}.jpg`, a crop sheet. Both models are decoded as in the guards: US rule plus topology mask, each at its selected epoch and threshold.
+
+**Method.**
+- A val has 2,113 (frame, direction) cells whose ground truth is red.
+- For each cell where exactly one model predicts not red, I find the light that gave the other model its red. Then I check what the failing model read on that light (IoU ≥ 0.3).
+- The left and U-turn directions come from the same light under the US rule, so each such light counts twice.
+
+**Counts.**
+- WF goes wrong on 81 cells where F8 is right, and F8 on 37 where WF is right: net +44, which is the +0.021 of G2.
+- For W the figures are 139 and 50: net +89, the +0.042.
+- The extra cells are concentrated. WF's 81 come from 37 frames in 16 segments, and 50 of them from 5 segments.
+
+**Causes of WF's extra False-Go** (net = WF-only minus F8-only):
+
+| Cause | WF-only | F8-only | Net |
+|---|---|---|---|
+| Light read, but junction score ≤ 0.5, so the rule ignores it | 26 | 2 | +24 |
+| Red light read, but another (green) light sets the direction | 32 | 13 | +19 |
+| Light read as not red | 11 | 10 | +1 |
+| Light missed | 9 | 11 | −2 |
+| No light sets the direction | 3 | 1 | +2 |
+
+**What these lights are.**
+- In 52 of WF's 81 cells, F8's red came from a **red left-turn arrow**. On the crop sheet these are mostly US protected-left signals: a separate left-arrow head while the through signals are green. Most sit on the left of the image (centre x 0.16–0.40).
+- On those arrows WF:
+  - calls them not relevant to the ego approach in 26 cells (junction scores 0.01–0.37, where F8 gave 0.52–0.99);
+  - **reads them as right arrows** in 12 cells (segment 10026, small lamps);
+  - reads them as circles in 6, so a higher-scored green circle sets the left direction;
+  - reads them yellow or green in 8.
+- In each of these the left turn turns green: a False-Go on exactly the protected-left phase.
+
+**W vs WF.**
+- 48 of WF's 81 cells are also W failures. W shows the same pattern more strongly: 40 cells where a red left arrow is called not relevant, plus 24 cells where a red is read as green.
+- So most of the regression is common to both arms and comes with the class-weighted training, not with the flip. The **left → right misreads** are WF-only and fit the flip, which balances left and right arrows: the prior no longer favours "left" on a small, unclear arrow.
+
+**Reading.**
+- A val's extra False-Go is a junction-relevance problem on US red left-turn arrows, not a pictogram-on-circle problem.
+- The junction head itself is unweighted. Something in weighted training lowers its confidence on these lights; how is not tested. One candidate: arrows weighted higher in the shared decoder, against a junction label that ATLAS, the main arrow source, lacks.
+- Not tested: whether a weighted run with a different epoch keeps the pictogram gain without this; whether a separate threshold on the junction score repairs it.
+- The pattern sits in a handful of segments, consistent with G2's lower CI of +0.001 for WF.
