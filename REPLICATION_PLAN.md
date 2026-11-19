@@ -1798,3 +1798,28 @@ S follows R's curve: it peaks at epoch 2, then declines slightly.
 - Single seed, and the continuation was not pre-registered. So the B val gain and the A val False-Go loss are both candidates to recheck, not established effects.
 
 Results: `runs/exp11_eval/result.json` (epoch 0) and `runs/exp11_eval_full/result.json` (5 epochs). A comparison page of F8, WF, R and S on every set was published as an artifact on 2026-11-19.
+
+**AWSIM video, R and S (2026-11-19, qualitative, no labels).** The source of the earlier AWSIM videos (`AWSIM_only.mp4`, 924×1054, 60 fps, 7,076 frames) is no longer on disk. R and S were therefore run on a different AWSIM clip, `run_full_clean.mp4` (854×468, 30 fps, 5,560 frames). The counts below are not comparable with the J, F7 and F8 videos.
+
+- Run with `tools/run_video_picto.py --arm F --run runs/exp10_R` and `--run runs/exp11_S`, each at its selected epoch 2 and threshold 0.35.
+- Outputs are in `runs/awsim/run_full_clean_picto_{R,S}.mp4`, each with a `.jsonl` log.
+- `tools/awsim_rs_compare.py` writes the counts to `run_full_clean_picto_RS_counts.json` and a side-by-side sheet to `run_full_clean_picto_RS_sample.jpg`.
+
+| | R | S |
+|---|---|---|
+| Frames with any detection | 4,048 | 4,087 |
+| Frames with a junction light | 3,920 | 3,013 |
+| Junction detections | 6,771 | 3,970 |
+| Of which red | 3,778 | 1,191 |
+| Of which yellow | 168 | 53 |
+| Straight red (frames) | 1,932 | 1,075 |
+| Straight yellow (frames) | 148 | 47 |
+| Straight green (frames) | 1,840 | 1,773 |
+| No straight color (frames) | 1,640 | 2,665 |
+| Arrow detections (right / left) | 0 / 0 | 112 / 7 |
+
+- The straight color differs in 1,147 frames. In 849 of them, R reports red and S reports none.
+- In 818 of those 849 frames, S still detects a red light but marks it as not part of the junction. S has 4,766 non-junction red detections, against 2,205 for R.
+- In this simulator clip, the drop in red reports comes from S's junction head, not from its detector.
+- On the sample frames, S misses the red stop light directly ahead, and R misreads a green light as yellow.
+- This matches the A val False-Go rise of S on real data, but it is one clip with no labels.

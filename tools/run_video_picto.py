@@ -37,7 +37,12 @@ def main():
     args = ap.parse_args()
 
     run = args.run or f"runs/exp6_picto_{args.arm}"
-    if os.path.exists(os.path.join(run, "exp8_eval", "result.json")):
+    # Exp 9-11 runs keep their selection in a shared eval folder, not inside the run
+    shared = {"exp9_WF": ("runs/exp9_eval/result.json", "WF"), "exp10_R": ("runs/exp10_eval/result.json", "R"),
+              "exp11_S": ("runs/exp11_eval_full/result.json", "S")}.get(os.path.basename(os.path.normpath(run)))
+    if shared:
+        sel = json.load(open(shared[0]))["selection"][shared[1]]
+    elif os.path.exists(os.path.join(run, "exp8_eval", "result.json")):
         sel = json.load(open(os.path.join(run, "exp8_eval", "result.json")))["selection"]["F8"]
     elif os.path.exists(os.path.join(run, "exp7_eval", "result.json")):
         sel = json.load(open(os.path.join(run, "exp7_eval", "result.json")))["F7"]
