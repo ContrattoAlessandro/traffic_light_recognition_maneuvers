@@ -4,56 +4,140 @@
     {
       "name": "boss-deck",
       "runtimeExecutable": "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\.venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\runs\\boss_deck"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8765",
+        "--directory",
+        "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\runs\\boss_deck"
+      ],
       "port": 8765
     },
     {
       "name": "pictogram-annotator",
       "runtimeExecutable": "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\.venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "http.server", "8766", "--bind", "127.0.0.1", "--directory", "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\annotation\\pictogram_v1"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8766",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\annotation\\pictogram_v1"
+      ],
       "port": 8766
     },
     {
       "name": "ood-gallery",
       "runtimeExecutable": "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\.venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "http.server", "8767", "--bind", "127.0.0.1", "--directory", "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\ood_gallery"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8767",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\ood_gallery"
+      ],
       "port": 8767
     },
     {
       "name": "review-mix",
       "runtimeExecutable": "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\.venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "http.server", "8768", "--bind", "127.0.0.1", "--directory", "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\review_mix"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8768",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\review_mix"
+      ],
       "port": 8768
     },
     {
       "name": "review-opposite",
       "runtimeExecutable": "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\.venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "http.server", "8769", "--bind", "127.0.0.1", "--directory", "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\review_opposite"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8769",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\review_opposite"
+      ],
       "port": 8769
     },
     {
       "name": "junction-fail",
       "runtimeExecutable": "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\.venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "http.server", "8770", "--bind", "127.0.0.1", "--directory", "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\junction_fail"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8770",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\junction_fail"
+      ],
       "port": 8770
     },
     {
       "name": "junction-label",
       "runtimeExecutable": "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\.venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "http.server", "8771", "--bind", "127.0.0.1", "--directory", "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\junction_label"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8771",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\junction_label"
+      ],
       "port": 8771
     },
     {
       "name": "review-picto",
       "runtimeExecutable": "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\.venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "http.server", "8772", "--bind", "127.0.0.1", "--directory", "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\review_picto"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8772",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\review_picto"
+      ],
       "port": 8772
     },
     {
       "name": "review-vzc",
       "runtimeExecutable": "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\.venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "http.server", "8773", "--bind", "127.0.0.1", "--directory", "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\review_vzc"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8773",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\review_vzc"
+      ],
       "port": 8773
+    },
+    {
+      "name": "review-exp10",
+      "runtimeExecutable": "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8775",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "C:\\Users\\alexa\\Desktop\\One_Perception_All_Maneuvers\\data\\review_exp10"
+      ],
+      "port": 8775
     }
   ]
 }

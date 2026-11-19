@@ -8,7 +8,10 @@ Random (seed 0) among frames with at least one annotated colored light (OpenLane
 Each image: annotations thin white (magenta = missed by the model, center criterion), junction detections in their
 color with "pictogram | color score", non-junction detections thin grey, a header with predicted (and labelled)
 per-maneuver colors, and a zoom strip. Writes data/review_exp8/*.jpg, items.json and index.html.
+Another model on the same frames: --run runs/exp10_R --result runs/exp10_eval/result.json --name R
+--out data/review_exp10 (epoch and threshold are that model's selection in the result file).
 """
+import argparse
 import json
 import os
 import random
@@ -176,12 +179,19 @@ def render(it, dets, dirs, out_path):
 
 
 def main():
-    os.makedirs(OUT, exist_ok=True)
-    sel = json.load(open(os.path.join(RUN, "exp8_eval", "result.json")))["selection"]["F8"]
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--run", default=RUN)
+    ap.add_argument("--result", default=os.path.join(RUN, "exp8_eval", "result.json"))
+    ap.add_argument("--name", default="F8", help="model key in the result file's selection")
+    ap.add_argument("--out", default=OUT)
+    args = ap.parse_args()
+    out_dir = args.out
+    os.makedirs(out_dir, exist_ok=True)
+    sel = json.load(open(args.result))["selection"][args.name]
     epoch, thr = sel["epoch"], sel["threshold"]
     classes = json.load(open(os.path.join(DATA, "class_names.json")))
-    net, res = load_model(RUN, epoch, classes, "F")
-    print(f"F8 epoch {epoch}, threshold {thr}, resolution {res}", flush=True)
+    net, res = load_model(args.run, epoch, classes, "F")
+    print(f"{args.name} epoch {epoch}, threshold {thr}, resolution {res}", flush=True)
     items = gather()
     print(len(items), "images", flush=True)
     page_items = []
@@ -190,20 +200,24 @@ def main():
             dets = infer(net, res, it["path"], thr)
             dirs = directions(it, dets)
             fid = f"{n:03d}"
-            stats = render(it, dets, dirs, os.path.join(OUT, fid + ".jpg"))
+            stats = render(it, dets, dirs, os.path.join(out_dir, fid + ".jpg"))
             page_items.append({"id": fid, "part": it["part"], "set": it["set"], "rule": it["rule"], "file": os.path.basename(it["path"]),
                                "path": it["path"], "pred": dirs, "gt": it.get("gt_dirs"), "vzc_label": {"RR": "stop", "RG": "go", "NoR": "none"}.get(it.get("vzc_label")),
                                "decision": image_decision(dets), **stats})
             if n % 10 == 9:
                 print(n + 1, flush=True)
-    with open(os.path.join(OUT, "items.json"), "w") as f:
+    with open(os.path.join(out_dir, "items.json"), "w") as f:
         json.dump({"epoch": epoch, "threshold": thr, "items": page_items}, f, indent=1)
     page = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "review_exp8.html"), encoding="utf-8").read()
     assert "/*ITEMS*/[]" in page
-    page = page.replace("/*ITEMS*/[]", json.dumps(page_items)).replace("/*META*/", f"epoch {epoch}, threshold {thr}")
-    with open(os.path.join(OUT, "index.html"), "w", encoding="utf-8") as f:
+    page = page.replace("/*ITEMS*/[]", json.dumps(page_items)).replace("/*META*/", f"epoch {epoch}, threshold {thr}, resolution {res}")
+    if args.name != "F8":
+        stem = os.path.basename(out_dir.rstrip("/\\"))
+        page = (page.replace("Exp 8 model (F8)", f"Model {args.name} ({args.run})").replace("<title>Exp 8 Review", f"<title>{args.name} Review")
+                .replace("review_exp8", stem))
+    with open(os.path.join(out_dir, "index.html"), "w", encoding="utf-8") as f:
         f.write(page)
-    print(len(page_items), "items ->", OUT)
+    print(len(page_items), "items ->", out_dir)
 
 
 if __name__ == "__main__":

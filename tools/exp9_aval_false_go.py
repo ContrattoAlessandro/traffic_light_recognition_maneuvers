@@ -1,4 +1,5 @@
-"""Exp 9 follow-up (exploratory, not pre-registered): why WF has more False-Go than F8 on OpenLane A val.
+"""Exp 9 / Exp 10 follow-up (exploratory, not pre-registered): why one model has more False-Go than another
+on an OpenLane val set (Exp 9: WF vs F8 on A val; Exp 10: R vs WF on B val).
 
 Both models are decoded exactly as in the Exp 9 guards (US rule + lane topology mask, each at its selected epoch
 and threshold). A False-Go cell is a (frame, direction) whose ground truth is red and whose prediction is not red
@@ -10,7 +11,8 @@ model its red is traced in the failing model's detections and the cause is named
   routed_away     red junction light, but no light sets this direction (its pictogram does not cover it)
   outvoted        red junction light, but another (non-red) light sets this direction
 Cells where the other model's red came from an unmatched source are "other".
-Usage: exp9_aval_false_go.py [WF|W]. Writes runs/exp9_eval/aval_false_go_{arm}.json and prints a summary.
+Usage: exp9_aval_false_go.py [ARM [REF [SET]]], defaults WF F8 A_val. Writes out_path(ARM, REF, SET) (.json) and
+prints a summary.
 """
 import json
 import os
@@ -28,8 +30,21 @@ from dtsu.picto_rules import ARROW_MOVES, COLORS, PICTOS  # noqa: E402
 from tools.eval_picto import kept  # noqa: E402
 
 DIRS = ("straight", "left", "right", "uturn")
-ARMS = {"WF": ("runs/exp9_eval/WF/e4_A_val.pt", 0.35), "W": ("runs/exp9_eval/W/e1_A_val.pt", 0.25)}  # selected epoch, threshold
-F8 = ("runs/exp8_bdd_F/exp8_eval/e3_A_val.pt", 0.45)
+# detection cache of each model at its selected epoch ({s} = set name), and its selected threshold
+MODELS = {"F8": ("runs/exp8_bdd_F/exp8_eval/e3_{s}.pt", 0.45), "WF": ("runs/exp9_eval/WF/e4_{s}.pt", 0.35),
+          "W": ("runs/exp9_eval/W/e1_{s}.pt", 0.25), "R": ("runs/exp10_eval/R/e2_{s}.pt", 0.35)}
+
+
+def sel(model, split):
+    path, thr = MODELS[model]
+    return path.format(s=split), thr
+
+
+def out_path(arm, ref, split):
+    """Output stem (no extension); the Exp 9 A val traces keep their original names."""
+    if (ref, split) == ("F8", "A_val"):
+        return f"runs/exp9_eval/aval_false_go_{arm}"
+    return f"runs/exp10_eval/false_go_{arm}_vs_{ref}_{split}"
 MATCH_IOU = 0.3
 
 
@@ -80,9 +95,9 @@ def cause(src_box, fail_all, fail_kept, fail_out, direction, thr):
     return "outvoted", f"{PICTOS[int(fail_kept['picto'][j])]} red, set by {PICTOS[int(fail_kept['picto'][other])]}/{COLORS[int(fail_kept['color'][other])]}"
 
 
-def main(arm):
-    SEL = {"F8": F8, arm: ARMS[arm]}
-    recs, _, masks, _ = e8.openlane_set("A_val")
+def main(arm, ref="F8", split="A_val"):
+    SEL = {ref: sel(ref, split), arm: sel(arm, split)}
+    recs, _, masks, _ = e8.openlane_set(split)
     dets = {m: torch.load(p, weights_only=False) for m, (p, _) in SEL.items()}
     rows = []
     for i, (r, mask) in enumerate(zip(recs, masks)):
@@ -91,9 +106,9 @@ def main(arm):
             if r["color"][a] != "red":
                 continue
             fg = {m: dec[m][1][a][0] != "red" for m in SEL}
-            if fg["F8"] == fg[arm]:
+            if fg[ref] == fg[arm]:
                 continue
-            fail, ok = (arm, "F8") if fg[arm] else ("F8", arm)
+            fail, ok = (arm, ref) if fg[arm] else (ref, arm)
             k_ok, out_ok = dec[ok]
             k_fail, out_fail = dec[fail]
             src = out_ok[a][1]
@@ -119,12 +134,13 @@ def main(arm):
     net = defaultdict(int)
     for x in rows:
         net[x["cause"]] += 1 if x["fails"] == arm else -1
-    summary[f"net_{arm}_minus_F8_by_cause"] = dict(net)
-    os.makedirs("runs/exp9_eval", exist_ok=True)
-    with open(f"runs/exp9_eval/aval_false_go_{arm}.json", "w") as f:
+    summary[f"net_{arm}_minus_{ref}_by_cause"] = dict(net)
+    out = out_path(arm, ref, split) + ".json"
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with open(out, "w") as f:
         json.dump({"summary": summary, "rows": rows}, f, indent=1, default=str)
     print(json.dumps(summary, indent=1, default=str))
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "WF")
+    main(*(sys.argv[1:] or ["WF"]))

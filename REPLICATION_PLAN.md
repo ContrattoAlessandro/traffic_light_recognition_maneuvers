@@ -1462,3 +1462,339 @@ Scripts: `tools/exp9_aval_false_go.py [WF|W]` → `runs/exp9_eval/aval_false_go_
 - The junction head itself is unweighted. Something in weighted training lowers its confidence on these lights; how is not tested. One candidate: arrows weighted higher in the shared decoder, against a junction label that ATLAS, the main arrow source, lacks.
 - Not tested: whether a weighted run with a different epoch keeps the pictogram gain without this; whether a separate threshold on the junction score repairs it.
 - The pattern sits in a handful of segments, consistent with G2's lower CI of +0.001 for WF.
+
+## Exp 10: WF at 1280 instead of 1024 (2026-11-14, design fixed before any training or result)
+
+**Question.** Does a higher input resolution make WF read pictograms better, above all on small lamps, without breaking the per-maneuver decisions?
+
+**Why resolution.**
+- Exp 9 left small lamps as the weakest point. On DTLD test, WF's pictogram macro recall is 0.60 for lamps under 15 px, 0.59 for 15–20 px and 0.82 for lamps at least 30 px tall.
+- The pre-measurement for Exp 9 also found that below 20 px most arrows are read as circles: a resolution limit rather than a class prior.
+- The training images are larger than 1024 px (DTLD 2048 × 1024, ATLAS 1920 × 1200, OpenLane 1550 × 2048, BDD100K 1280 × 720), so 1280 gives the network more pixels per lamp on all sources except BDD100K.
+- Model size is not tested. In rfdetr 1.11.2, RFDETRLarge has the same architecture as RFDETRMedium (DINOv2-S, 4 decoder layers, 34 M parameters); only the pretrained weights differ. The DINOv2-B variant does not fit the 12 GB GPU even at batch 2.
+
+**Arm R.** The WF recipe of Exp 9, unchanged except for `--resolution 1280`:
+- RF-DETR Medium, factorized head, class weights at power 0.5 and the label-swapping flip;
+- lr 1e-4 / 1.5e-4, batch 4 × accum 4, 5 epochs, 6 workers, seed 0;
+- data `data/rfdetr_coco_exp8`.
+
+**Cost**, measured on the RTX 5070 with the factorized head:
+
+| | 1024 (WF) | 1280 (R) |
+|---|---|---|
+| Train step, batch 4 | 219 ms, 7.1 GB | 398 ms, 10.1 GB |
+| Inference, batch 1 | 22 ms | 29 ms |
+
+Expected time: about 16 h of training and 3 h of evaluation.
+
+**Selection.** The Exp 8 rule, unchanged: the epoch and threshold that maximise the mean of DTLD tune TSS (junction rule) and A tune and B tune TSS (US rule plus lane topology mask).
+
+**Comparisons.**
+- R against WF, the reference: WF at epoch 4, threshold 0.35, as selected in Exp 9.
+- R against F8 is reported beside it.
+- As in Exp 9: attribute metrics use the lights both models of a pair match, and every CI is a cluster bootstrap with 2,000 draws.
+- G1 and G2 use the segment bootstrap with 10,000 draws.
+
+**Primary endpoints (R − WF):**
+- **P1:** pictogram macro recall on DTLD test, over circle, arrow_left, arrow_right, arrow_straight and other. Same definition as in Exp 9.
+- **P2:** the same macro recall on DTLD test lamps under 20 px tall, the 0–15 and 15–20 px bins together.
+
+**Guards (R − WF)**, with the thresholds of Exp 9:
+- **G1:** ΔTSS lower CI above −0.01 on A val, B val and DTLD test.
+- **G2:** ΔFalse-Go at most +0.01 on the same three sets.
+- **G3:** DTLD test color accuracy, Δ lower CI above −0.005.
+- **G4:** false-arrow rate on the hand-labelled OpenLane circles, Δ at most +0.03.
+
+**Reported, not deciding.**
+- The same guards and endpoints against F8, so R can be read against the Exp 9 decision.
+- Yellow recall and the other attribute metrics, on every set and against both references.
+- AP, recall and precision of every Exp 8 perception cell, against WF and F8. Higher resolution may help small and horizontal lights; that is reported only.
+- The A val False-Go trace of the Exp 9 follow-up for R.
+
+**Decision rule.** R replaces WF as the recipe if G1 to G4 hold against WF and P1 or P2 has a lower CI above 0. Otherwise WF stays. R's slower inference (29 vs 22 ms) is reported but does not count against it.
+- R does not settle the A val False-Go of WF against F8. If R passes, that comparison is reported as for WF.
+- Single seed.
+
+**Expected, written down to be checked:**
+- P2 up more than P1;
+- arrow_right and arrow_straight recall up;
+- small-lamp and horizontal-light AP up (S2TLD 1080p, VZC, BDD100K);
+- BDD100K unchanged in color, since its images are 1280 × 720;
+- the A val False-Go pattern of WF unchanged, because it is about junction relevance rather than resolution.
+
+**Implementation.**
+- `tools/run_exp10.sh`: trains `runs/exp10_R`, then runs the evaluation.
+- `tools/eval_exp10.py`: reuses the Exp 9 functions (selection, guards, matched-light attributes, perception cells) with R, WF and F8. Each model is decoded at its own training resolution, read from `args.json`. Writes `runs/exp10_eval/result.json`.
+
+### Exp 10 results (2026-11-15, single seed)
+
+**Run.**
+- `runs/exp10_R` trained for 5 epochs: 2.9 h per epoch and 9.1 GB peak, against 1.8 h and 6.6 GB for WF.
+- The first epoch took 3.75 h because another GPU job ran alongside it. Training took 15.2 h in total, and evaluation took 1.3 h.
+- The library's built-in validation mAP is 0 for every epoch, as for WF, because it does not read the factorized head. All metrics below come from `tools/eval_exp10.py` → `runs/exp10_eval/result.json`.
+- An earlier launch on 2026-11-14 was killed with its session before epoch 0 ended and is not used.
+
+**Selection.** Epoch 2 at threshold 0.35, with a tune mean of 0.941 (DTLD 0.950, A 0.951, B 0.921). WF stays at epoch 4, threshold 0.35, and F8 at epoch 3, threshold 0.45.
+
+**Decision: R does not replace WF.** P1 and G3 pass. G1, G2 and G4 fail.
+
+| | R − WF | 95% CI | Rule | Pass |
+|---|---|---|---|---|
+| P1 DTLD test pictogram macro recall | **+0.049** (0.821 vs 0.772) | [+0.033, +0.066] | lower CI > 0 | ✅ |
+| P2 the same, lamps under 20 px | +0.015 (0.609 vs 0.594) | [−0.016, +0.050] | lower CI > 0 | ❌ |
+| G1 ΔTSS A val | +0.007 (0.934 vs 0.927) | [−0.005, +0.020] | lower CI > −0.01 | ✅ |
+| G1 ΔTSS B val | −0.002 (0.918 vs 0.920) | **[−0.027**, +0.015] | | ❌ |
+| G1 ΔTSS DTLD test | +0.004 (0.955 vs 0.951) | [−0.000, +0.008] | | ✅ |
+| G2 ΔFalse-Go A val | **−0.036** (0.092 vs 0.128) | [−0.073, −0.005] | ≤ +0.01 | ✅ |
+| G2 ΔFalse-Go B val | **+0.035** (0.093 vs 0.057) | [−0.006, +0.097] | | ❌ |
+| G2 ΔFalse-Go DTLD test | −0.003 (0.032 vs 0.035) | [−0.009, +0.003] | | ✅ |
+| G3 DTLD test color accuracy | +0.003 (0.984 vs 0.981) | [+0.002, +0.005] | lower CI > −0.005 | ✅ |
+| G4 false arrows, hand-labelled OpenLane circles | +0.039 (0.097 vs 0.058) | [+0.006, +0.078] | ≤ +0.03 | ❌ |
+
+**Against F8 (reported).**
+- ΔTSS: A val −0.003 [−0.012, +0.006], B val +0.010 [−0.018, +0.053], DTLD test +0.0045 [+0.0004, +0.0084].
+- ΔFalse-Go: −0.015, −0.045 and −0.001, so lower than F8 on all three sets.
+- Pictogram macro recall: P1 +0.097 [+0.081, +0.114] and P2 +0.077 [+0.021, +0.138].
+- Hand-labelled false arrows: +0.015.
+- Under the Exp 9 guards, R against F8 fails only G1 on A val, and narrowly (lower CI −0.012).
+
+**Pictograms (matched lights, R − WF).**
+
+| Set | Class | R | WF | Δ | 95% CI |
+|---|---|---|---|---|---|
+| DTLD test | circle | 0.961 | 0.965 | −0.004 | [−0.009, −0.000] |
+| | arrow_left | 0.869 | 0.853 | +0.017 | [−0.003, +0.039] |
+| | arrow_right | 0.648 | 0.506 | **+0.143** | [+0.076, +0.218] |
+| | arrow_straight | 0.679 | 0.597 | **+0.082** | [+0.049, +0.114] |
+| | other | 0.947 | 0.938 | +0.009 | [+0.001, +0.017] |
+| ATLAS test | macro | 0.826 | 0.777 | +0.049 | [+0.033, +0.066] |
+| LISA test | arrow_left | 0.283 | 0.152 | +0.131 | [+0.070, +0.184] |
+| B val | circle | 0.810 | 0.872 | −0.061 | [−0.169, +0.003] |
+| B val | false arrows on circles | 0.176 | 0.084 | +0.092 | [+0.032, +0.199] |
+
+DTLD test pictogram macro recall by lamp height:
+
+| Height | R | WF | Δ | 95% CI |
+|---|---|---|---|---|
+| 0–15 px | 0.555 | 0.628 | −0.073 | [−0.219, +0.023] |
+| 15–20 px | 0.623 | 0.598 | +0.024 | [+0.000, +0.061] |
+| 20–30 px | 0.696 | 0.658 | +0.038 | [+0.002, +0.085] |
+| ≥ 30 px | 0.873 | 0.820 | +0.053 | [+0.037, +0.070] |
+
+**Color (R − WF).**
+- Yellow recall goes up: DTLD test +0.040 [+0.024, +0.059], LISA night +0.155, BDD val +0.057 [+0.024, +0.092].
+- Color accuracy is unchanged on DTLD, LISA, ATLAS and BDD100K (BDD −0.002).
+- It drops on S2TLD: −0.011 [−0.021, −0.003] overall and −0.062 [−0.127, −0.011] on its 1920 × 1080 images.
+
+**Perception cells (AP, R − WF).**
+- Up: ATLAS test +0.038 [+0.030, +0.045], LISA night +0.036 [+0.014, +0.058], BDD100K +0.008 [+0.005, +0.010].
+- Down: LISA day −0.019 [−0.034, −0.006], S2TLD 720p −0.035 [−0.040, −0.030], VZC horizontal −0.090 [−0.119, −0.061].
+- No clear change: S2TLD 1080p −0.020, S2TLD 1080p horizontal +0.025 and BDD horizontal +0.004, all with CIs that include 0.
+
+**Expectations check.**
+- P2 up more than P1: **no**. The gain grows with lamp size (+0.053 at 30 px and above). Below 15 px the change is −0.073 with a wide CI.
+- arrow_right and arrow_straight up: **yes**.
+- Small-lamp and horizontal-light AP up: **no**. S2TLD and BDD horizontal are flat, and VZC horizontal and S2TLD 720p go down.
+- BDD100K color unchanged: **yes** for accuracy, but its yellow recall rises.
+- WF's A val False-Go pattern unchanged: **no**. R removes most of it (see the trace below).
+
+### Exp 10 follow-up: R's False-Go against WF on A val and B val (2026-11-15, exploratory, no training)
+
+**Method.** The Exp 9 trace, generalised: `tools/exp9_aval_false_go.py ARM REF SET` and `tools/exp9_aval_sheet.py ARM REF SET` → `runs/exp10_eval/false_go_R_vs_WF_{A_val,B_val}.{json,jpg}`. The Exp 9 outputs are reproduced unchanged.
+
+**A val: R repairs WF's red left-arrow failures.**
+- WF goes wrong on 122 cells where R is right, and R on 47 where WF is right: net −75, the −0.036 of G2.
+- In 75 of WF's 122 cells, R's red came from a red left arrow. On those, WF:
+  - lets a green light set the direction (37), mostly by reading the arrow as a right arrow (23);
+  - calls the arrow not relevant (24);
+  - reads it as not red (12);
+  - misses it (2).
+- By cause, R minus WF is: outvoted −41, junction score too low −24, color −16, missed +6.
+- So the Exp 9 regression on US protected-left arrows is mostly a 1024 px effect, not an effect of the weighting.
+
+**B val: two segments.**
+- R goes wrong on 92 cells where WF is right, and WF on 21: net +71, the +0.035 of G2.
+- **78 of R's 92 cells are in two segments:** 11067 (51 cells, 23 frames) and 11049 (27 cells, 9 frames). Outside them R has 14 and WF 19, so R is slightly ahead there (net −5).
+- In every R-only cell the direction ends as "none" (no relevant light read), never green. Causes: missed 55, junction score too low 24, read but routed to another direction 13.
+- The hand-labelled false arrows on circles (G4) are not what drives this.
+- **Segment 11067** (US city street, a truck partly hiding the signals):
+  - A distant through signal: WF reads a red circle at 0.49–0.78. R reads the same lamp either as a red circle at 0.09–0.31, below threshold, or as a red **left** arrow (score 0.58–0.71, junction 0.98), which the rule routes to the left turn.
+  - Later frames, a near pole-mounted signal: WF reads a red straight arrow at 0.36–0.46, just over its 0.35 threshold. R gives it 0.05–0.37.
+- **Segment 11049** (a single light on a pole and a horizontal light against a bright sky):
+  - R reads a red circle but gives it a junction score of 0.18–0.47, where WF gives 0.79–0.93.
+  - Where WF scores the horizontal light 0.43–0.56, R misses it.
+- **Lower thresholds** (exploratory, `r_thresholds.py` in the session scratchpad). R at 0.30 / 0.25 / 0.20 gives B val ΔFalse-Go +0.030 / +0.026 / +0.022 and A val −0.036 / −0.040 / −0.045. G2 on B val still fails, and the tune mean drops by at most 0.002.
+
+**Reading.**
+- 1280 helps pictograms on lamps of 15 px and more, helps yellow, and fixes WF's protected-left arrows on A val.
+- It does not help the smallest lamps, so the premise of P2 does not hold: arrows under 15 px are not recovered by 25 % more pixels.
+- The guard failures are concentrated:
+  - B val False-Go comes from two segments, through lower scores and junction confidence on a few lamps;
+  - G4 comes from more arrow calls on hand-labelled circles;
+  - G1 on B val is a wide CI around −0.002.
+- With one seed and 1,565 B val frames, it cannot be told whether these are a resolution effect or seed noise.
+- By the pre-registered rule, **WF stays the recipe**. R is the better model against F8 on every guard set but A val TSS. It costs 30 % more inference time (29 vs 22 ms) and 1.6× the training time.
+- Not tested: a second seed of R and WF, which would separate the B val segments from noise; R at a later epoch (epoch 4 has a tune mean of 0.932, below epoch 2).
+
+## Exp 11: R at 1536, first epoch only (2026-11-16, design fixed before any training or result)
+
+**Question.** After one epoch, does 1536 read pictograms better than 1280, and better than 1024, with the same training budget?
+
+**Why one epoch.** Training at 1536 takes about 4.7 h per epoch, about 24 h for all five. The user asked for the first epoch only, then a comparison with WF and R.
+- On the selection metric, epoch 0 did **not** already separate R from WF. The tune means at epoch 0 were R 0.9249 and WF 0.9258. R pulled ahead from epoch 1 (0.9338 against 0.9306) and peaked at epoch 2.
+- So epoch 0 is compared with epoch 0, and R0 against WF0 on the test sets is reported too. It shows whether R's pictogram gain was already visible after one epoch.
+- If it was not, a null result for S says little about a full run.
+
+**Arm S.** The R recipe with these changes:
+- `--resolution 1536`;
+- `--batch-size 2 --grad-accum 8` instead of 4 × 4, because batch 4 does not fit in 12 GB at 1536. The effective batch (16) and the number of optimizer steps per epoch (5,375) stay the same.
+- `--epochs 5 --stop-after 1`, so the learning-rate schedule is the 5-epoch one of R, and the run can be resumed to 5 epochs from `last.ckpt`.
+
+Everything else is unchanged: RF-DETR Medium, factorized head, class weights at power 0.5, `--flip-swap`, lr 1e-4 / 1.5e-4, seed 0, data `data/rfdetr_coco_exp8`.
+
+**Cost**, measured on 2026-11-16:
+
+| | 1280 (R) | 1536 (S) |
+|---|---|---|
+| Train step | 425 ms at batch 4 (10.1 GB) | 349 ms at batch 2 (7.2 GB); batch 4 does not fit |
+| Inference, batch 1 | 29.5 ms | 54 ms |
+
+Expected time: about 4.7 h of training, then 3–4 h of evaluation. The evaluation has to infer three epoch-0 models on every test set.
+
+**Models compared.**
+- **S** is the 1536 model at epoch 0.
+- **R0** and **WF0** are R and WF at epoch 0.
+- **R** and **WF** are the selected models of Exp 10 and Exp 9 (epoch 2, threshold 0.35; epoch 4, threshold 0.35).
+- Each epoch-0 model gets its threshold from the Exp 8 rule with the epoch fixed at 0: the threshold that maximises the mean of DTLD tune TSS and A/B tune TSS.
+
+**Primary (S − R0, equal budget):**
+- **P1:** DTLD test pictogram macro recall.
+- **P2:** the same on lamps under 20 px.
+
+**Guards (S − R0):** G1–G4 with the Exp 9 thresholds.
+
+**Reported, not deciding:**
+- the same endpoints and guards for S − WF0, R0 − WF0, S − R and S − WF;
+- the other attribute metrics and the Exp 8 perception cells for S − R0;
+- inference time.
+
+**Decision rule.** S is resumed to 5 epochs (about 19 h more) if, against R0, P1 or P2 has a lower CI above 0 and G1–G4 hold. Otherwise 1280 stays the highest resolution tried, and S stays at one epoch.
+- If R0 − WF0 shows no pictogram gain either, then epoch 0 does not predict the full run at all. In that case the result is reported as inconclusive rather than negative.
+- Single seed.
+
+**Expected, written down to be checked:**
+- S above R0 on lamps of 15 px and more, as R was above WF;
+- P2 flat again, since 1280 did not help lamps under 15 px;
+- S2TLD color down again;
+- R0 above WF0 on P1, smaller than the full-run gap of +0.049.
+
+**Implementation.**
+- `tools/run_exp11.sh` trains `runs/exp11_S` and then runs `tools/eval_exp11.py`.
+- `tools/eval_exp11.py` reuses the Exp 9 / Exp 10 functions and writes `runs/exp11_eval/result.json`.
+
+### Exp 11: epoch-0 outcome and continuation (2026-11-17)
+
+**Epoch 0.** Training took 4.7 h (16,949 s including validation, peak memory 6.55 GiB), and the evaluation 2.2 h. Under the rule above, S does not continue:
+- **G1 fails on B val:** ΔTSS −0.014, CI [−0.050, +0.014].
+- **P1 and P2 are not proven:** P1 +0.018, CI [−0.002, +0.039]; P2 +0.024, CI [−0.039, +0.077].
+- **G2–G4 hold.**
+- **Tune mean at epoch 0:** S 0.9334, R0 0.9249, WF0 0.9258.
+
+Full numbers are in `runs/exp11_eval/result.json`.
+
+**Continuation, against the pre-registered rule.** The user decided to resume S to the full 5-epoch schedule. This is a deviation from the decision rule and is reported as such: the 5-epoch result is exploratory, not a confirmatory test.
+- **Training:** `tools/run_exp11_resume.sh` resumes from the epoch-0 `last.ckpt`. A copy of it, with `metrics.csv` and `args.json`, is kept in `runs/exp11_S/epoch0_backup/`. The schedule, data and settings are unchanged.
+- **Evaluation:** `tools/eval_exp11.py --full` selects S over epochs 0–4 and threshold with the Exp 8 rule. It then compares S with R and WF at their selections (guards, attributes, P2, perception cells) and applies the Exp 10 rule to S − R. It writes `runs/exp11_eval_full/result.json`.
+- **Expected time:** about 19 h of training (4 epochs × 4.7 h), then about 3 h of evaluation.
+
+### Exp 11 results (2026-11-19, single seed)
+
+**Epoch 0, against the expectations written before training** (S − R0 unless stated):
+
+| Expectation | Result | Held? |
+|---|---|---|
+| S above R0 on lamps of 15 px and more | 15–20 px +0.032 [−0.029, +0.084]; 20–30 px +0.055 [+0.028, +0.085]; 30 px and over +0.011 [−0.010, +0.034] | partly: only 20–30 px is clear |
+| P2 flat | +0.024 [−0.039, +0.077] | yes |
+| S2TLD color down | +0.007 [+0.002, +0.014] | no, it went up |
+| R0 above WF0 on P1, below the full-run gap of +0.049 | +0.028 [+0.013, +0.044] | yes |
+
+Because R0 − WF0 already showed the pictogram gain, the epoch-0 test was conclusive, not inconclusive. The pre-registered outcome stands: S stays at one epoch.
+
+**5-epoch continuation (exploratory, at the user's request; see the note above).**
+
+*Run.*
+- **Resume attempt 1:** stopped at 16:36 on 2026-11-17, 7 minutes in. There was no traceback, and the launcher shell was gone too.
+- **Resume attempt 2** (from 17:03 on 2026-11-17):
+  - It completed epochs 1–3 in 30,111 s, 19,347 s and 19,655 s. Another program shared the GPU for long stretches, so these are slower than epoch 0 (16,949 s).
+  - It stopped the same way at about 17:52 on 2026-11-18, at step 25,449 of epoch 4.
+- **Epoch 4** was rerun from the end-of-epoch-3 `last.ckpt` (backup in `runs/exp11_S/epoch3_backup/`). It finished at 00:20 on 2026-11-19, in 20,929 s.
+- **Evaluation:** 00:20–02:39.
+- **Logs:** the rows of the killed attempts are kept in `metrics_attempt*_killed*.csv`, and `metrics.csv` holds one clean row set per epoch.
+- **Settings:** schedule, data and every training setting unchanged. Peak memory 6.56 GiB.
+
+*Selection (Exp 8 rule):* **epoch 2, threshold 0.35**, the same epoch as R.
+
+| Model | Tune mean by epoch, 0 → 4 | DTLD tune | A tune | B tune | Mean at selection |
+|---|---|---|---|---|---|
+| S (1536) | 0.933, 0.936, **0.942**, 0.940, 0.938 | 0.955 | 0.946 | 0.924 | 0.9417 |
+| R (1280) | 0.925, 0.934, **0.941**, 0.935, 0.932 | 0.950 | 0.951 | 0.921 | 0.9407 |
+| WF (1024) | 0.926, 0.931, 0.924, 0.928, **0.932** | 0.943 | 0.947 | 0.905 | 0.9318 |
+
+S follows R's curve: it peaks at epoch 2, then declines slightly.
+
+*Decision, S − R, with the Exp 10 rule:* **S does not replace R.**
+
+| Criterion | S − R | Result |
+|---|---|---|
+| P1 DTLD pictogram macro recall | +0.010 [−0.002, +0.022] | not shown |
+| P2 under 20 px | −0.011 [−0.030, +0.006] | not shown |
+| G1 TSS A val | −0.003 [−0.011, +0.005] | **fails** (lower bound below −0.01) |
+| G1 TSS B val | +0.019 [+0.008, +0.031] | pass |
+| G1 TSS DTLD test | +0.007 [+0.003, +0.011] | pass |
+| G2 False-Go A val | +0.017 (0.109 against 0.092) [−0.004, +0.040] | **fails** (limit +0.01) |
+| G2 False-Go B val / DTLD test | −0.027 / −0.004 | pass |
+| G3 DTLD color accuracy | +0.002 [+0.000, +0.003] | pass |
+| G4 hand-labelled false arrows | −0.020 | pass |
+
+*Where S differs from R* (95 % CI excludes 0 unless stated):
+- **OpenLane B val**, R's weak set in Exp 10:
+  - TSS +0.019, False-Go 0.066 against 0.093.
+  - False arrows on round lights −0.092.
+  - Yellow recall −0.049.
+- **DTLD test:**
+  - TSS +0.007, junction accuracy +0.004, false arrows on round lights −0.008.
+  - Pictogram recall: circle +0.010, straight arrow +0.030, lamps of 30 px and over +0.014.
+  - Lamps under 30 px: no clear change (under 15 px −0.019 [−0.055, +0.024]).
+- **ATLAS test:**
+  - Pictogram macro recall about level, +0.001 [−0.016, +0.019].
+  - False arrows −0.059, color accuracy +0.006, detection AP +0.020.
+- **LISA (OOD):**
+  - Pictogram macro recall +0.074 [−0.012, +0.088], not clear.
+  - Yellow recall −0.060.
+  - Detection AP: day +0.018, night −0.020.
+- **S2TLD (OOD):**
+  - Detection AP: 1080p +0.084, 1080p horizontal lights +0.107, 720p +0.022.
+  - Color accuracy +0.011.
+- **VZC-TLD (OOD):** horizontal-light AP +0.076, all lights +0.010, junction accuracy +0.012.
+- **BDD100K val:**
+  - Yellow recall −0.055.
+  - Detection AP −0.003, horizontal lights −0.035.
+- **Cost:** inference 54 ms per frame, against 29.5 ms for R.
+
+*S − WF, for reference:*
+- **Pictogram macro recall:** DTLD +0.058 [+0.043, +0.074], ATLAS +0.052, LISA +0.127.
+- **Arrow classes on DTLD:** right +0.129, straight +0.110, left +0.035.
+- **By lamp height on DTLD:** lamps 20 px and over +0.048 to +0.065. Under 15 px is worse, −0.089 [−0.227, −0.006].
+- **TSS:** A val +0.003, B val +0.017, DTLD +0.011.
+- **False-Go:** A val 0.109 against 0.128, B val 0.066 against 0.057.
+
+**Reading.**
+- Going from 1280 to 1536 does not give the clear pictogram gain the rule asks for.
+- It is a trade:
+  - **Better:** B val decisions and the detection of small or distant lights (S2TLD 1080p, VZC horizontal lights).
+  - **Worse:** A val False-Go, yellow recall on B val, BDD100K and LISA, and twice the inference time.
+- The gain from resolution concentrates in lamps of 20 px and over, and in detection. Lamps under 15 px do not improve at 1280 or at 1536.
+- R stays the selected model, and 1536 is the highest resolution tried.
+- Single seed, and the continuation was not pre-registered. So the B val gain and the A val False-Go loss are both candidates to recheck, not established effects.
+
+Results: `runs/exp11_eval/result.json` (epoch 0) and `runs/exp11_eval_full/result.json` (5 epochs). A comparison page of F8, WF, R and S on every set was published as an artifact on 2026-11-19.

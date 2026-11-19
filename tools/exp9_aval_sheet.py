@@ -1,19 +1,19 @@
-"""Crop sheet for tools/exp9_aval_false_go.py: one tile per light that gives F8 its red where an arm makes a False-Go.
-Each tile: the light (magenta) with context, and what F8 and the arm read on it (pictogram, color, junction score).
-Usage: exp9_aval_sheet.py [WF|W] -> runs/exp9_eval/aval_false_go_{arm}.jpg"""
+"""Crop sheet for tools/exp9_aval_false_go.py: one tile per light that gives REF its red where ARM makes a False-Go.
+Each tile: the light (magenta) with context, and what REF and ARM read on it (pictogram, color, junction score).
+Usage: exp9_aval_sheet.py [ARM [REF [SET]]] (defaults WF F8 A_val) -> out_path(ARM, REF, SET).jpg"""
 import json, os, sys
 import torch
 from PIL import Image, ImageDraw
 from torchvision.ops import box_iou, box_convert
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import tools.eval_exp8 as e8  # noqa: E402
-from tools.exp9_aval_false_go import ARMS, F8  # noqa: E402
+from tools.exp9_aval_false_go import out_path, sel  # noqa: E402
 from dtsu.picto_rules import COLORS, PICTOS  # noqa: E402
 
-arm = sys.argv[1] if len(sys.argv) > 1 else "WF"
-rows = [x for x in json.load(open(f"runs/exp9_eval/aval_false_go_{arm}.json"))["rows"] if x["fails"] == arm and "box" in x]
-_, abs_recs, _, _ = e8.openlane_set("A_val")
-dets = {"F8": torch.load(F8[0], weights_only=False), arm: torch.load(ARMS[arm][0], weights_only=False)}
+arm, ref, split = (sys.argv[1:] + ["WF", "F8", "A_val"][len(sys.argv) - 1:])[:3]
+rows = [x for x in json.load(open(out_path(arm, ref, split) + ".json"))["rows"] if x["fails"] == arm and "box" in x]
+_, abs_recs, _, _ = e8.openlane_set(split)
+dets = {m: torch.load(sel(m, split)[0], weights_only=False) for m in (ref, arm)}
 seen, tiles = set(), []
 T = 256
 
@@ -47,7 +47,7 @@ for x in rows:
     tile.paste(crop, (0, 0))
     t = ImageDraw.Draw(tile)
     t.text((4, T + 2), f"seg {x['segment']} f{x['frame']} {x['direction']}: {x['cause']}", fill=(255, 255, 0))
-    t.text((4, T + 17), "F8 " + read(dets["F8"][x["frame"]], b), fill=(200, 255, 200))
+    t.text((4, T + 17), f"{ref} " + read(dets[ref][x["frame"]], b), fill=(200, 255, 200))
     t.text((4, T + 32), f"{arm} " + read(dets[arm][x["frame"]], b), fill=(255, 200, 200))
     tiles.append(tile)
 
@@ -55,6 +55,6 @@ cols = 6
 sheet = Image.new("RGB", (cols * T, ((len(tiles) + cols - 1) // cols) * (T + 48)), (0, 0, 0))
 for i, tl in enumerate(tiles):
     sheet.paste(tl, ((i % cols) * T, (i // cols) * (T + 48)))
-out = f"runs/exp9_eval/aval_false_go_{arm}.jpg"
+out = out_path(arm, ref, split) + ".jpg"
 sheet.save(out, quality=85)
 print(len(tiles), "tiles ->", out)
