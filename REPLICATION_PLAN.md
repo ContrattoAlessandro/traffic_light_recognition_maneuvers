@@ -1823,3 +1823,31 @@ Results: `runs/exp11_eval/result.json` (epoch 0) and `runs/exp11_eval_full/resul
 - In this simulator clip, the drop in red reports comes from S's junction head, not from its detector.
 - On the sample frames, S misses the red stop light directly ahead, and R misreads a green light as yellow.
 - This matches the A val False-Go rise of S on real data, but it is one clip with no labels.
+
+**AWSIM camera view, R and S (2026-11-19, qualitative, no labels).** The source `AWSIM_ Autoware autonomous driving simulator_1080p60.mp4` (1920×1080, 60 fps, 7,076 frames) is available again. The camera view was cropped to x 70–990, y 60–960. This leaves out the window title and the bottom HUD, so the crop is tighter than the old `AWSIM_only.mp4` (x 72–996, y 24–1078).
+- The new crop is saved as `data/awsim/AWSIM_cam.mp4`, 920×900.
+- R and S were run on it at epoch 2 and threshold 0.35. Outputs are `runs/awsim/AWSIM_cam_picto_{R,S}.mp4` and `.jsonl`.
+- `tools/awsim_rs_compare.py AWSIM_cam` writes `AWSIM_cam_picto_RS_counts.json` and `_RS_sample.jpg`.
+
+| | R | S |
+|---|---|---|
+| Frames with any detection | 3,800 | 3,059 |
+| Frames with a junction light | 3,568 | 2,808 |
+| Junction detections | 5,245 | 3,953 |
+| Straight green (frames) | 3,028 | 2,496 |
+| Straight red (frames) | 340 | 171 |
+| Straight yellow (frames) | 171 | 138 |
+| No straight color (frames) | 3,537 | 4,271 |
+| Arrow detections (straight / right / left) | 109 / 65 / 37 | 24 / 2 / 1 |
+| Junction lamp height, median | 16.7 px | 20.6 px |
+| Junction lamps under 15 px | 40 % | 18 % |
+
+**Where R and S disagree**
+- The straight color differs in 992 frames. Most are R green → S none (637) or R red → S none (171).
+- In 854 frames R reports a color and S reports none. There, R's largest junction lamp has a median height of 12.9 px, and 63 % are under 15 px. R's median score on them is 0.43.
+- In only 48 of the 171 red → none frames does S detect a red light that it marks as not in the junction.
+
+**Reading**
+- On this tighter crop, S mostly does not detect small, distant lamps that R reports. This differs from the 854px clip, where S detected the light but marked it as not in the junction.
+- The sample sheet shows R reporting green on a far lamp of a few pixels, where S reports nothing. The images can't tell which model is right.
+- A possible cause, not tested: the video is only 920×900. Upscaling it to S's 1536 input adds no detail, so small lamps look blurrier than S's training data at the same size.
