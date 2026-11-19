@@ -6,7 +6,7 @@ export, and reports per subset:
   annotated pictogram (circle -> generic, arrows -> their directions, other -> light dropped), US rules
   (``assign_scored``, near_turn dedicated). The estimate is exact on stratum D (every dependent frame)
   and uses the random N sample for the rest:  TSS = (sum_D s_i + n_rest * mean_N s_i) / n_frames, where
-  s_i is a frame's (color acc + pass acc + EM) / 3 over its four directions (this equals the TSS
+  s_i is a frame's (color acc + pass acc + EM) / 3 over its three directions (this equals the TSS
   definition of ``dtsu.metrics``). 95% interval: segment-cluster bootstrap of the N sample.
 - primary analysis: unclear -> circle; sensitivity: frames with an unclear light left out;
 - references on the same frames: every light a circle, and the "ideal" (turn-only lights = arrows);

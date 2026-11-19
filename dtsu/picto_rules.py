@@ -5,7 +5,7 @@ per "<pictogram>|<J or N>|<color>"; the factorized arm F learns the three separa
 
 The rule turns the junction lights of one frame into per-maneuver colors: an arrow sets its own maneuvers,
 every maneuver without an arrow takes the circle color (German convention: the circle also governs the
-right turn), U-turn follows left, unknown pictograms count as circles.
+right turn), unknown pictograms count as circles.
 """
 import statistics
 
@@ -67,7 +67,6 @@ def rule(lights):
     for d in ("straight", "left", "right"):
         src = best.get(d) or circle
         out[d] = src[1] if src else "none"
-    out["uturn"] = out["left"]
     return {d: out[d] for d in DIRECTIONS}
 
 

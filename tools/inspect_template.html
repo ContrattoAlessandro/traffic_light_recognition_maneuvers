@@ -177,8 +177,8 @@ textarea { font: inherit; font-size: var(--step--1); width: 100%; min-height: 54
 <script>
 (function () {
   const DATA = JSON.parse(document.getElementById("inspect-data").textContent);
-  const DIRS = ["straight", "left", "right", "uturn"];
-  const DIR_LABEL = { straight: "Straight", left: "Left", right: "Right", uturn: "U-turn" };
+  const DIRS = ["straight", "left", "right"];
+  const DIR_LABEL = { straight: "Straight", left: "Left", right: "Right" };
   const COLORS = ["none", "red", "yellow", "green"];
   const SUBSET_NAME = { A: "subset_A · Argoverse 2", B: "subset_B · nuScenes" };
   const MOVE_SHORT = { straight: "S", left: "L", right: "R", uturn: "U", generic: "gen" };
@@ -244,7 +244,7 @@ textarea { font: inherit; font-size: var(--step--1); width: 100%; min-height: 54
     const head = el("header", "frame-head");
     head.append(el("span", "fid", f.id), el("span", "subset", SUBSET_NAME[f.subset] || f.subset));
     head.append(el("span", "status " + (f.wrong.length ? "bad" : "ok"),
-      f.wrong.length ? `${f.wrong.length} of 4 directions wrong` : "All 4 directions correct"));
+      f.wrong.length ? `${f.wrong.length} of ${DIRS.length} directions wrong` : `All ${DIRS.length} directions correct`));
     if (f.falseGo.length) head.append(el("span", "pill", "False-Go"));
     if (f.falseStop.length) head.append(el("span", "pill", "False-Stop"));
     if (f.crossing) head.append(el("span", "pill soft", "Past stop line"));

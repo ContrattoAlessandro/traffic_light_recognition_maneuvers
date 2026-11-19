@@ -1,10 +1,9 @@
 """Exp 6 models (trained on DTLD only) on the OpenLane-V2 benchmark frames: A val and B val.
 
 Each arm runs at its DTLD-tune epoch and threshold; detections -> class-agnostic NMS 0.5 -> the junction
-rule on the lights the model assigns to the junction (dtsu.picto_rules.rule). U-turn follows the far turn:
-left in right-hand traffic, right in left-hand traffic (Singapore, from the record's traffic_side).
+rule on the lights the model assigns to the junction (dtsu.picto_rules.rule).
 Scored against the benchmark's per-direction labels (HD-map topology) two ways:
-- all: the four directions as predicted. The rule gives every direction a color whenever a junction light
+- all: the three directions as predicted. The rule gives every direction a color whenever a junction light
   is seen, while the label says "none" for a maneuver no light governs (e.g. not allowed from the ego
   lane), so this under-rates the rule;
 - map-masked: directions labelled "none" are set to "none" in the prediction too, i.e. the HD map's
@@ -28,9 +27,7 @@ RUNS = {"J": "runs/exp6_picto_J", "F": "runs/exp6_picto_F"}
 
 
 def predict(d, thr, side):
-    out = directions(kept(d, thr))
-    out["uturn"] = out["left"] if side == "right" else out["right"]
-    return out
+    return directions(kept(d, thr))
 
 
 def main():

@@ -29,7 +29,7 @@ import tools.exp7_checks as ck  # noqa: E402
 from dtsu.picto_rules import ARROW_MOVES, COLORS, PICTOS  # noqa: E402
 from tools.eval_picto import kept  # noqa: E402
 
-DIRS = ("straight", "left", "right", "uturn")
+DIRS = ("straight", "left", "right")
 # detection cache of each model at its selected epoch ({s} = set name), and its selected threshold
 MODELS = {"F8": ("runs/exp8_bdd_F/exp8_eval/e3_{s}.pt", 0.45), "WF": ("runs/exp9_eval/WF/e4_{s}.pt", 0.35),
           "W": ("runs/exp9_eval/W/e1_{s}.pt", 0.25), "R": ("runs/exp10_eval/R/e2_{s}.pt", 0.35)}
@@ -60,7 +60,7 @@ def us_rule_src(d, side):
     far, near = ("left", "right") if side == "right" else ("right", "left")
     straight = best.get("straight") or circle
     f = best.get(far) or straight
-    res = {"straight": straight, far: f, near: best.get(near), "uturn": f}
+    res = {"straight": straight, far: f, near: best.get(near)}
     return {k: (v[1], v[2]) if v else ("none", None) for k, v in res.items()}
 
 

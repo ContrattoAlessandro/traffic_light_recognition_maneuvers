@@ -43,7 +43,6 @@ def assign_scored(dets, side="right", near_turn="dedicated"):
 
     out = {"straight": pick(lambda m: "straight" in m or "generic" in m)}
     out[far] = pick(lambda m: far in m) or out["straight"]
-    out["uturn"] = pick(lambda m: "uturn" in m) or out[far]
     out[near] = pick((lambda m: m <= {near}) if near_turn == "dedicated" else (lambda m: near in m))
     return {d: out[d] or "none" for d in DIRECTIONS}
 

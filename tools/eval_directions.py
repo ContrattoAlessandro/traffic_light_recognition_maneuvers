@@ -61,6 +61,7 @@ def main():
     ap.add_argument("--run", default="runs/swin_t_AB")
     ap.add_argument("--val-set", nargs=3, action="append", metavar=("NAME", "LABELS", "ROOT"))
     ap.add_argument("--workers", type=int, default=6)
+    ap.add_argument("--tag", default="", help="suffix for per_direction / val_preds (re-scoring under changed rules)")
     args = ap.parse_args()
     val_sets = args.val_set or [
         ("A", "data/labels/subset_A_val.jsonl", "data/OpenLane-V2/subset_A"),
@@ -96,9 +97,9 @@ def main():
             mix = "/".join(f"{100 * s['gt_color_mix'][c]:.1f}" for c in COLORS)
             print(f"{d:9s} {mix:>22s} {s['acc_color']:6.4f} {s['acc_pass']:6.4f} {s['false_go']:6.4f} "
                   f"{s['false_stop']:6.4f} {s['n_stop']:6d} {s['majority_acc_color']:6.4f} {s['majority_acc_pass']:6.4f}")
-    with open(os.path.join(args.run, "per_direction.json"), "w") as f:
+    with open(os.path.join(args.run, f"per_direction{args.tag}.json"), "w") as f:
         json.dump(out, f, indent=1)
-    save_preds(os.path.join(args.run, "val_preds.npz"), records, preds, records)
+    save_preds(os.path.join(args.run, f"val_preds{args.tag}.npz"), records, preds, records)
 
 
 if __name__ == "__main__":

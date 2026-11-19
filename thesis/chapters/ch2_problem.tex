@@ -11,7 +11,7 @@ designs compared in this thesis (\cref{sec:prob-paradigms}).
 \section{Task definition}
 \label{sec:prob-def}
 
-Let $I$ be a front-camera image and $\dirs=\{\text{straight},\text{left},\text{right},\text{U-turn}\}$
+Let $I$ be a front-camera image and $\dirs=\{\text{straight},\text{left},\text{right}\}$
 the set of maneuvers. The task is to predict, for every $d\in\dirs$,
 \begin{align}
   c_d &\in \mathcal{C} = \{\text{none},\text{red},\text{yellow},\text{green}\}, \\
@@ -30,9 +30,19 @@ with a separate head, which the original paper motivates with the possibility of
 \cref{sec:res-perdir} shows that in practice the two outputs are almost perfectly coupled.
 
 A frame-level label is the tuple $y = \big((c_d, p_d)\big)_{d\in\dirs}$. Since $p_d$ is a function of
-$c_d$, the label space has $4^4=256$ possible states, of which only a few dozen occur in practice
-because maneuvers are strongly correlated: left and U-turn almost always share a signal, and straight
-and left share it whenever there is no dedicated left arrow.
+$c_d$, the label space has $4^3=64$ possible states, of which far fewer occur in practice because
+maneuvers are strongly correlated: straight and left share a signal whenever there is no dedicated left
+arrow.
+
+\paragraph{Why U-turn is left out.} Zou et al.\ define a fourth maneuver, the U-turn. This thesis drops
+it. Dedicated U-turn signals are almost absent from the data, so a U-turn label takes the left signal in
+99.9\% of the OpenLane-V2 frames, and DTLD and LISA have no U-turn signals at all. As a separate output,
+U-turn therefore adds no information; it only counts the left turn a second time in every averaged
+metric. All results in this thesis are computed over the three maneuvers, unless stated otherwise. The
+paper's published numbers include U-turn, so comparisons with them are close but not exact. Removing
+a near copy of left reweights the averaged metrics towards straight and right; since right is almost
+always the trivial \emph{none} (\cref{sec:prob-metrics}), three-direction scores come out slightly
+higher than four-direction scores of the same predictions.
 
 \section{Label semantics and traffic rules}
 \label{sec:prob-semantics}
@@ -46,10 +56,9 @@ made. The rules adopted in this thesis, detailed in \cref{sec:method-labels} and
         generic (circular) lights of the approach.
   \item \textbf{Left} takes a left-specific light if one exists, and otherwise inherits the straight
         signal.
-  \item \textbf{U-turn} takes a U-turn light if one exists, and otherwise inherits the left signal.
   \item \textbf{Right} takes only a \emph{dedicated} right-turn light; without one it is \emph{none}.
 \end{enumerate}
-The fourth rule encodes the US convention that a right turn on red is permitted
+The third rule encodes the US convention that a right turn on red is permitted
 (\cref{sec:bg-signals}). It has two consequences that recur throughout the thesis. First, right is
 \emph{none} in about 97\% of the OpenLane-V2 frames, so its color accuracy is dominated by a trivial
 majority class. Second, the rare dedicated red right arrow, which is the one case where turning right
@@ -104,8 +113,8 @@ and aspect ratio at which lights appear after resizing.
 The metrics follow Eqs.~4--7 of Zou et al. For $N$ frames with predictions $\hat c_{i,d}$, $\hat
 p_{i,d}$:
 \begin{align}
-  \acccolor &= \frac{1}{4N}\sum_{i=1}^{N}\sum_{d\in\dirs} \mathbb{1}[\hat c_{i,d} = c_{i,d}], \\
-  \accpass &= \frac{1}{4N}\sum_{i=1}^{N}\sum_{d\in\dirs} \mathbb{1}[\hat p_{i,d} = p_{i,d}], \\
+  \acccolor &= \frac{1}{|\dirs|N}\sum_{i=1}^{N}\sum_{d\in\dirs} \mathbb{1}[\hat c_{i,d} = c_{i,d}], \\
+  \accpass &= \frac{1}{|\dirs|N}\sum_{i=1}^{N}\sum_{d\in\dirs} \mathbb{1}[\hat p_{i,d} = p_{i,d}], \\
   \EM &= \frac{1}{N}\sum_{i=1}^{N} \prod_{d\in\dirs} \mathbb{1}[\hat c_{i,d}=c_{i,d} \wedge \hat p_{i,d}=p_{i,d}], \\
   \TSS &= \tfrac{1}{3}\left(\acccolor + \accpass + \EM\right),
 \end{align}
@@ -118,7 +127,7 @@ The Traffic Signal Score (TSS) is a convenient single number, but it has propert
 explicit:
 \begin{itemize}
   \item \textbf{Trivial directions inflate it.} Because right is \emph{none} in $\sim$97\% of frames, a
-        model that never predicts anything else for right gains almost a quarter of $\acccolor$ and
+        model that never predicts anything else for right gains almost a third of $\acccolor$ and
         $\accpass$ for free. For this reason, out-of-distribution results are also reported without the
         right direction.
   \item \textbf{It is symmetric in the errors that matter asymmetrically.} Predicting \emph{go} for a
@@ -140,7 +149,7 @@ accuracy of always predicting that direction's most frequent color.
 
 Two ways of solving the task are compared in this thesis.
 
-\paragraph{End-to-end (direction-aware).} The network maps the image directly to the 4$\times$2
+\paragraph{End-to-end (direction-aware).} The network maps the image directly to the 3$\times$2
 outputs. Relevance, association and traffic rules are learned implicitly from data. An auxiliary
 detector supplies localized evidence, but its output is consumed as features, not as decisions. The
 advantages are flexibility (context such as lane markings or road layout can be used without being

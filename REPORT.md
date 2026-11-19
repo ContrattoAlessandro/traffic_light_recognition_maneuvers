@@ -13,26 +13,30 @@ ConvNeXtV2-Tiny (§6).
 | | Acc_color ↑ | Acc_pass ↑ | EM ↑ | TSS ↑ | False-Go ↓ | False-Stop ↓ |
 |---|---|---|---|---|---|---|
 | Paper, Subset-A (Tables 1–3) | 0.9019 | 0.9356 | 0.8031 | 0.8802 | 0.1372 | 0.0416 |
-| **Ours, subset_A val** | **0.9098** | **0.9341** | **0.8221** | **0.8887** | **0.1642** | **0.0352** |
-| Δ (ours − paper) | +0.0079 | −0.0015 | +0.0190 | **+0.0085** | +0.0270 | −0.0064 |
-| Ours, subset_B val | 0.9334 | 0.9468 | 0.8518 | 0.9106 | 0.1208 | 0.0214 |
-| Ours, A+B val | 0.9196 | 0.9394 | 0.8343 | 0.8978 | 0.1431 | 0.0298 |
+| **Ours, subset_A val** | **0.9144** | **0.9422** | **0.8279** | **0.8948** | **0.1581** | **0.0316** |
+| Δ (ours − paper) | +0.0125 | +0.0066 | +0.0248 | **+0.0146** | +0.0209 | −0.0100 |
+| Ours, subset_B val | 0.9316 | 0.9476 | 0.8543 | 0.9112 | 0.1334 | 0.0200 |
+| Ours, A+B val | 0.9215 | 0.9444 | 0.8388 | 0.9016 | 0.1459 | 0.0271 |
 
-- **The main result reproduces.** On subset_A val we get TSS 0.889 vs the paper's 0.880, with higher color accuracy and EM and the same go/stop accuracy.
-- **Weak point, False-Go:** 0.164 vs 0.137, i.e. predicting "go" for a stop direction more often. It fluctuates strongly between epochs (0.105–0.212 over epochs 4–14, mean 0.146), so the gap is partly where training stopped.
+Ours: epoch 14, over straight / left / right (§2). The paper's row includes U-turn; over those four directions our subset_A val TSS is 0.8887.
+
+- **The main result reproduces.** On subset_A val we get TSS 0.895 vs the paper's 0.880, with higher color accuracy, go/stop accuracy and EM. About half a point of the margin comes from dropping U-turn (0.889 over four directions).
+- **Weak point, False-Go:** 0.158 vs 0.137, i.e. predicting "go" for a stop direction more often. It fluctuates strongly between epochs (0.105–0.212 over epochs 4–14, mean 0.146, four directions), so the gap is partly where training stopped.
 - **The numbers aren't strictly comparable.** The paper's labels are not public; ours are rebuilt from the OpenLane-V2 annotations, and the kept-frame counts differ (§5).
-- **Swapping the backbone for ConvNeXtV2-Tiny does not help** (§6). With everything else fixed, mean TSS over epochs 4–14 is 0.891 vs 0.898 on subset_A val, and False-Go is higher (0.191 vs 0.146).
+- **Swapping the backbone for ConvNeXtV2-Tiny does not help** (§6). With everything else fixed, mean TSS over epochs 4–14 is 0.891 vs 0.898 on subset_A val (four directions), and False-Go is higher (0.191 vs 0.146).
 
 ## 2. Task and metrics
 
-From one front-camera image, the model predicts for each maneuver d ∈ {straight, left, right, U-turn}:
+From one front-camera image, the model predicts for each maneuver d ∈ {straight, left, right}:
 - a color c ∈ {none, red, yellow, green};
 - a passability p ∈ {stop, go}, with red → stop and everything else → go (Fig. 2 legend).
 
 The metrics follow the paper's Eqs. 4–7:
 - Acc_color and Acc_pass are pooled over frame × direction.
-- EM counts a frame only if all 4 colors and all 4 passabilities are right.
+- EM counts a frame only if all 3 colors and all 3 passabilities are right.
 - TSS = (Acc_color + Acc_pass + EM) / 3.
+
+**U-turn is dropped.** The paper has a fourth maneuver, U-turn. We leave it out: U-turn takes the left signal in 99.9% of our labels (dedicated U-turn signals are almost absent), and DTLD and LISA have none. As an output it only counts left a second time. All metrics here are over the three maneuvers unless stated otherwise. The paper's numbers include U-turn, so the comparison is close but not exact. Dropping a near copy of left gives the near-trivial right ("none" in ~97% of frames) more weight, so three-direction scores are slightly higher than four-direction scores of the same predictions.
 - False-Go = P(pred go | gt stop) and False-Stop = P(pred stop | gt go), pooled over directions.
 
 The implementation is in `dtsu/metrics.py`, with unit tests.
@@ -60,7 +64,7 @@ The implementation is in `dtsu/metrics.py`, with unit tests.
 2. **Global token g.** The mean of the pooled FPN levels, followed by a linear layer.
 3. **Detector.** A lightweight DETR (6-layer encoder on P5; 6-layer decoder over P3 + P4 + encoded P5; 50 queries; 3 light classes red/green/yellow).
 4. **ROI tokens.** Each of the top-16 detected boxes gives an ROI token t_j = φ_r(RoIAlign(P2, b_j)) + φ_b(b_j), with linear φ (Eq. 9).
-5. **Direction attention.** Four learnable direction queries attend to T = [g, t_1..t_16] through multi-head attention (8 heads), followed by LayerNorm and an FFN (Eq. 11).
+5. **Direction attention.** One learnable query per direction attends to T = [g, t_1..t_16] through multi-head attention (8 heads), followed by LayerNorm and an FFN (Eq. 11). The models were trained with the paper's four queries; the queries attend only to the tokens, not to each other, so the U-turn query is simply not read out and the other three are unaffected (`dtsu/model.py` drops it when loading old checkpoints).
 6. **Heads.** A color head (4-way) and a pass head (2-way) for each direction (Eq. 12).
 
 ### Training (`dtsu/train.py`, `tools/run_full.sh`)
@@ -78,7 +82,7 @@ The implementation is in `dtsu/metrics.py`, with unit tests.
 
 ### Hyperparameter tuning
 - Tuning used a held-out 10% of train scenes (70 per subset; 1,185 A + 785 B kept frames); val was never used.
-- Each run lasted 4 epochs. The table gives combined tune-split TSS at the last epoch.
+- Each run lasted 4 epochs. The table gives combined tune-split TSS at the last epoch, over four directions (U-turn included), as scored when the choice was made.
 
 | Run | λ (C/P/D) | Clip | Other | Tune TSS |
 |---|---|---|---|---|
@@ -90,6 +94,7 @@ The implementation is in `dtsu/metrics.py`, with unit tests.
 ## 4. Results
 
 ### 4.1 Overall, per epoch (subset_A val)
+- The per-epoch metrics were logged during training over four directions (U-turn included). Only the epoch-14 checkpoint was kept, so they can't be re-scored over three; the values below are on the four-direction scale.
 - TSS from epoch 4 to 14 stayed between 0.887 and 0.908 (mean 0.898). It was above the paper's 0.880 in every epoch from epoch 0 on.
 - The training color/pass loss reached ~0.001, while val stayed flat, so further epochs mostly fit the training set.
 - Full per-epoch metrics: `runs/swin_t_AB/val_log.jsonl`.
@@ -105,7 +110,6 @@ The implementation is in `dtsu/metrics.py`, with unit tests.
 | straight | 3.9 / 28.6 / 5.0 / 62.5 | 0.865 | 0.921 | 0.132 | 0.058 | 636 | 0.625 |
 | left | 0.9 / 32.8 / 4.1 / 62.2 | 0.900 | 0.910 | 0.172 | 0.050 | 729 | 0.622 |
 | right | 97.7 / 0.6 / 0.1 / 1.5 | 0.978 | 0.996 | 0.643 | 0.000 | 14 | 0.977 |
-| U-turn | 0.9 / 33.1 / 4.1 / 61.9 | 0.896 | 0.910 | 0.176 | 0.048 | 734 | 0.619 |
 
 **subset_B val (1,565 frames)**
 
@@ -114,7 +118,6 @@ The implementation is in `dtsu/metrics.py`, with unit tests.
 | straight | 3.1 / 41.2 / 2.2 / 53.6 | 0.911 | 0.928 | 0.120 | 0.038 | 644 | 0.536 |
 | left | 0.4 / 42.2 / 2.9 / 54.4 | 0.931 | 0.939 | 0.104 | 0.030 | 661 | 0.544 |
 | right | 95.8 / 2.4 / 0.3 / 1.5 | 0.953 | 0.976 | 0.892 | 0.003 | 37 | 0.959 |
-| U-turn | 0.4 / 42.2 / 2.9 / 54.4 | 0.939 | 0.944 | 0.095 | 0.027 | 661 | 0.544 |
 
 **Per-class color recall, straight direction**
 
@@ -124,15 +127,14 @@ The implementation is in `dtsu/metrics.py`, with unit tests.
 | B val | 0.19 (48) | 0.89 (644) | 0.85 (34) | 0.97 (839) |
 
 **Observations**
-- **Straight, left and U-turn are learned well**, 25–40 points above the majority baseline.
-  - Left and U-turn behave almost identically, as expected: U-turn inherits left in 99.9% of labels.
-  - Straight is the hardest of the three on A (0.865 color). Its "none" class (no light governs straight, e.g. T-junctions or turn-only lanes) is rarely recognized: recall 0.19–0.20.
+- **Straight and left are learned well**, 24–39 points above the majority baseline.
+  - Straight is the harder of the two on A (0.865 color). Its "none" class (no light governs straight, e.g. T-junctions or turn-only lanes) is rarely recognized: recall 0.19–0.20.
 - **The right turn is not learned.** Its color accuracy equals the majority baseline (A: 0.978 vs 0.977; B: 0.953 vs 0.959). The model predicts "none" almost always. Right-turn red is rare (14 frames in A val, 37 in B), so it gets False-Go 0.64 (A) and 0.89 (B).
   - These cases are few, so they barely affect pooled False-Go, but they are the most safety-relevant errors.
   - The paper's Fig. 3 has the same imbalance (right "none" 96.9%). The paper doesn't say how its model handles it.
 - **Yellow is weak on A.** Straight yellow recall is 0.42 on A vs 0.85 on B; yellow is mostly confused with red or green. A val has 110 yellow straight frames, more than B, so this isn't only a sample-size effect. A likely contributor is Argoverse yellow lights looking like red/amber.
 - **Passability is almost exactly a function of the predicted color.** Pass = rule(color) in 99.4–99.9% of predictions, even though the two heads are separate. So go/stop errors come from color errors, mainly red ↔ green/yellow.
-- **subset_B is easier than subset_A** across all directions (TSS 0.911 vs 0.889).
+- **subset_B is easier than subset_A** across all directions (TSS 0.911 vs 0.895).
 
 ### 4.3 Label distribution vs the paper's Fig. 3 (A+B, train + val, kept frames)
 
@@ -141,10 +143,10 @@ The implementation is in `dtsu/metrics.py`, with unit tests.
 | straight (ours / paper %) | 6.5 / 7.0 | 36.9 / 40.7 | 53.9 / 49.7 | 2.7 / 2.5 |
 | left | 0.9 / 7.2 | 40.8 / 41.3 | 55.5 / 48.8 | 2.9 / 2.8 |
 | right | 96.6 / 96.9 | 1.8 / 0.3 | 1.5 / 2.7 | 0.1 / 0.2 |
-| U-turn | 0.8 / 7.2 | 40.9 / 41.3 | 55.4 / 48.8 | 2.9 / 2.8 |
 
+- The paper's Fig. 3 also has U-turn, nearly identical to its left; ours inherits left in 99.9% of frames, which is why we drop it (§2).
 - Most of the distribution matches. That supports our reading that the paper's benchmark is A+B with US rules (§5.1).
-- The main mismatch is left/U-turn "none": 0.9% for us vs 7.2% in the paper. In the paper, left "none" ≈ straight "none", which suggests its left labels inherit straight's "none" more often than ours do.
+- The main mismatch is left "none": 0.9% for us vs 7.2% in the paper. In the paper, left "none" ≈ straight "none", which suggests its left labels inherit straight's "none" more often than ours do.
 
 ## 5. Assumptions and deviations
 
@@ -155,12 +157,11 @@ The implementation is in `dtsu/metrics.py`, with unit tests.
   - lane centerline geometry;
   - traffic-element colors (the `attribute` field: 1 red, 2 green, 3 yellow, 4–12 arrows).
 - **Our rules:**
-  1. **Maneuver per lane.** Follow linked lanes to the first junction lane being entered (it starts beyond 3 m behind the ego). Classify its heading change: within 30° is straight, beyond 135° is U-turn, otherwise left or right.
+  1. **Maneuver per lane.** Follow linked lanes to the first junction lane being entered (it starts beyond 3 m behind the ego). Classify its heading change: within 30° is straight, beyond 135° is U-turn, otherwise left or right. U-turn is kept only as a lane movement, so that a light controlling only U-turn lanes isn't taken for a left-turn light; it is not an output.
   2. **Relevant lights.** Keep lights linked to lanes that are aligned with the ego (within 60°) and at the nearest junction (within 10 m). If the ego has passed the stop line, use approach lanes ending within 30 m behind it.
   3. **Lights to directions.**
      - Straight takes straight/generic lights.
      - Left takes left lights, otherwise inherits straight.
-     - U-turn takes U-turn lights, otherwise inherits left.
      - Right takes only dedicated right-only lights, otherwise "none".
      - The most specific light wins. Ties with different colors mark a conflict, and the frame is dropped (596 frames).
   4. **Frame filter.** A frame is kept if at least one relevant colored light exists and there is no conflict.
@@ -227,7 +228,9 @@ We compared our backbone with the official `facebookresearch/ConvNeXt-V2` model 
 
 | | Swin-T | ConvNeXtV2-T | Δ |
 |---|---|---|---|
-| TSS, epoch 14 | 0.889 | 0.894 | +0.006 |
+| TSS, epoch 14 (3 directions) | 0.895 | 0.906 | +0.012 |
+| False-Go ↓, epoch 14 (3 directions) | 0.158 | 0.172 | +0.014 |
+| *Means below: 4 directions, as logged during training* | | | |
 | Acc_color, mean ep 4–14 | 0.917 | 0.911 | −0.006 |
 | Acc_pass, mean ep 4–14 | 0.938 | 0.932 | −0.006 |
 | EM, mean ep 4–14 | 0.841 | 0.830 | −0.010 |
@@ -240,16 +243,16 @@ We compared our backbone with the official `facebookresearch/ConvNeXt-V2` model 
 
 | | Swin-T | ConvNeXtV2-T | Δ |
 |---|---|---|---|
-| B, epoch 14 | 0.911 | 0.919 | +0.009 |
-| B, mean ep 4–14 | 0.921 ± 0.013 | 0.915 ± 0.009 | −0.005 |
-| A+B, epoch 14 | 0.898 | 0.905 | +0.007 |
-| A+B, mean ep 4–14 | 0.908 ± 0.009 | 0.901 ± 0.007 | −0.006 |
+| B, epoch 14 (3 directions) | 0.911 | 0.923 | +0.012 |
+| B, mean ep 4–14 (4 directions) | 0.921 ± 0.013 | 0.915 ± 0.009 | −0.005 |
+| A+B, epoch 14 (3 directions) | 0.902 | 0.913 | +0.012 |
+| A+B, mean ep 4–14 (4 directions) | 0.908 ± 0.009 | 0.901 ± 0.007 | −0.006 |
 
 **Observations**
-- **No improvement from ConvNeXtV2.** It is ahead at epoch 14 only because epoch 14 was one of Swin's weakest (subset_A range 0.887–0.908). Averaged over epochs 4–14 it is slightly behind on A, B and A+B, and it has the higher subset_A TSS in only 3 of 15 epochs.
+- **No improvement from ConvNeXtV2.** It is ahead at epoch 14 (by 0.012 over three directions) only because epoch 14 was one of Swin's weakest (subset_A range 0.887–0.908, four directions). Averaged over epochs 4–14 it is slightly behind on A, B and A+B, and it has the higher subset_A TSS in only 3 of 15 epochs.
 - **The gap is small.** It is about one standard deviation of the epoch-to-epoch swings, from one seed per backbone. The supported conclusion is "no gain, possibly slightly worse", not a clear loss.
 - **ConvNeXtV2 leans towards "go".** It makes more False-Go errors (A: 0.191 vs 0.146) and fewer False-Stop errors (A: 0.029 vs 0.036). This is the more safety-relevant direction of error.
-- **It still exceeds the paper's Swin-T result:** subset_A TSS 0.894 at epoch 14 vs 0.880.
+- **It still exceeds the paper's Swin-T result:** subset_A TSS 0.906 at epoch 14 vs 0.880 (0.894 over four directions).
 - **Cost:** about 1.5× the training time per epoch (≈30 vs ≈20 min, excluding validation) and about 30% more peak GPU memory (9.5 vs 7.3 GB at batch 4, 1024×800).
 
 ## 7. Reproducing
@@ -261,6 +264,9 @@ python -m dtsu.labels --root data/OpenLane-V2/subset_A --split train --data-dict
 bash tools/run_full.sh
 # per-direction evaluation of runs/swin_t_AB/last.pt
 python tools/eval_directions.py
+# re-score every reported result over three directions (outputs tagged _3dir), then summarize
+bash tools/rescore_three_dirs.sh
+python tools/collect_three_dirs.py
 # backbone ablation (§6), resumable; outputs in runs/convnextv2_t_AB/
 bash tools/run_convnextv2.sh
 ```
@@ -272,7 +278,8 @@ Outputs in `runs/swin_t_AB/`:
 | `last.pt` | epoch-14 checkpoint |
 | `final_metrics.json` | final metrics |
 | `val_log.jsonl` | per-epoch metrics |
-| `per_direction.json` | per-direction metrics |
+| `per_direction.json` | per-direction metrics (four directions) |
+| `per_direction_3dir.json`, `val_preds_3dir.npz` | epoch-14 metrics and predictions over three directions |
 | `train.log` | training log |
 
 The working notes and history are in `REPLICATION_PLAN.md`.

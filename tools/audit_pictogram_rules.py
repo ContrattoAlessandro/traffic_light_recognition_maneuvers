@@ -1,8 +1,8 @@
 """How much of the OpenLane-V2 direction labels a pictogram + rules method can recover, before any annotation.
 
 OpenLane-V2 lights only carry a color; their moves come from the lanes they are linked to. A pictogram
-method instead reads moves off the lamp: a circle governs the approach (straight, the far turn and the
-U-turn by inheritance, never the near turn under US rules), an arrow governs its own direction(s).
+method instead reads moves off the lamp: a circle governs the approach (straight and the far turn,
+never the near turn under US rules), an arrow governs its own direction(s).
 Ground-truth relevance and color are used throughout; only each relevant light's moves are replaced:
 
 - topo:   the topology moves (sanity check: must reproduce every label, TSS = 1);

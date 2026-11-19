@@ -15,12 +15,13 @@ The label builder (\code{dtsu/labels.py}) processes each frame as follows.
         junction lane being entered; the entering lane may start up to 3\,m behind the ego vehicle
         (\code{ENTERING_X = -3 m}). Classify the heading change along that lane: $|\Delta\psi|\le30^\circ$
         straight, $|\Delta\psi|>135^\circ$ U-turn, otherwise left or right by the sign of $\Delta\psi$.
+        U-turn is a lane movement only (it keeps U-turn-only lights specific) and is not an output.
   \item \textbf{Relevant lights.} Through \code{topology_lcte}, collect the lights linked to the selected
         lanes of the nearest junction (within 10\,m). If the ego vehicle has passed the stop line, use
         approach lanes ending within 30\,m behind it.
   \item \textbf{Assignment.} For each relevant light, record the set of maneuvers it controls. Then:
         straight $\leftarrow$ straight-specific or generic lights; left $\leftarrow$ left-specific lights,
-        else straight; U-turn $\leftarrow$ U-turn-specific lights, else left; right $\leftarrow$ lights
+        else straight; right $\leftarrow$ lights
         that control only the right turn, else \emph{none}. Among candidates, the most specific light
         (fewest controlled maneuvers) wins.
   \item \textbf{Conflicts and filter.} Equally specific candidates with different colors mark a conflict
@@ -28,7 +29,7 @@ The label builder (\code{dtsu/labels.py}) processes each frame as follows.
   \item \textbf{Traffic side.} US (right-hand) rules are applied to all frames, including Singapore. A
         mirrored variant for left-hand traffic is kept for analysis only.
 \end{enumerate}
-Each record stores the image path, the four colors and passabilities, the traffic side, the
+Each record stores the image path, the colors and passabilities of the three maneuvers, the traffic side, the
 right-turn convention (\code{near_turn}) and all light boxes with their controlled maneuvers and a
 relevance flag (used by the structured baseline).
 
@@ -44,7 +45,7 @@ relevance flag (used by the structured baseline).
   \item States: red and red--yellow $\to$ red, yellow $\to$ yellow, green $\to$ green; off or unknown
         lamps give no color, and a direction whose lamps all lack one drops the frame.
   \item Directions: straight, left and right take their lamps' colors; left without lamps inherits
-        straight; U-turn inherits left (DTLD has no U-turn signals). Right uses the German convention
+        straight. Right uses the German convention
         (\code{near_turn = "signal"}).
 \end{enumerate}
 
@@ -74,7 +75,7 @@ Backbone & Swin-T \code{swin_tiny_patch4_window7_224} (ImageNet-1k), LayerNorm p
 Neck & FPN, 256 channels, P2--P5 \\
 Detector & DETR, 6 encoder layers (P5), 6 decoder layers (P3, P4, encoded P5), 50 queries, 3 classes \\
 ROI tokens & $K=16$, RoIAlign on P2, $7\times7$ \\
-Direction attention & 4 queries, 8 heads, 1 layer + LayerNorm + FFN \\
+Direction attention & 4 queries trained (the U-turn query is not read out), 8 heads, 1 layer + LayerNorm + FFN \\
 Loss & $\lambda_c=1$, $\lambda_p=1$, $\lambda_d=0.2$; DETR: class + $5\,L_1$ + $2\,$GIoU, auxiliary losses \\
 Optimizer & AdamW, lr $10^{-4}$ (backbone $10^{-5}$), weight decay $10^{-4}$ \\
 Schedule & cosine over 24 epochs, 500 warm-up iterations, stopped after epoch 14 \\
@@ -114,7 +115,9 @@ Inference & score threshold 0.20 (OpenLane-V2, from tuning), 0.25 (DTLD, from tu
 \begin{table}[h]
 \centering
 \caption{TSS per epoch on subset A, subset B and A+B val, direction-aware model with both backbones, and
-subset A False-Go.}
+subset A False-Go. Scored over the four directions of Zou et al.\ (U-turn included) during training;
+only the epoch-14 checkpoints were kept, so these values cannot be re-scored over three directions
+(epoch 14 over three directions: \cref{tab:replication,tab:backbone}).}
 \label{tab:epochs}
 \small
 \begin{tabular}{@{}r cccc cccc@{}}
@@ -144,17 +147,18 @@ Epoch & A & B & A+B & $\FG_A$ & A & B & A+B & $\FG_A$ \\
 
 \begin{table}[h]
 \centering
-\caption{RF-DETR-M on OpenLane-V2 val per epoch (threshold 0.20). The reported model is epoch 3.}
+\caption{RF-DETR-M on OpenLane-V2 val per epoch (threshold 0.20; three directions, re-scored from the
+kept epoch checkpoints). The reported model is epoch 3.}
 \label{tab:rfdetr-epochs}
 \small
 \begin{tabular}{@{}rccccc@{}}
 \toprule
 Epoch & TSS A & TSS B & TSS A+B & $\FG$ A+B & $\FS$ A+B \\
 \midrule
-0 & 0.909 & 0.919 & 0.913 & 0.113 & 0.029 \\
-1 & 0.900 & 0.919 & 0.908 & 0.133 & 0.025 \\
-2 & 0.902 & 0.913 & 0.907 & 0.135 & 0.021 \\
-3 & 0.895 & 0.914 & 0.903 & 0.130 & 0.024 \\
+0 & 0.914 & 0.920 & 0.916 & 0.114 & 0.026 \\
+1 & 0.903 & 0.919 & 0.910 & 0.137 & 0.024 \\
+2 & 0.907 & 0.914 & 0.910 & 0.135 & 0.019 \\
+3 & 0.899 & 0.915 & 0.906 & 0.132 & 0.022 \\
 \bottomrule
 \end{tabular}
 \end{table}

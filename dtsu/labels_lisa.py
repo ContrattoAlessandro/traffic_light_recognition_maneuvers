@@ -8,7 +8,7 @@ straight arrow) in the frame. Lights of farther intersections or other approache
 comparing per kind keeps far-side balls when a near-side left-arrow pole is much closer. These go
 through ``dtsu.labels.assign_directions`` with right-hand
 rules: balls are generic and arrows dedicated, so left inherits the ball unless a left arrow is
-visible, U-turn inherits left, and right is always none (LISA has no right arrows). Disagreeing
+visible, and right is always none (LISA has no right arrows). Disagreeing
 lights of the same kind mark a conflict and drop the frame. Frames with only left arrows are
 dropped too: their balls are usually out of view or unannotated, not absent, so straight = none
 would be a guess.

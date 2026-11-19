@@ -7,7 +7,6 @@ FIG3 = {
     "straight": {"none": 2044, "red": 11838, "green": 14443, "yellow": 726},
     "left": {"none": 2099, "red": 11985, "green": 14165, "yellow": 802},
     "right": {"none": 28145, "red": 76, "green": 780, "yellow": 50},
-    "uturn": {"none": 2082, "red": 11987, "green": 14173, "yellow": 809},
 }
 COLORS = ("none", "red", "green", "yellow")
 
@@ -33,7 +32,7 @@ def main():
         print(f"{d:9s}" + "".join(f"{s:>18s}" for s in cells))
 
     agree = lambda a, b: sum(r["color"][a] == r["color"][b] for r in kept) / max(len(kept), 1)
-    print(f"left==straight {agree('left', 'straight'):.3f}   uturn==left {agree('uturn', 'left'):.3f}")
+    print(f"left==straight {agree('left', 'straight'):.3f}")
 
 
 if __name__ == "__main__":

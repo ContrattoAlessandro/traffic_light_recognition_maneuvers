@@ -37,11 +37,11 @@ def save(fig, name):
 
 def label_distribution():
     """A+B kept frames, ours vs the paper's Fig. 3 (REPORT.md section 4.3)."""
-    dirs = ["straight", "left", "right", "U-turn"]
-    ours = {"none": [6.5, 0.9, 96.6, 0.8], "red": [36.9, 40.8, 1.8, 40.9],
-            "yellow": [2.7, 2.9, 0.1, 2.9], "green": [53.9, 55.5, 1.5, 55.4]}
-    paper = {"none": [7.0, 7.2, 96.9, 7.2], "red": [40.7, 41.3, 0.3, 41.3],
-             "yellow": [2.5, 2.8, 0.2, 2.8], "green": [49.7, 48.8, 2.7, 48.8]}
+    dirs = ["straight", "left", "right"]
+    ours = {"none": [6.5, 0.9, 96.6], "red": [36.9, 40.8, 1.8],
+            "yellow": [2.7, 2.9, 0.1], "green": [53.9, 55.5, 1.5]}
+    paper = {"none": [7.0, 7.2, 96.9], "red": [40.7, 41.3, 0.3],
+             "yellow": [2.5, 2.8, 0.2], "green": [49.7, 48.8, 2.7]}
     fig, ax = plt.subplots(figsize=(6.2, 2.8))
     w = 0.36
     x = np.arange(len(dirs))
@@ -123,14 +123,14 @@ def per_direction():
     rfd = json.load(open("runs/rfdetr_m_AB/per_direction.json"))
     sw = swin["A"]["directions"] if "directions" in swin.get("A", {}) else swin["A"]
     rf = rfd["A"]["directions"]
-    dirs = ["straight", "left", "right", "uturn"]
+    dirs = ["straight", "left", "right"]
     fig, ax = plt.subplots(figsize=(5.6, 2.7))
     w = 0.26
-    x = np.arange(4)
+    x = np.arange(len(dirs))
     ax.bar(x - w - 0.02, [rf[d]["majority_acc_color"] for d in dirs], w, color="#c9c8c2", label="majority color")
     ax.bar(x, [sw[d]["acc_color"] for d in dirs], w, color=SWIN, label="Swin-T (direction-aware)")
     ax.bar(x + w + 0.02, [rf[d]["acc_color"] for d in dirs], w, color=RFD, label="RF-DETR-M (structured)")
-    ax.set_xticks(x, ["straight", "left", "right", "U-turn"])
+    ax.set_xticks(x, ["straight", "left", "right"])
     ax.set_ylabel(r"Acc$_\mathrm{color}$, subset_A val")
     ax.set_ylim(0.5, 1.0)
     ax.grid(axis="x", visible=False)

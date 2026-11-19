@@ -5,8 +5,8 @@ F7 = runs/exp7_multi_F (epoch 4, threshold 0.20), M = runs/rfdetr_m_mix (epoch 1
 - ap: bootstrap CIs of the center AP difference on LISA (blocks of 100 frames), S2TLD and BDD100K (images), and of the mean over the three;
 - topo: A val and B val without using the labels. F7 is decoded with the US rule (right only from a right arrow, left falls back
   on straight, as M's decoder), alone and with a mask built only from lane topology (no traffic light is used): a maneuver is
-  blanked when no lane of the ego approach at the nearest junction leads to it, keeping the benchmark's inheritance (left and
-  U-turn are blanked only if neither left nor straight exist). Compared with M native and M with the same mask;
+  blanked when no lane of the ego approach at the nearest junction leads to it, keeping the benchmark's inheritance (left is
+  blanked only if neither left nor straight exist). Compared with M native and M with the same mask;
 - route: DTLD test against the route labels (data/labels/dtld_test.jsonl, German rule), the target M trained on; frames in
   both the route labels and the junction-scored set;
 - fg: every False-Go direction (label red, prediction not red) attributed, on A val, B val and DTLD test (junction labels), to
@@ -214,7 +214,7 @@ def us_rule(lights, side):
     straight = best.get("straight") or circle
     f = best.get(far) or straight
     n = best.get(near)
-    res = {"straight": straight, far: f, near: n, "uturn": f}
+    res = {"straight": straight, far: f, near: n}
     return {d: v[1] if v else "none" for d, v in res.items()}
 
 
@@ -230,7 +230,7 @@ def apply_topo(f, moves):
     if "straight" not in moves:
         f["straight"] = "none"
     if not moves & {"left", "straight"}:
-        f["left"] = f["uturn"] = "none"
+        f["left"] = "none"
     if "right" not in moves:
         f["right"] = "none"
     return f

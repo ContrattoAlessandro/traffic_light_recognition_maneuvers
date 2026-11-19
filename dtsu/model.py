@@ -28,6 +28,14 @@ class FPN(nn.Module):
         return [o(x) for o, x in zip(self.output, lat)]
 
 
+def _drop_uturn_query(state_dict, prefix, *args):
+    """Checkpoints from before U-turn was dropped have a 4th (U-turn) direction query. Queries only
+    cross-attend to the image tokens, so removing that row leaves the other directions' outputs unchanged."""
+    k = prefix + "dir_queries.weight"
+    if k in state_dict and state_dict[k].shape[0] == len(DIRECTIONS) + 1:
+        state_dict[k] = state_dict[k][:len(DIRECTIONS)]
+
+
 class DirectionAwareModel(nn.Module):
     def __init__(self, img_size=(1024, 800), backbone="swin_tiny_patch4_window7_224", pretrained=True,
                  d=256, n_queries=50, top_k=16, roi_size=7, enc_layers=6, dec_layers=6):
@@ -54,6 +62,7 @@ class DirectionAwareModel(nn.Module):
         self.type_embed = nn.Embedding(2, d)  # 0 = global token, 1 = ROI token
 
         self.dir_queries = nn.Embedding(len(DIRECTIONS), d)
+        self._register_load_state_dict_pre_hook(_drop_uturn_query)
         self.dir_attn = nn.MultiheadAttention(d, 8, dropout=0.1, batch_first=True)
         self.dir_norm1, self.dir_norm2 = nn.LayerNorm(d), nn.LayerNorm(d)
         self.dir_ffn = MLP(d, 4 * d, d, 2)
@@ -103,8 +112,8 @@ class DirectionAwareModel(nn.Module):
         h = self.dir_norm1(q + self.dir_attn(q, T, T, need_weights=False)[0])
         h = self.dir_norm2(h + self.dir_ffn(h))
         return {
-            "color_logits": self.color_head(h),  # [B, 4, |COLORS|] (Eq. 12)
-            "pass_logits": self.pass_head(h),  # [B, 4, |PASS|]
+            "color_logits": self.color_head(h),  # [B, |DIRECTIONS|, |COLORS|] (Eq. 12)
+            "pass_logits": self.pass_head(h),  # [B, |DIRECTIONS|, |PASS|]
             "det_logits": logits,  # [L, B, Q, 4]
             "det_boxes": boxes,  # [L, B, Q, 4]
         }

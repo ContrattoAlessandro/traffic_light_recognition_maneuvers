@@ -1,6 +1,6 @@
 """Directional Traffic Signal Understanding (replication of Zou et al.)."""
 
-DIRECTIONS = ("straight", "left", "right", "uturn")
+DIRECTIONS = ("straight", "left", "right")
 COLORS = ("none", "red", "yellow", "green")
 PASS = ("stop", "go")
 

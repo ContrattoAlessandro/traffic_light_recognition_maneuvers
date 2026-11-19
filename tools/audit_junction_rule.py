@@ -63,9 +63,7 @@ def classify(lights):
     if any(p == "unreadable" and (c not in known or len(known) > 1) for p, c in lights):
         return "fail_unreadable", None
     circle = circles.pop() if circles else None
-    out = {m: (arrow[m].pop() if arrow.get(m) else circle) for m in ("straight", "left", "right", "uturn")}
-    if out["uturn"] is None or not arrow.get("uturn"):
-        out["uturn"] = out["left"]
+    out = {m: (arrow[m].pop() if arrow.get(m) else circle) for m in ("straight", "left", "right")}
     return "ok_arrows", out
 
 

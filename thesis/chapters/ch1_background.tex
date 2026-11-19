@@ -217,7 +217,7 @@ labels are derived.
 Zou et al.~\cite{zou2026oneperception} take the last step and remove all intermediate
 representations. Instead of light boxes, relevance flags or a graph from which the planner would still
 have to infer what is allowed, they predict, for each of the four maneuvers straight, left, right and
-U-turn, a color $c\in\{\text{none},\text{red},\text{yellow},\text{green}\}$ and a passability
+U-turn (this thesis keeps the first three, \cref{sec:prob-def}), a color $c\in\{\text{none},\text{red},\text{yellow},\text{green}\}$ and a passability
 $p\in\{\text{stop},\text{go}\}$. The task, called \emph{directional traffic signal understanding},
 is posed on a benchmark derived from OpenLane-V2 by associating the annotated lights with ego
 maneuvers through the lane topology. Its direction-aware model, described in detail in

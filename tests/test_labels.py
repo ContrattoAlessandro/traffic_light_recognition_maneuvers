@@ -60,10 +60,17 @@ def right_hand(rec):
 
 def test_direction_assignment():
     rec = right_hand(build_frame(frame()))
-    assert rec["color"] == {"straight": "red", "left": "green", "right": "none", "uturn": "green"}
-    assert rec["pass"] == {"straight": "stop", "left": "go", "right": "go", "uturn": "go"}
+    assert rec["color"] == {"straight": "red", "left": "green", "right": "none"}
+    assert rec["pass"] == {"straight": "stop", "left": "go", "right": "go"}
     assert [b["relevant"] for b in rec["boxes"]] == [True, True, False]  # distant light ignored
     assert rec["conflict"] == []
+
+
+def test_uturn_connector_is_a_movement_not_a_direction():
+    # lane 5 turns 180 deg: still a U-turn movement of the left lane's light, but not an output maneuver
+    rec = right_hand(build_frame(frame()))
+    assert "uturn" not in rec["color"]
+    assert "uturn" in rec["boxes"][1]["moves"]
 
 
 def test_dedicated_right_signal():
@@ -78,15 +85,15 @@ def test_left_inherits_straight_without_left_lane():
     lcte[1, 1] = 0  # left lane no longer linked to any light
     f["annotation"]["topology_lcte"] = lcte.tolist()
     rec = right_hand(build_frame(f))
-    assert rec["color"]["left"] == rec["color"]["uturn"] == "red"
+    assert rec["color"]["left"] == "red"
 
 
 def test_left_hand_traffic_mirrors_rules():
     # same lights: a dedicated light on the right-turn connector, in left-hand traffic
-    # the right turn crosses oncoming traffic and U-turn follows it
+    # the right turn crosses oncoming traffic
     rec = build_frame(frame(extra_lights=[("right_arrow", GREEN, [3])]))
     lht = rec["by_side"]["left"]["color"]
-    assert lht["right"] == "green" and lht["uturn"] == "green"
+    assert lht["right"] == "green"
     assert lht["left"] == "none"  # the near turn needs a dedicated left-only light
     assert lht["straight"] == "red"
 

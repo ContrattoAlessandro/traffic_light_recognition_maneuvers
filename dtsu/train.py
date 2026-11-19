@@ -25,7 +25,7 @@ from .model import DirectionAwareModel, param_groups
 def compute_loss(out, targets, lam_c=1.0, lam_p=1.0, lam_d=1.0):
     gc = torch.stack([t["color"] for t in targets]).to(out["color_logits"].device)
     gp = torch.stack([t["pass"] for t in targets]).to(out["pass_logits"].device)
-    # CE averaged over the four directions (Eq. 13, 14)
+    # CE averaged over the directions (Eq. 13, 14)
     l_color = F.cross_entropy(out["color_logits"].flatten(0, 1), gc.flatten())
     l_pass = F.cross_entropy(out["pass_logits"].flatten(0, 1), gp.flatten())
     l_det = detr_loss(out["det_logits"], out["det_boxes"], targets)

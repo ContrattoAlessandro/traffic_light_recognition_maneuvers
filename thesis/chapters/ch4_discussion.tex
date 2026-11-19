@@ -12,19 +12,23 @@ directions for future research (\cref{sec:disc-future}).
 \paragraph{Confirmations.} The central result of Zou et al.\ holds: a direction-aware model with a
 Swin-Tiny backbone reaches a TSS of about 0.88--0.90 on OpenLane-V2, and it does so with labels rebuilt
 independently from the public annotations. That the reconstructed label distribution matches the
-paper's Fig.~3 for almost every class suggests that the label semantics---specificity hierarchy, U-turn
-inheriting left, right governed only by dedicated signals---were recovered correctly. The replication
+paper's Fig.~3 for almost every class suggests that the label semantics---specificity hierarchy, left
+inheriting straight, right governed only by dedicated signals---were recovered correctly. The replication
 also confirms, indirectly, that maneuver-level prediction from a single image is feasible without HD
 maps, which map-based systems~\cite{fairfield2011traffic,possatti2019traffic,polley2025atlas} rely on,
 and without the annotated lane metadata of earlier map-free work~\cite{langenberg2019deep}.
 
 \paragraph{Differences.} Three discrepancies remain. The False-Go rate of the replication is higher
-than published (0.164 vs 0.137), although its mean over epochs (0.146) is close; the paper does not
+than published (0.158 vs 0.137), although its mean over epochs (0.146, four directions) is close; the paper does not
 state how its checkpoint was selected, and the strong epoch-to-epoch variation observed here suggests
 that this choice alone can move False-Go by several points. The benchmark contains about 29\% fewer
 frames than the paper's, for reasons that cannot be determined without the original filtering rules.
 Finally, the paper describes its data as Subset-A, which its own frame counts contradict; the evidence
 collected here (frame counts, color mix, right-turn distribution under US rules) points to A+B.
+A further difference is deliberate: the results here are over three maneuvers, without the U-turn,
+which follows the left signal in 99.9\% of the labels. This raises the replication's TSS slightly
+(0.895 instead of 0.889 over four directions), so the margin over the published 0.880 should be read
+as about one point, not one and a half.
 
 \paragraph{The value of the direction queries.} The most consequential finding concerns RQ3. The
 original paper reports that the direction-aware model outperforms structured pipelines. In this work, a
@@ -33,7 +37,7 @@ well, with no significant difference in any metric. The two findings are not nec
 strongest structured baseline in the paper is TLD-READY~\cite{polley2024tldready}, a pipeline designed
 for per-light relevance on German roads and adapted to the four-maneuver output with a fallback to the
 circular signal; it reaches a TSS of 0.842 and a False-Go rate of 0.302. The structured model used here
-reaches 0.894 and 0.156 on the same subset, because its classes encode the maneuvers each light
+reaches 0.899 and 0.152 on the same subset, because its classes encode the maneuvers each light
 controls and therefore mirror the label rules exactly, so that a perfect detector would be a perfect
 predictor.
 What the comparison does show is that, on this benchmark, the end-to-end design is not \emph{necessary}
@@ -98,7 +102,7 @@ monitoring and debugging, an important property for safety arguments.
         mismatch shows a systematic difference from the original.
   \item \textbf{Single seeds and stopped schedules.} Each configuration was trained once. The
         epoch-to-epoch variation of the direction-aware model (TSS standard deviation 0.006, False-Go range
-        0.105--0.212) is of the same order as the differences between models, and the cosine schedule was
+        0.105--0.212, over four directions) is of the same order as the differences between models, and the cosine schedule was
         stopped at 14 of 24 epochs. Conclusions about small differences are therefore limited to ``no
         significant difference''.
   \item \textbf{Evaluation on the validation split.} OpenLane-V2's test split has no usable annotations,

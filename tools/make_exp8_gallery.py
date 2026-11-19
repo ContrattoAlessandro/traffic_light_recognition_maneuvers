@@ -40,7 +40,7 @@ OUT = "data/review_exp8"
 WIDTH, ZOOM = 1280, 96
 RGB = {"red": (235, 50, 50), "yellow": (245, 200, 0), "green": (40, 200, 80), "none": (110, 110, 110)}
 NAMES = {**SHORT, "arrow_straight_right": "straight+right arrow"}
-MOVES = ("straight", "left", "right", "uturn")
+MOVES = ("straight", "left", "right")
 
 
 def pick(pool, n, seed=0):

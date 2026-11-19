@@ -10,7 +10,8 @@ the details it leaves open filled in as documented in REPLICATION_PLAN.md:
 2. The movements a linked lane leads into are found by walking its successors
    (``topology_lclc``) until the first intersection connector ahead of the ego
    vehicle, and classifying that connector's heading change as straight / left /
-   right / U-turn. Lanes cut off by the annotation range give no movement and
+   right / U-turn (U-turn stays a lane movement so that U-turn-only lights stay
+   specific, but it is not an output maneuver). Lanes cut off by the annotation range give no movement and
    are treated as generic (they control "straight" and, by inheritance, "left").
 3. Lights are kept only when they control lanes heading the ego's way, at the
    nearest intersection ahead. This drops opposite / crossing traffic and signals
@@ -18,8 +19,7 @@ the details it leaves open filled in as documented in REPLICATION_PLAN.md:
    stop line), the approach lanes just behind the ego are used instead.
 4. Directions: straight takes lights covering straight (or generic lanes); left
    takes lights covering left, else inherits straight (permissive left on the
-   ball light); U-turn takes lights covering U-turn, else inherits left; right
-   takes only dedicated right-turn lights, else none. Among candidates the most
+   ball light); right takes only dedicated right-turn lights, else none. Among candidates the most
    specific lights (smallest movement set) win; remaining color disagreement
    marks the frame as conflicting. These right-hand-traffic rules are applied
    everywhere by default, which matches the paper's Fig. 3; ``--traffic-side auto``
@@ -170,10 +170,10 @@ def build_frame(info):
 
 
 def assign_directions(light_moves, side="right"):
-    """Map lights to the four maneuvers for right-hand ("right") or left-hand ("left") traffic.
+    """Map lights to the three maneuvers for right-hand ("right") or left-hand ("left") traffic.
 
-    The turn across oncoming traffic ("far" turn: left in right-hand traffic) and the
-    U-turn are governed by the approach signal unless a light covers them; the "near"
+    The turn across oncoming traffic ("far" turn: left in right-hand traffic) is governed
+    by the approach signal unless a light covers it; the "near"
     turn (right in right-hand traffic) is only set by a dedicated signal.
     """
     far, near = ("left", "right") if side == "right" else ("right", "left")
@@ -192,9 +192,6 @@ def assign_directions(light_moves, side="right"):
     out[far] = pick(lambda m: far in m)
     if out[far][0] is None:
         out[far] = out["straight"]
-    out["uturn"] = pick(lambda m: "uturn" in m)
-    if out["uturn"][0] is None:
-        out["uturn"] = out[far]
     out[near] = pick(lambda m: m <= {near})
 
     color = {d: out[d][0] or "none" for d in DIRECTIONS}

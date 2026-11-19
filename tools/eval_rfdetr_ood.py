@@ -137,6 +137,7 @@ def main():
     ap.add_argument("--keep-all", action="store_true",
                     help="score every frame, also those the run's classes cannot reproduce (so runs with different "
                          "class lists share one test set); the oracle count is still reported")
+    ap.add_argument("--tag", default="", help="suffix for the output JSON (re-scoring under changed rules)")
     args = ap.parse_args()
 
     class_names = json.load(open(args.class_names))
@@ -171,7 +172,7 @@ def main():
                   f"EM {nr['em']:.4f} F-Go {nr['false_go']:.4f}{dn}", flush=True)
     out_dir = os.path.join(args.run, f"ood_{args.target}")
     os.makedirs(out_dir, exist_ok=True)
-    with open(os.path.join(out_dir, f"epoch{args.epoch}_{geometry}.json"), "w") as f:
+    with open(os.path.join(out_dir, f"epoch{args.epoch}_{geometry}{args.tag}.json"), "w") as f:
         json.dump(out, f, indent=1)
 
 

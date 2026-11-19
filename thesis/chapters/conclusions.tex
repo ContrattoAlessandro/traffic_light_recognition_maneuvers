@@ -11,8 +11,8 @@ data they were trained on.
 \paragraph{Answers to the research questions.}
 \begin{description}[leftmargin=1.2cm,style=nextline]
   \item[RQ1] \emph{Reproducibility.} Yes, the published result can be reproduced. With labels rebuilt from
-        the OpenLane-V2 topology, the direction-aware model reaches a TSS of 0.889 against 0.880 in the
-        original paper. Reproducing it required two undocumented choices---down-weighting the auxiliary
+        the OpenLane-V2 topology, the direction-aware model reaches a TSS of 0.895 against 0.880 in the
+        original paper (over straight, left and right; the paper also scores U-turn, a near copy of left). Reproducing it required two undocumented choices---down-weighting the auxiliary
         detection loss and normalizing the backbone outputs---without which training was unstable or
         diverged. The evidence also indicates that the original benchmark combines subsets A and B
         under US rules, rather than subset A alone as stated.
@@ -24,7 +24,7 @@ data they were trained on.
         with a third fewer parameters, and a segment-level paired bootstrap finds no significant
         difference in any metric.
   \item[RQ4] \emph{Transfer.} A model trained on German data (DTLD, test TSS 0.958) transfers well to US
-        day-time driving (LISA day 0.951 without right turns) but loses ten points at night and doubles
+        day-time driving (LISA day 0.952 without right turns) but loses ten points at night and doubles
         its False-Go rate on Argoverse~2 images. Detection of small lights is the dominant failure: on
         ATLAS, recall falls from over 85\% for lights taller than 40 pixels to about 20\% for lights of
         10--20 pixels.

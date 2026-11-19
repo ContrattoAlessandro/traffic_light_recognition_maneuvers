@@ -27,7 +27,8 @@ relevant, but still not which maneuver each of them permits.
 A recent line of work removes the map and asks the network to answer the planner's question directly.
 Zou et al.~\cite{zou2026oneperception} formulate \emph{maneuver-level signal intent prediction}: from
 one front-camera image, predict, for each of the four maneuvers straight, left, right and U-turn, the
-color of the signal that governs it and whether the maneuver may proceed. Their direction-aware model
+color of the signal that governs it and whether the maneuver may proceed. (This thesis drops the U-turn,
+which almost always follows the left-turn signal; \cref{sec:prob-def}.) Their direction-aware model
 uses four learnable \emph{direction queries} that attend to a global image token and to region tokens
 from an auxiliary traffic-light detector, and it outperforms both structured detection pipelines and
 multimodal large language models on a benchmark derived from OpenLane-V2~\cite{wang2023openlanev2}.

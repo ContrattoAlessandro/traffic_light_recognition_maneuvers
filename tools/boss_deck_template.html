@@ -193,12 +193,11 @@ table.answers { border-collapse: separate; border-spacing: 4px; width: 100%; }
 <script>
 const DATA = __DECK_DATA__;
 const M = DATA.meta, FRAMES = DATA.frames, BOOT = M.bootstrap;
-const DIR_NAMES = { straight: "Straight", left: "Left turn", right: "Right turn", uturn: "U-turn" };
+const DIR_NAMES = { straight: "Straight", left: "Left turn", right: "Right turn" };
 const ARROWS = {
   straight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V4M6 10l6-6 6 6"/></svg>',
   left: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-8a4 4 0 0 0-4-4H5M9 5L5 9l4 4"/></svg>',
   right: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21v-8a4 4 0 0 1 4-4h7M15 5l4 4-4 4"/></svg>',
-  uturn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21V9a5 5 0 0 0-10 0v4M3 10l3 3 3-3"/></svg>',
 };
 const COLOR_WORD = { red: "Red", yellow: "Yellow", green: "Green", none: "No light" };
 const GROUP = {
@@ -222,16 +221,16 @@ function titleSlide() {
     <div class="title-meta">
       <div><b>${nFrames.toLocaleString("en-US")}</b>frames scored</div>
       <div><b>${FRAMES.length}</b>frames shown here</div>
-      <div><b>4</b>maneuvers per frame</div>
+      <div><b>${M.directions.length}</b>maneuvers per frame</div>
     </div>
   </section>`;
 }
 function taskSlide() {
-  const ex = { straight: ["green", "GO"], left: ["red", "STOP"], right: ["none", "GO"], uturn: ["red", "STOP"] };
+  const ex = { straight: ["green", "GO"], left: ["red", "STOP"], right: ["none", "GO"] };
   return `<section class="slide">
     <span class="eyebrow">The task</span>
     <h2>One question per maneuver</h2>
-    <p style="font-size:var(--s1)">From the front camera image, the model answers four questions at once: for going straight, turning left, turning right and making a U-turn,
+    <p style="font-size:var(--s1)">From the front camera image, the model answers three questions at once: for going straight, turning left and turning right,
     <b>what color is the light that controls it</b>, and <b>may the car go?</b></p>
     <div class="dirs">${M.directions.map((d) => `<div class="dir-card">${ARROWS[d]}<h3>${DIR_NAMES[d]}</h3>
       <div>${sig(ex[d][0])}</div><span class="pass">${ex[d][1]}</span></div>`).join("")}</div>
@@ -254,7 +253,7 @@ function modelsSlide() {
         <span class="tag">Replication of Zou et al.; trained 15 epochs</span>
         <ol class="steps">
           <li><span>Looks at the whole image and finds the traffic lights.</span></li>
-          <li><span>Four learned “direction” slots, one per maneuver, each look at the scene and at all the lights.</span></li>
+          <li><span>Three learned “direction” slots, one per maneuver, each look at the scene and at all the lights.</span></li>
           <li><span>Each slot answers its own maneuver: color, and go or stop.</span></li>
         </ol>
         <p class="key">The network itself learns which light matters for which maneuver.</p>
@@ -263,7 +262,7 @@ function modelsSlide() {
         <h3>RF-DETR · detector plus rules</h3>
         <span class="tag">Off-the-shelf detector, pre-trained on millions of images; trained 4 epochs</span>
         <ol class="steps">
-          <li><span>Finds every traffic light and tags it, for example “left + U-turn, red” or “not for our lane”.</span></li>
+          <li><span>Finds every traffic light and tags it, for example “left turn, red” or “not for our lane”.</span></li>
           <li><span>Fixed rules collect, for each maneuver, the lights that control it; the most specific one wins.</span></li>
           <li><span>No light found for a maneuver means “no light”, so go with care.</span></li>
         </ol>
@@ -303,7 +302,7 @@ function resultsSlide() {
         ${row("Overall score (TSS)", "tss", "average of the three accuracies below")}
         ${row("Color right", "acc_color", "per maneuver")}
         ${row("Go / stop right", "acc_pass", "per maneuver")}
-        ${row("Whole frame right", "em", "all 4 maneuvers correct")}
+        ${row("Whole frame right", "em", "all 3 maneuvers correct")}
         ${row("Wrongly says GO", "false_go", "share of real STOPs; lower is safer")}
         ${row("Wrongly says STOP", "false_stop", "share of real GOs; lower is better")}
       </table></div>
@@ -328,7 +327,7 @@ function legendSlide() {
         <p><span class="swatch-box thin"></span>Thin grey outline: a light for another lane or road.</p>
         <p class="muted">Lights are small, so the panel also shows them zoomed in.</p></div>
       <div><h3>In the table</h3>
-        <p>First row: the correct answer. Then each model’s answer for the four maneuvers.</p>
+        <p>First row: the correct answer. Then each model’s answer for the three maneuvers.</p>
         <p><span style="outline:2px solid var(--wrong);background:var(--wrong-soft);padding:2px 8px;border-radius:6px">✗ wrong</span> marks an answer that differs from the truth.</p></div>
       <div><h3>The 100 frames</h3>
         <p>Picked at random: 50 from the US dataset (Argoverse 2) and 50 from nuScenes. Not cherry-picked.</p>

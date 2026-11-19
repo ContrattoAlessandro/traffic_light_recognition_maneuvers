@@ -11,8 +11,7 @@ least SIZE_RATIO times the median relevant height.
 - A route without an arrow is served by the circles (annotated ones first).
 
 Directions then follow ``dtsu.labels`` where the traffic rules agree: straight, left and right take
-the color of their lamps, left without lamps inherits straight and U-turn inherits left (DTLD has no
-U-turn signals). Unlike the paper's US convention (right = dedicated signal only), German right turns
+the color of their lamps and left without lamps inherits straight. Unlike the paper's US convention (right = dedicated signal only), German right turns
 obey the circle when there is no right arrow; records say so with ``near_turn = "signal"``.
 red_yellow ("prepare to go") is still a stop and counts as red. Off/unknown lamps give no color: a
 direction whose lamps all lack one, or whose lamps disagree, drops the frame.
@@ -82,9 +81,6 @@ def build_frame(im, rule_ok=None):
         color["left"] = color["straight"]
         conflict += ["left"] if "straight" in conflict else []
         unknown += ["left"] if "straight" in unknown else []
-    color["uturn"] = color["left"]
-    conflict += ["uturn"] if "left" in conflict else []
-    unknown += ["uturn"] if "left" in unknown else []
     color["right"] = resolve("right", lamps["right"]) if lamps.get("right") else "none"
 
     moves = collections.defaultdict(set)

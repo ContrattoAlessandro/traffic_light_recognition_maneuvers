@@ -101,7 +101,7 @@ def render(path, dets, out_path, show_score=True):
 
 def pick_opposite(gc, em, n):
     """Frames whose label has a red and a green direction, round-robin over the label patterns
-    (straight, left, right, uturn colors) so rare combinations are shown too; random within a pattern."""
+    (straight, left, right colors) so rare combinations are shown too; random within a pattern."""
     rng = random.Random(0)
     groups = {}
     for i in np.flatnonzero((gc == COLORS.index("red")).any(1) & (gc == COLORS.index("green")).any(1)):

@@ -2,7 +2,7 @@
 \addcontentsline{toc}{chapter}{Abstract}
 
 An automated vehicle approaching a signalized intersection does not need the color of every traffic
-light in view; it needs to know whether its intended maneuver---straight, left, right or U-turn---is
+light in view; it needs to know whether its intended maneuver---straight, left or right---is
 permitted. This thesis studies this \emph{maneuver-level} formulation of traffic signal understanding,
 in which one front-camera image is mapped to a signal color and a stop/go decision for each maneuver.
 
@@ -15,11 +15,11 @@ the maneuvers it controls and an explicit rule assigns colors to maneuvers. Thir
 across countries, traffic rules and cameras, using new compatible labels for the DriveU (Germany) and
 LISA (United States) traffic light datasets and a per-light evaluation on ATLAS.
 
-The replication reaches a Traffic Signal Score (TSS) of 0.889 on OpenLane-V2 subset A against 0.880
-published, with a higher False-Go rate (0.164 vs 0.137); a ConvNeXt V2 backbone brings no gain. The
-structured baseline, a third smaller, scores 0.894, and a segment-level paired bootstrap finds no
+The replication reaches a Traffic Signal Score (TSS) of 0.895 on OpenLane-V2 subset A against 0.880
+published, with a higher False-Go rate (0.158 vs 0.137); a ConvNeXt V2 backbone brings no gain. The
+structured baseline, a third smaller, scores 0.899, and a segment-level paired bootstrap finds no
 significant difference. Trained on DTLD it reaches a test TSS of 0.958 at 22\,ms per frame; it
-transfers well to LISA by day (0.951) but drops at night (0.861), and its False-Go rate doubles on
+transfers well to LISA by day (0.952) but drops at night (0.863), and its False-Go rate doubles on
 Argoverse~2 images. Right-turn signals, yellow lights, small distant lights and country-specific label
 conventions emerge as the main open problems, and the safety-relevant errors concentrate exactly where
 aggregate metrics do not look.

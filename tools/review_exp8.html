@@ -53,7 +53,7 @@ let store = {};
 try { store = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} };
 let filter = "all";
-const MOVES = ["straight", "left", "right", "uturn"];
+const MOVES = ["straight", "left", "right"];
 
 function card(it) {
   const v = store[it.id] || {};

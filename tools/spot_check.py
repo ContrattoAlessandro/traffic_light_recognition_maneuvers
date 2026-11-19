@@ -1,6 +1,6 @@
 """Contact sheets of tricky label cases: full view + zoom on the traffic lights.
 
-Each tile shows the four maneuver labels; relevant lights get a thick box tagged with
+Each tile shows the three maneuver labels; relevant lights get a thick box tagged with
 the movements their lanes lead into (S/L/R/U, G = generic), ignored lights a thin box.
 """
 import argparse
@@ -49,7 +49,7 @@ def tile(rec, tile_w=520):
     head = Image.new("RGB", (tile_w, 30), (0, 0, 0))
     hd = ImageDraw.Draw(head)
     c = rec["color"]
-    hd.text((4, 2), f"S:{c['straight']} L:{c['left']} R:{c['right']} U:{c['uturn']}"
+    hd.text((4, 2), f"S:{c['straight']} L:{c['left']} R:{c['right']}"
             + (f"  CONFLICT {rec['conflict']}" if rec["conflict"] else "") + ("  [crossing]" if rec.get("crossing") else ""),
             fill=(255, 255, 255))
     hd.text((4, 16), f"{rec['subset']} {rec['segment_id']}/{rec['timestamp']}", fill=(170, 170, 170))

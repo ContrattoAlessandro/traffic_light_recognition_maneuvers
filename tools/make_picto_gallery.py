@@ -6,7 +6,7 @@
 - ATLAS test and LISA test, 33 each: random images (seed 0) with at least one annotated colored light,
   half of them with an annotated arrow. No target labels, so only the prediction is shown.
 The same junction rule decodes every image (dtsu.picto_rules.rule: arrows set their own maneuvers, the
-circle sets the rest including right, U-turn follows left).
+circle sets the rest including right).
 Each image shows the junction lights the model detects (box in the light's color, label "pictogram | color
 score") and, thin and grey, the lights it assigns to no junction (other junction, pedestrian, bike, tram).
 Writes data/review_picto/*.jpg, items.json and index.html (same review page as tools/make_review_gallery.py).
@@ -103,7 +103,7 @@ def main():
                   "Thin grey boxes: lights it assigns to no junction (another junction, or pedestrian / bike / tram signals)."),
                  ("zooms in on the relevant lights.",
                   "zooms in on the junction lights. The targets come from the junction rule: an arrow sets its own maneuvers, "
-                  "the circle sets the rest (right included), U-turn follows left.")):
+                  "the circle sets the rest (right included).")):
         assert a in page, a
         page = page.replace(a, b)
     with open(os.path.join(OUT, "index.html"), "w", encoding="utf-8") as f:
