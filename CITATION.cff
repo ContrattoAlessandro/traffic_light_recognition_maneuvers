@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite it as below."
+title: "Maneuver-level traffic signal understanding with a factorized, partially supervised traffic light detector"
+authors:
+  - family-names: Contratto
+    given-names: Alessandro
+repository-code: "https://github.com/ContrattoAlessandro/traffic_light_recognition_maneuvers"
+license: MIT
+type: software

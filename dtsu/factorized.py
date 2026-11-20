@@ -1,30 +1,34 @@
-"""Factorized head for RF-DETR (Exp 6, arm F): one "light" class plus pictogram, color and junction heads.
+"""Factorized RF-DETR head: one "light" class plus pictogram, color and junction heads, trained with partial labels.
 
-The training data is the joint-class export (``<pictogram>|<J|N>|<color>``, dtsu/picto_rules.py); F maps each
-target class back to its three attributes. Nothing in the rfdetr package is edited:
-- ``factorize(model, class_names)`` resizes the detection head to one class (``reinitialize_detection_head``,
-  which also resizes the two-stage encoder heads) and replaces ``class_embed`` with ``FactorizedClassEmbed``:
-  the same light logit plus three linear heads on the same decoder features. The model's class becomes
-  ``FactorizedLWDETR``, whose forward adds ``pred_attrs`` to the final and auxiliary decoder outputs.
-- ``factorize_criterion(criterion, class_names)`` turns the SetCriterion into ``FactorizedCriterion``: targets
-  get label 0 (light) for matching and the detection losses, and an extra "attrs" loss (cross-entropy for
-  pictogram and color, binary cross-entropy for junction, weight 1 each) on the Hungarian-matched queries of
-  every decoder layer. The encoder proposals carry no attributes.
+Training classes are ``"<pictogram>|<J|N|?>|<color>"`` (``dtsu.rules``); each is mapped back to its three
+attributes, and an attribute the source dataset does not label ("?") is ignored by its loss. So one model learns
+from datasets that each label only part of the target. Nothing in the rfdetr package is edited:
+- ``factorize(model)`` resizes the detection head to one class (``reinitialize_detection_head``, which also resizes
+  the two-stage encoder heads), starting the light logit from the COCO "traffic light" row, and replaces
+  ``class_embed`` with ``FactorizedClassEmbed``: the same light logit plus three linear heads on the same decoder
+  features. The model's class becomes ``FactorizedLWDETR``, whose forward adds ``pred_attrs`` to the final and
+  auxiliary decoder outputs.
+- ``factorize_criterion(criterion, class_names)`` turns the SetCriterion into ``FactorizedCriterion``: targets get
+  label 0 (light) for matching and the detection losses, and an extra "attrs" loss (cross-entropy for pictogram and
+  color, optionally class-weighted, binary cross-entropy for junction, weight 1 each) on the Hungarian-matched
+  queries of every decoder layer. The encoder proposals carry no attributes.
+- ``class_weights`` and ``mirror_classes`` support the class-weighted loss and the horizontal flip that swaps the
+  left and right arrow labels (``scripts/train.py``).
 Training applies both in a Lightning callback's ``setup`` (before the optimizer and the EMA copy exist);
-inference rebuilds the same structure with ``factorize`` before loading the weights.
+inference rebuilds the same structure with ``factorize`` before loading the weights (``dtsu.model``).
 """
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .picto_rules import COLORS, PICTOS, UNKNOWN, class_name, parse
+from .rules import LAMP_COLORS as COLORS, PICTOGRAMS as PICTOS, UNKNOWN, class_name, parse
 
 HEADS = {"picto": len(PICTOS), "color": len(COLORS), "junction": 1}
-IGNORE = -1  # Exp 7: attribute not labelled by the source dataset -> no loss
+IGNORE = -1  # attribute not labelled by the source dataset -> no loss
 
 
 def heads(n_picto=None):
-    """Head sizes; Exp 6 models have 7 pictogram outputs (before arrow_straight_right was appended)."""
+    """Head sizes; models trained before arrow_straight_right was added have 7 pictogram outputs."""
     return {**HEADS, "picto": n_picto or HEADS["picto"]}
 
 
@@ -142,7 +146,7 @@ def _make_factorized_criterion_class(base):
 
 
 def factorize_criterion(criterion, class_names, weight=1.0, class_weights=None):
-    """class_weights (Exp 9): optional {"picto": [len(PICTOS)], "color": [len(COLORS)]} per-class weights of the
+    """class_weights: optional {"picto": [len(PICTOS)], "color": [len(COLORS)]} per-class weights of the
     cross-entropy (PyTorch's weighted mean, so the loss is normalised by the weights of the targets in the batch)."""
     if getattr(criterion, "attr_table", None) is not None:
         return criterion
@@ -165,7 +169,7 @@ SWAP.update({v: k for k, v in SWAP.items()})
 
 
 def class_weights(counts, power=0.5):
-    """Exp 9: w_c proportional to n_c ** -power, scaled so the count-weighted mean is 1; classes with no count get 1.
+    """w_c proportional to n_c ** -power, scaled so the count-weighted mean is 1; classes with no count get 1.
     counts: {"picto": {name: n}, "color": {name: n}} -> {"picto": [len(PICTOS)], "color": [len(COLORS)]}."""
     out = {}
     for head, names in (("picto", PICTOS), ("color", COLORS)):
@@ -177,7 +181,7 @@ def class_weights(counts, power=0.5):
 
 
 def mirror_classes(class_names):
-    """Exp 9: class_names plus the mirrored classes the dataset lacks (e.g. arrow_straight_right|J|green: ATLAS has
+    """class_names plus the mirrored classes the dataset lacks (e.g. arrow_straight_right|J|green: ATLAS has
     straight-right arrows but no junction label), and the permutation index -> index of the mirrored light.
     The extra classes exist only in the criterion's attribute table: the factorized detection head has one class."""
     ext = list(class_names)

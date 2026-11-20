@@ -1,0 +1,19 @@
+{
+ "description": "ATLAS train sessions (camera + 10-minute window) held out from training (15%, seed 0).",
+ "held_out": [
+  "front_medium_2843507",
+  "front_medium_2870441",
+  "front_medium_2871017",
+  "front_medium_2871598",
+  "front_medium_2872472",
+  "front_medium_2872620",
+  "front_medium_2873751",
+  "front_tele_2870440",
+  "front_tele_2871016",
+  "front_tele_2872621",
+  "front_tele_2872725",
+  "front_tele_2872727",
+  "front_tele_2872728",
+  "front_wide_2872725"
+ ]
+}
