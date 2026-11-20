@@ -31,7 +31,7 @@ The label builder (\code{dtsu/labels.py}) processes each frame as follows.
 \end{enumerate}
 Each record stores the image path, the colors and passabilities of the three maneuvers, the traffic side, the
 right-turn convention (\code{near_turn}) and all light boxes with their controlled maneuvers and a
-relevance flag (used by the structured baseline).
+relevance flag (used by the structured model).
 
 \section{DTLD}
 
@@ -64,33 +64,7 @@ relevance flag (used by the structured baseline).
 
 \begin{table}[h]
 \centering
-\caption{Training settings of the direction-aware model.}
-\label{tab:hparams-dam}
-\small
-\begin{tabularx}{\textwidth}{@{}lX@{}}
-\toprule
-Setting & Value \\
-\midrule
-Backbone & Swin-T \code{swin_tiny_patch4_window7_224} (ImageNet-1k), LayerNorm per output stage, drop-path 0.1 \\
-Neck & FPN, 256 channels, P2--P5 \\
-Detector & DETR, 6 encoder layers (P5), 6 decoder layers (P3, P4, encoded P5), 50 queries, 3 classes \\
-ROI tokens & $K=16$, RoIAlign on P2, $7\times7$ \\
-Direction attention & 4 queries trained (the U-turn query is not read out), 8 heads, 1 layer + LayerNorm + FFN \\
-Loss & $\lambda_c=1$, $\lambda_p=1$, $\lambda_d=0.2$; DETR: class + $5\,L_1$ + $2\,$GIoU, auxiliary losses \\
-Optimizer & AdamW, lr $10^{-4}$ (backbone $10^{-5}$), weight decay $10^{-4}$ \\
-Schedule & cosine over 24 epochs, 500 warm-up iterations, stopped after epoch 14 \\
-Gradient clipping & 0.1 \\
-Batch & 4 (one canvas shape per batch) \\
-Input & long side 1024, aspect kept, padded to a multiple of 32 \\
-Augmentation & brightness and contrast jitter $[0.75, 1.25]$; no flips, no hue shift \\
-Precision & fp16 backbone/FPN, bf16 detector, fp32 ROI/direction branch, TF32 \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\begin{table}[h]
-\centering
-\caption{Training settings of the structured RF-DETR baseline.}
+\caption{Training settings of the structured RF-DETR model.}
 \label{tab:hparams-rfdetr}
 \small
 \begin{tabularx}{\textwidth}{@{}lX@{}}
@@ -100,7 +74,7 @@ Setting & Value \\
 Model & RF-DETR Medium, 34.6M parameters, fine-tuned from the released weights \\
 Classes & \code{<moves>|<color>}: 46 (OpenLane-V2 A+B), 24 (DTLD) \\
 Resolution & 1024$\times$1024 square resize, no multi-scale, no scale jitter \\
-Augmentation & brightness and contrast jitter; no flips, no crops \\
+Augmentation & brightness and contrast jitter $[0.75, 1.25]$; no flips, no crops, no hue shift \\
 Optimizer & library default; lr $10^{-4}$, encoder lr $1.5\cdot10^{-4}$, EMA weights evaluated \\
 Batch & 4, gradient accumulation 4 \\
 Epochs & 4 (OpenLane-V2), 15 with per-epoch report (DTLD) \\
@@ -111,39 +85,6 @@ Inference & score threshold 0.20 (OpenLane-V2, from tuning), 0.25 (DTLD, from tu
 
 \chapter{Per-Epoch Results}
 \label{app:epochs}
-
-\begin{table}[h]
-\centering
-\caption{TSS per epoch on subset A, subset B and A+B val, direction-aware model with both backbones, and
-subset A False-Go. Scored over the four directions of Zou et al.\ (U-turn included) during training;
-only the epoch-14 checkpoints were kept, so these values cannot be re-scored over three directions
-(epoch 14 over three directions: \cref{tab:replication,tab:backbone}).}
-\label{tab:epochs}
-\small
-\begin{tabular}{@{}r cccc cccc@{}}
-\toprule
- & \multicolumn{4}{c}{Swin-T} & \multicolumn{4}{c}{ConvNeXtV2-T} \\
-\cmidrule(lr){2-5}\cmidrule(lr){6-9}
-Epoch & A & B & A+B & $\FG_A$ & A & B & A+B & $\FG_A$ \\
-\midrule
-0 & 0.891 & 0.910 & 0.899 & 0.124 & 0.863 & 0.886 & 0.872 & 0.169 \\
-1 & 0.893 & 0.895 & 0.894 & 0.182 & 0.875 & 0.904 & 0.887 & 0.181 \\
-2 & 0.888 & 0.925 & 0.903 & 0.223 & 0.890 & 0.916 & 0.900 & 0.150 \\
-3 & 0.896 & 0.927 & 0.909 & 0.145 & 0.886 & 0.908 & 0.895 & 0.228 \\
-4 & 0.904 & 0.928 & 0.914 & 0.107 & 0.884 & 0.908 & 0.894 & 0.183 \\
-5 & 0.899 & 0.936 & 0.914 & 0.170 & 0.895 & 0.922 & 0.906 & 0.192 \\
-6 & 0.899 & 0.926 & 0.910 & 0.139 & 0.890 & 0.905 & 0.896 & 0.222 \\
-7 & 0.904 & 0.937 & 0.918 & 0.112 & 0.893 & 0.900 & 0.896 & 0.204 \\
-8 & 0.899 & 0.928 & 0.911 & 0.105 & 0.896 & 0.928 & 0.909 & 0.174 \\
-9 & 0.893 & 0.912 & 0.901 & 0.189 & 0.884 & 0.919 & 0.898 & 0.241 \\
-10 & 0.908 & 0.927 & 0.916 & 0.132 & 0.892 & 0.914 & 0.901 & 0.186 \\
-11 & 0.887 & 0.891 & 0.889 & 0.212 & 0.879 & 0.912 & 0.893 & 0.209 \\
-12 & 0.903 & 0.920 & 0.910 & 0.135 & 0.891 & 0.910 & 0.899 & 0.188 \\
-13 & 0.897 & 0.912 & 0.903 & 0.141 & 0.905 & 0.932 & 0.916 & 0.112 \\
-14 & 0.889 & 0.911 & 0.898 & 0.164 & 0.894 & 0.919 & 0.905 & 0.194 \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 \begin{table}[h]
 \centering
@@ -179,17 +120,13 @@ python -m dtsu.labels --root data/OpenLane-V2/subset_A --split train \
 bash tools/build_ext_labels.sh
 # unit tests (labels, metrics)
 python -m pytest tests
-# direction-aware model, Swin-T (resumable) and per-direction evaluation
-bash tools/run_full.sh
-python tools/eval_directions.py
-# backbone ablation
-bash tools/run_convnextv2.sh
 # RF-DETR: tuning, final OpenLane-V2 run, DTLD run
 bash tools/run_rfdetr_tuning.sh
 bash tools/run_rfdetr.sh
 bash tools/run_rfdetr_dtld.sh
-# paired segment-level bootstrap
-python tools/bootstrap_compare.py
+# re-score the reported evaluations over three directions and collect them
+bash tools/rescore_three_dirs.sh
+python tools/collect_three_dirs.py
 # out-of-distribution evaluation of the DTLD model
 python tools/eval_rfdetr_ood.py --target lisa --epoch 4 --source-threshold 0.25
 python tools/eval_rfdetr_ood.py --target openlane --epoch 4 --source-threshold 0.25
@@ -200,9 +137,8 @@ python thesis/make_figures.py
 
 The main outputs are:
 \begin{itemize}
-  \item \code{runs/swin_t_AB/}: checkpoint, final and per-epoch metrics, per-direction results;
-  \item \code{runs/convnextv2_t_AB/}: backbone ablation;
-  \item \code{runs/rfdetr_m_AB/}, \code{runs/rfdetr_m_dtld/}: structured baseline, including
-        \code{ood_lisa/}, \code{ood_openlane/} and \code{ood_atlas/};
-  \item \code{runs/bootstrap_swin_vs_rfdetr.json}: bootstrap comparison.
+  \item \code{runs/rfdetr_m_AB/}, \code{runs/rfdetr_m_dtld/}: the structured model on OpenLane-V2 and
+        DTLD, including \code{ood_lisa/}, \code{ood_openlane/} and \code{ood_atlas/};
+  \item \code{results/three_directions/summary.json}: the RF-DETR results re-scored over three
+        directions (OpenLane-V2 per epoch, DTLD test, out-of-distribution).
 \end{itemize}

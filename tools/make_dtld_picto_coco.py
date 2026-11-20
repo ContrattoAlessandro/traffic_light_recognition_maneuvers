@@ -1,4 +1,4 @@
-"""Export DTLD for Exp 6 (REPLICATION_PLAN.md) as an RF-DETR COCO dataset with "<pictogram>|<J|N>|<color>" classes.
+"""Export DTLD for Exp 6 (EXPERIMENT_LOG.md) as an RF-DETR COCO dataset with "<pictogram>|<J|N>|<color>" classes.
 
 train/ = DTLD fit sessions, valid/ = DTLD tune sessions (the session split of data/labels/tune/dtld_train_*),
 and dtld_test_records.jsonl for the official test split (not a COCO folder, so RF-DETR never evaluates it).

@@ -25,9 +25,10 @@ the rule of Zou et al.\ (legend of their Fig.~2):
   \label{eq:pass-rule}
 \end{equation}
 Yellow therefore counts as \emph{go}, and so does \emph{none}: a maneuver without a governing signal is
-not prohibited by a signal, even if other rules (yield, give way) apply. The model still predicts $p_d$
-with a separate head, which the original paper motivates with the possibility of learning exceptions;
-\cref{sec:res-perdir} shows that in practice the two outputs are almost perfectly coupled.
+not prohibited by a signal, even if other rules (yield, give way) apply. The direction-aware model of
+the original paper still predicts $p_d$ with a separate head, motivated by the possibility of learning
+exceptions; the structured model of this thesis derives $p_d$ from the predicted color by
+\cref{eq:pass-rule}, so the two outputs are consistent by construction.
 
 A frame-level label is the tuple $y = \big((c_d, p_d)\big)_{d\in\dirs}$. Since $p_d$ is a function of
 $c_d$, the label space has $4^3=64$ possible states, of which far fewer occur in practice because
@@ -74,7 +75,7 @@ which matters when models are evaluated out of distribution (\cref{sec:res-ood})
 A further subtlety concerns the left-hand traffic scenes of nuScenes (Singapore). A strict mirroring of
 the rules (left becomes the near turn, right the far turn) would be the natural choice, but, as
 shown in \cref{sec:res-labels}, it does not reproduce the label distribution of the original paper,
-whereas applying US rules everywhere does. The replication therefore follows the US convention for
+whereas applying US rules everywhere does. The rebuilt labels therefore follow the US convention for
 comparability, at the price of a known inconsistency: in Singapore a green right arrow yields
 right~$=$~none.
 
@@ -147,9 +148,10 @@ accuracy of always predicting that direction's most frequent color.
 \section{Two design paradigms}
 \label{sec:prob-paradigms}
 
-Two ways of solving the task are compared in this thesis.
+Two ways of solving the task can be distinguished.
 
-\paragraph{End-to-end (direction-aware).} The network maps the image directly to the 3$\times$2
+\paragraph{End-to-end (direction-aware).} This is the design of Zou et al.~\cite{zou2026oneperception}.
+The network maps the image directly to the 3$\times$2
 outputs. Relevance, association and traffic rules are learned implicitly from data. An auxiliary
 detector supplies localized evidence, but its output is consumed as features, not as decisions. The
 advantages are flexibility (context such as lane markings or road layout can be used without being
@@ -167,4 +169,5 @@ advantages are interpretability, the possibility of changing the rule at inferen
 German right turns) and the reuse of mature detection architectures. The drawbacks are the larger,
 sparser class space and the dependence on a score threshold.
 
-The empirical comparison of the two paradigms is the subject of \cref{sec:res-rfdetr}.
+This thesis follows the structured paradigm; \cref{sec:method-rfdetr} describes its implementation and
+\cref{sec:disc-compare} relates its results to the end-to-end model of the original paper.

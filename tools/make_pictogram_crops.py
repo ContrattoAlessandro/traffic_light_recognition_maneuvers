@@ -1,4 +1,4 @@
-"""Crops for the pictogram classifier P of the two-stage arm J+P (REPLICATION_PLAN.md, amendment 1).
+"""Crops for the pictogram classifier P of the two-stage arm J+P (EXPERIMENT_LOG.md, amendment 1).
 
 Lamps come from the unified per-lamp files of the traffic-light-detection project
 (``$TLD/datasets/lamps/*.jsonl``; boxes in source pixels, ``pictogram`` and ``state`` per lamp).

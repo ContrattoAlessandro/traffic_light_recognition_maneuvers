@@ -1,4 +1,4 @@
-"""Blinded pictogram-annotation pool for the OpenLane-V2 rule oracle (protocol: REPLICATION_PLAN.md, H1).
+"""Blinded pictogram-annotation pool for the OpenLane-V2 rule oracle (protocol: EXPERIMENT_LOG.md, H1).
 
 Strata (kept val frames of subset_A and subset_B, seed 0):
 - D: every frame whose labels change when every relevant light is a circle ("dependent", see

@@ -1,4 +1,4 @@
-"""Exp 6 secondary check (REPLICATION_PLAN.md): arrow directions of J and F on ATLAS test and LISA test.
+"""Exp 6 secondary check (EXPERIMENT_LOG.md): arrow directions of J and F on ATLAS test and LISA test.
 
 Each arm runs at its selected epoch and threshold (<run>/picto_eval/result.json), class-agnostic NMS 0.5.
 For every annotated arrow with a color, matched (center criterion, as tools/eval_rfdetr_perception.py) to

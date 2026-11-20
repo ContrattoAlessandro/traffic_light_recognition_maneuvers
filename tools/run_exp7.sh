@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exp 7 (REPLICATION_PLAN.md): one factorized model on DTLD + ATLAS + OpenLane-V2 with partial labels.
+# Exp 7 (EXPERIMENT_LOG.md): one factorized model on DTLD + ATLAS + OpenLane-V2 with partial labels.
 set -u
 cd "$(dirname "$0")/.."
 export PYTHONUTF8=1 PYTHONIOENCODING=utf-8

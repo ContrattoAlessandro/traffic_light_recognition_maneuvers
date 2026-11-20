@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Amendment 1 (REPLICATION_PLAN.md): J vs J+P on the per-direction matrix, then on ATLAS / LISA arrows.
+# Amendment 1 (EXPERIMENT_LOG.md): J vs J+P on the per-direction matrix, then on ATLAS / LISA arrows.
 # Needs runs/pictogram_p/best.pth (tools/train_pictogram.py). Cached detections make re-runs cheap.
 set -u
 cd "$(dirname "$0")/.."

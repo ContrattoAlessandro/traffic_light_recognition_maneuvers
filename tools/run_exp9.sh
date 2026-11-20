@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exp 9 (REPLICATION_PLAN.md): class imbalance. LA (no training) first, then W, then WF, then the evaluation of all arms.
+# Exp 9 (EXPERIMENT_LOG.md): class imbalance. LA (no training) first, then W, then WF, then the evaluation of all arms.
 # Each arm is the F8 recipe (tools/run_exp8.sh) plus one change.
 set -u
 cd "$(dirname "$0")/.."

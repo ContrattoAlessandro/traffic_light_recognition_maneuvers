@@ -6,8 +6,8 @@ role of traffic signals in automated driving and the rules that give them meanin
 (\cref{sec:bg-signals}). It then reviews traffic light recognition, from hand-crafted pipelines to
 deep detectors (\cref{sec:bg-tlr}), and the central topic of this work: how a system decides
 \emph{which} lights are relevant for the ego vehicle and which maneuvers they control
-(\cref{sec:bg-relevance}). The detection and backbone architectures used later are covered in
-\cref{sec:bg-detection,sec:bg-backbones}, the public datasets in \cref{sec:bg-datasets}, and the
+(\cref{sec:bg-relevance}). The detection architectures used later are covered in
+\cref{sec:bg-detection}, the public datasets in \cref{sec:bg-datasets}, and the
 chapter closes by positioning this work with respect to the literature (\cref{sec:bg-position}).
 
 \section{Traffic signals in automated driving}
@@ -220,8 +220,8 @@ have to infer what is allowed, they predict, for each of the four maneuvers stra
 U-turn (this thesis keeps the first three, \cref{sec:prob-def}), a color $c\in\{\text{none},\text{red},\text{yellow},\text{green}\}$ and a passability
 $p\in\{\text{stop},\text{go}\}$. The task, called \emph{directional traffic signal understanding},
 is posed on a benchmark derived from OpenLane-V2 by associating the annotated lights with ego
-maneuvers through the lane topology. Its direction-aware model, described in detail in
-\cref{sec:method-model}, uses a Swin Transformer backbone~\cite{liu2021swin} with an FPN, a lightweight
+maneuvers through the lane topology. Its direction-aware model uses a Swin Transformer
+backbone~\cite{liu2021swin} with an FPN, a lightweight
 DETR-style light detector as auxiliary task, region-of-interest tokens of the detected lights, a global
 image token and four learnable direction queries that attend to these tokens. The paper also defines
 the evaluation protocol adopted in this thesis (color and passability accuracy, exact match, their
@@ -236,14 +236,14 @@ Finally, structured pipelines are clearly weaker: TLD-READY, adapted to the four
 fallback to the approach's circular signal, reaches a TSS of 0.842 with a False-Go rate of 0.302, and
 topology-based methods reach 0.66--0.71. The paper concludes that direct maneuver-level prediction is
 more accurate and safer than multi-stage association. Neither the benchmark labels nor the code are
-public. The present thesis replicates the best configuration of this work and revisits the comparison
-with structured pipelines.
+public. The present thesis rebuilds this benchmark from the public annotations and revisits the
+comparison with structured pipelines.
 
 \section{Object detection}
 \label{sec:bg-detection}
 
-Both models studied in this thesis contain a detector, so the main detection paradigms are summarized
-here.
+The model studied in this thesis is built on a detector, as is the direction-aware model of Zou et al.,
+so the main detection paradigms are summarized here.
 
 \paragraph{Convolutional detectors.} Two-stage detectors such as Faster R-CNN~\cite{ren2015faster}
 generate region proposals and classify pooled region features; the Feature Pyramid Network
@@ -270,23 +270,7 @@ lights of DTLD~\cite{polley2024tldready} and on relevance-aware classes~\cite{tr
 RF-DETR~\cite{robinson2025rfdetr} builds on LW-DETR with a DINOv2~\cite{oquab2024dinov2}
 self-supervised vision-transformer backbone and uses weight-sharing neural architecture search to
 obtain a family of models (Nano to Large) that trade accuracy for latency; it is designed to be
-fine-tuned on new domains. RF-DETR Medium is the detector of the structured baseline in this thesis.
-
-\section{Image backbones}
-\label{sec:bg-backbones}
-
-Residual networks~\cite{he2016deep} pretrained on ImageNet~\cite{deng2009imagenet} were the default
-backbone for a long time. The Vision Transformer~\cite{dosovitskiy2021image} applies a transformer to
-image patches, but its global attention scales quadratically with resolution, which is a problem for
-the high-resolution inputs that small traffic lights require. The \textbf{Swin
-Transformer}~\cite{liu2021swin} restricts attention to local windows that shift between layers and
-builds a four-stage hierarchy with strides 4 to 32, so it can serve as a drop-in replacement for
-convolutional backbones in detection. \textbf{ConvNeXt}~\cite{liu2022convnet} modernized the
-convolutional design along the same lines (large depthwise kernels, LayerNorm, inverted bottlenecks)
-and matched Swin's accuracy; \textbf{ConvNeXt V2}~\cite{woo2023convnext} adds a global response
-normalization (GRN) layer and fully convolutional masked-autoencoder (FCMAE) pretraining. Swin-Tiny and
-ConvNeXt V2-Tiny have nearly the same size, channels and strides, which makes them a clean pair for an
-ablation (\cref{sec:res-backbone}).
+fine-tuned on new domains. RF-DETR Medium is the detector of the structured model in this thesis.
 
 \section{Datasets}
 \label{sec:bg-datasets}
@@ -399,7 +383,7 @@ maneuver-level labels can be derived without manual annotation (\cref{sec:method
 \subsection{Use in this thesis}
 
 OpenLane-V2 is the only dataset from which maneuver-level labels can be derived for every direction,
-and it is the basis of the replicated benchmark. DTLD provides the second source of relevance---the
+and it is the basis of the reconstructed benchmark. DTLD provides the second source of relevance---the
 driven route---under German rules, and is used to train and test a model in a different country.
 LISA and ATLAS, which lack relevance labels, serve as out-of-distribution test sets: LISA with
 maneuver labels reconstructed from light sizes and kinds (US, day and night), ATLAS per light (Germany,
@@ -427,7 +411,7 @@ image~\cite{zou2026oneperception} answers the planner's question most directly, 
 evaluated on a single, unreleased benchmark, against structured baselines that were designed for a
 different output, and in one traffic-rule setting only.
 
-This thesis contributes an open reconstruction of that benchmark, an independent replication, a
-comparison with a structured alternative whose classes are designed for the maneuver-level output, and
+This thesis contributes an open reconstruction of that benchmark, a structured alternative whose
+classes are designed for the maneuver-level output, and
 the first cross-dataset evaluation of the task that we are aware of, spanning US and German traffic
 rules, day and night, and three camera fields of view.

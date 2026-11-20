@@ -48,7 +48,7 @@ def assign_scored(dets, side="right", near_turn="dedicated"):
 
 
 class Photometric:
-    """Brightness/contrast jitter on the resized PIL image, as in ``dtsu.data`` (no hue, no flips)."""
+    """Brightness/contrast jitter on the resized PIL image, (no hue shift, no flips)."""
 
     def __init__(self, low=0.75, high=1.25):
         self.low, self.high = low, high

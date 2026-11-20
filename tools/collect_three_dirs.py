@@ -24,23 +24,11 @@ def row(m, keys=KEYS):
 
 def main():
     s = {}
-    for name, run in (("swin", "swin_t_AB"), ("convnext", "convnextv2_t_AB")):
-        d = load(f"{run}/per_direction_3dir.json")
-        s[name] = {k: d[k]["overall"] for k in ("A", "B", "combined")}
-        for k in ("A", "B", "combined"):
-            print(f"{name:9s} {k:8s} {row(d[k]['overall'])}")
     rf = jsonl("rfdetr_m_AB/val_log_3dir.jsonl")
     s["rfdetr_epochs"] = [{"epoch": e["epoch"], **{k: e[k] for k in ("A", "B", "combined")}} for e in rf]
     for e in rf:
         print(f"rfdetr ep{e['epoch']} A {e['A']['tss']:.4f} B {e['B']['tss']:.4f} A+B {e['combined']['tss']:.4f} "
               f"FG {e['combined']['false_go']:.4f} FS {e['combined']['false_stop']:.4f} | A {row(e['A'])}")
-    b = load("bootstrap_swin_vs_rfdetr_3dir.json")
-    s["bootstrap"] = {k: b[k] for k in ("A", "B", "A+B")}
-    for sc in ("A", "B", "A+B"):
-        for m in ("tss", "em", "acc_pass", "false_go", "false_stop"):
-            x = b[sc][m]
-            print(f"boot {sc:4s} {m:10s} {x['a']:.4f} {x['b']:.4f} {x['diff']:+.4f} "
-                  f"[{x['ci95'][0]:+.4f}, {x['ci95'][1]:+.4f}] p={x['p']:.2f}")
     s["dtld"] = {}
     for tag, ep in (("_3dir_e4", 4), ("_3dir", 14)):
         e = [x for x in jsonl(f"rfdetr_m_dtld/val_log{tag}.jsonl") if x["epoch"] == ep][-1]

@@ -1,4 +1,4 @@
-"""J vs J+P arrow directions on ATLAS test and LISA test (REPLICATION_PLAN.md, amendment 1).
+"""J vs J+P arrow directions on ATLAS test and LISA test (EXPERIMENT_LOG.md, amendment 1).
 
 Same per-light test as ``tools/eval_rfdetr_perception.py`` (center matching, the run's own score
 threshold, class-agnostic NMS): for every annotated arrow matched to a detection the run calls relevant,
@@ -7,7 +7,7 @@ J+P replaces it with P's arrow when P's top class is an arrow with probability >
 (picked on its source tune split by ``tools/eval_hybrid.py``, read from <run>/hybrid/matrix.json).
 Paired 95% CI of the accuracy gain: bootstrap over images (10,000 draws, seed 0). ATLAS test has
 3 cameras and LISA test 4 sequences, too few clusters for a cluster bootstrap (deviation from
-amendment 1, recorded in REPLICATION_PLAN.md). Writes <run>/hybrid/arrows.json.
+amendment 1, recorded in EXPERIMENT_LOG.md). Writes <run>/hybrid/arrows.json.
 """
 import argparse
 import json

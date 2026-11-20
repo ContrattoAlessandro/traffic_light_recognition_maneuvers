@@ -3,33 +3,31 @@
 
 This chapter describes how the research was carried out and presents its results. The first half
 covers the methodology: the overall design (\cref{sec:method-design}), the data and the construction
-of labels (\cref{sec:method-labels}), the two models (\cref{sec:method-model,sec:method-rfdetr}), the
-training and tuning procedure (\cref{sec:method-training}) and the evaluation protocol
-(\cref{sec:method-eval}). The second half reports the results in the order of the research questions
-(\cref{sec:res-labels} to \cref{sec:res-cost}).
+of labels (\cref{sec:method-labels}), the structured model and its training (\cref{sec:method-rfdetr})
+and the evaluation protocol (\cref{sec:method-eval}). The second half reports the results in the order
+of the research questions (\cref{sec:res-labels} to \cref{sec:res-cost}).
 
 \section{Research design}
 \label{sec:method-design}
 
-The study is a quantitative, experimental one. Its core is a \emph{replication} in the sense of an
-independent re-implementation from the paper's description, with newly derived data, rather than a
-re-run of released code (none is available). Every quantity that the paper does not specify is treated
-as a free design choice, made on the basis of standard practice or of tuning on held-out training
-data, and documented. Three principles guided all experiments:
+The study is a quantitative, experimental one. The benchmark of Zou et al.\ is rebuilt from public
+annotations, since neither its labels nor its code are released, and every quantity that the paper does
+not specify is treated as a free design choice, made on the basis of standard practice or of tuning on
+held-out training data, and documented. Three principles guided all experiments:
 \begin{enumerate}
   \item \textbf{No model selection on evaluation data.} Hyperparameters, score thresholds and the
         number of epochs are chosen on a \emph{tune split} of 10\% of the training scenes. Where the
         evaluation split is the official validation set (OpenLane-V2), the reported model is the last
         completed epoch, not the best one.
-  \item \textbf{Controlled comparisons.} Ablations change one factor at a time (the backbone, the
-        model family), with everything else, including the random seed, fixed.
+  \item \textbf{Controlled comparisons.} Comparisons change one factor at a time (the training data, the
+        evaluation domain), with everything else, including the random seed, fixed.
   \item \textbf{Verifiable components.} Label builders are unit-tested and checked by hand on frames
-        with difficult configurations; the metrics are unit-tested; the structured baseline is checked
-        with a ground-truth oracle; the backbones are checked against their official implementations.
+        with difficult configurations; the metrics are unit-tested; the structured model is checked
+        with a ground-truth oracle.
 \end{enumerate}
 
 All experiments ran on a single NVIDIA RTX~5070 (12\,GB) with PyTorch~2.14.1~\webcite{web:pytorch}, CUDA~13.0 and
-timm~1.0.30~\webcite{web:timm}. The code is organized as a Python package (\code{dtsu}) with tools for data export,
+the \code{rfdetr} library~1.11.2~\webcite{web:rfdetr}. The code is organized as a Python package (\code{dtsu}) with tools for data export,
 training, evaluation and visualization; \cref{app:repro} lists the commands that reproduce every
 number in this chapter.
 
@@ -90,9 +88,9 @@ Zou et al.~\cite{zou2026oneperception} & 23,904 & 5,147 \\
 \paragraph{Data scope.} The paper describes its benchmark as Subset-A, yet its frame counts (23,904
 train, 5,147 val) exceed the total number of subset A frames \emph{before} any filtering (22,477 and
 4,806). The paper's benchmark therefore cannot be subset A alone. Combining A and B fits its counts
-better, and, as shown in \cref{sec:res-labels}, also its label distribution. The replication thus
-trains one model on A+B and reports subset A validation as the main comparison, with subset B and A+B
-as additional evaluations. \Cref{tab:kept-frames} lists the kept frames: this work keeps about 71\% as
+better, and, as shown in \cref{sec:res-labels}, also its label distribution. All OpenLane-V2 models are
+therefore trained on A+B and evaluated on subset A validation (the paper's reference set), subset B
+validation and their union. \Cref{tab:kept-frames} lists the kept frames: this work keeps about 71\% as
 many frames as the paper. The remaining difference cannot be resolved, since the paper's filtering
 rules are not specified and it also applied manual quality control.
 
@@ -140,137 +138,12 @@ LISA & 16,240 & 1,431 & 17,612 & 1024$\times$768 \\
 \end{tabular}
 \end{table}
 
-\section{The direction-aware model}
-\label{sec:method-model}
-
-The model follows the description of Zou et al.\ (\cref{fig:arch}); choices not specified in the paper
-are marked as such.
-
-\begin{figure}[t]
-\centering
-\begin{tikzpicture}[
-  font=\small, >={Stealth[length=2mm]},
-  box/.style={draw, rounded corners=2pt, align=center, minimum height=0.9cm, inner sep=4pt, fill=#1},
-  box/.default=white]
-  \node[box=gray!10, minimum width=4.2cm] (img) {front image\\[-1pt]\scriptsize 1024$\times$800 (A) / 576$\times$1024 (B)};
-  \node[box=blue!8, minimum width=4.2cm, below=0.5cm of img] (bb) {Swin-T backbone\\[-1pt]\scriptsize + LayerNorm per stage};
-  \node[box=blue!8, minimum width=4.2cm, below=0.5cm of bb] (fpn) {FPN\\[-1pt]\scriptsize P2--P5, 256 channels};
-  \node[box=orange!12, minimum width=3.6cm] (det) at ($(fpn)+(-2.7,-1.7)$) {DETR detector\\[-1pt]\scriptsize 50 queries, 3 colors};
-  \node[box=orange!12, minimum width=3.6cm, below=0.5cm of det] (roi) {ROI tokens $t_1,\dots,t_{16}$\\[-1pt]\scriptsize RoIAlign(P2) + box};
-  \node[box=green!10, minimum width=3.6cm] (g) at ($(roi)+(5.4,0)$) {global token $g$\\[-1pt]\scriptsize mean of pooled levels};
-  \node[box=violet!10, minimum width=4.2cm] (att) at ($(fpn |- roi.south)+(0,-1.3)$) {direction attention\\[-1pt]\scriptsize queries $q_{\text{straight}}, q_{\text{left}}, q_{\text{right}}$};
-  \node[box=gray!10, minimum width=4.2cm, below=0.5cm of att] (heads) {per direction: color head (4) + pass head (2)};
-  \draw[->] (img) -- (bb);
-  \draw[->] (bb) -- (fpn);
-  \draw[->] (fpn.south west) -- (det.north);
-  \draw[->] (det) -- (roi);
-  \draw[->] (fpn.south east) -- (g.north);
-  \draw[->] (roi.south) -- (att.north west);
-  \draw[->] (g.south) -- (att.north east);
-  \draw[->] (att) -- (heads);
-  \node[font=\scriptsize, left=0.1cm of det] {$\mathcal{L}_{\mathrm{DETR}}$};
-\end{tikzpicture}
-\caption{The direction-aware model. Three learnable direction queries attend to a global image token and
-to region tokens, pooled from the P2 level of the FPN, of the lights found by an auxiliary detector; each
-query feeds a color head and a passability head.}
-\label{fig:arch}
-\end{figure}
-
-\paragraph{Backbone and neck.} A Swin-Tiny backbone (\code{swin_tiny_patch4_window7_224}, ImageNet-1k
-weights from timm) produces four feature stages, which a 256-channel FPN turns into levels P2--P5. A
-LayerNorm is applied to each backbone output stage before the FPN. This normalization is not mentioned
-in the paper; it is standard in Swin detection code bases and, as \cref{sec:method-training} explains,
-it proved essential for stable training.
-
-\paragraph{Global token.} Each FPN level is average-pooled, the pooled vectors are averaged across
-levels, and a linear layer gives the global token $g\in\mathbb{R}^{256}$ (pooling choice ours).
-
-\paragraph{Auxiliary detector.} A lightweight DETR with a 6-layer transformer encoder on P5 and a
-6-layer decoder attending to P3, P4 and the encoded P5 predicts 50 boxes with three light classes (red,
-green, yellow). It is trained with the standard set-prediction loss: Hungarian matching, a
-classification term, $5\cdot L_1$ and $2\cdot$GIoU, with auxiliary losses on all decoder layers.
-
-\paragraph{ROI tokens.} The $K=16$ highest-scoring predicted boxes $\hat b_j$ give region tokens
-\begin{equation}
-  t_j = \phi_r\big(\mathrm{RoIAlign}(P2, \hat b_j)\big) + \phi_b(\hat b_j), \qquad j = 1,\dots,K,
-\end{equation}
-with linear projections $\phi_r$ (on $7\times7$ pooled features) and $\phi_b$ (on box coordinates), as
-in Eq.~9 of the paper.
-
-\paragraph{Direction attention and heads.} With $T=[g, t_1,\dots,t_K]$, one learnable query per maneuver,
-$q_d$, attends to the tokens through 8-head attention, followed by LayerNorm and a feed-forward network:
-\begin{equation}
-  h_d = \mathrm{FFN}\big(\mathrm{LN}(q_d + \mathrm{MHA}(q_d, T, T))\big), \qquad d\in\dirs.
-\end{equation}
-Each $h_d$ feeds a 4-way color head and a 2-way passability head. The queries attend only to the
-image tokens, not to each other, so the paper's fourth (U-turn) query has no influence on the other
-three: the models were trained with it, and it is simply not read out. The model has 52.0M parameters,
-against 50.1M reported by the paper, so the original design differs slightly in details that are not
-described.
-
-\paragraph{Loss.} The training objective is
-\begin{equation}
-  \mathcal{L} = \lambda_c\,\mathrm{CE}_{\mathrm{color}} + \lambda_p\,\mathrm{CE}_{\mathrm{pass}} +
-                \lambda_d\,\mathcal{L}_{\mathrm{DETR}},
-\end{equation}
-with $\lambda_c=\lambda_p=1$ and $\lambda_d=0.2$ (tuned; see below).
-
-\section{Training and hyperparameter tuning}
-\label{sec:method-training}
-
-\paragraph{Input and augmentation.} Images are resized so that their long side is 1024 pixels, with the
-aspect ratio kept, and padded to a multiple of 32: subset A becomes a 1024$\times$800 portrait canvas,
-subset B a 576$\times$1024 landscape canvas, and each batch holds a single shape. Augmentation is
-limited to brightness and contrast jitter. Horizontal flips are excluded because they swap left and
-right maneuvers and arrows; hue shifts are excluded because they change light colors.
-
-\paragraph{Optimization.} AdamW~\cite{loshchilov2019decoupled} with learning rate $10^{-4}$
-($10^{-5}$ for the backbone), weight decay $10^{-4}$, a cosine schedule~\cite{loshchilov2017sgdr} with
-500 warm-up iterations, gradient clipping at 0.1 and batch size 4. Training uses mixed
-precision~\cite{micikevicius2018mixed}: fp16 for backbone and FPN, bf16 for the detector, fp32 for the ROI
-and direction branch, and TF32 matrix products. The schedule was planned for 24 epochs; training was
-stopped after epoch 14 (with the learning rate still at about 31\% of its peak), because validation
-metrics had been flat since epoch~4 while the training color and passability losses had fallen to
-about 0.001. One epoch took about 24 minutes including evaluation. The complete settings of both
-models are collected in \cref{app:hparams} (\cref{tab:hparams-dam,tab:hparams-rfdetr}).
-
-\paragraph{Tuning.} Four tuning runs of four epochs each were trained on the fit split and scored on
-the tune split (\cref{tab:tuning}). With the detection loss at full weight, it dominated the gradients:
-summed over six decoder layers it was around 20, against color and passability losses below 1. The
-first run diverged with NaN values in epoch~2 and collapsed to predicting \emph{go} everywhere; a larger
-clipping threshold avoided the NaN but still learned poorly. Reducing $\lambda_d$ to 0.2 gave a usable
-model, but its tune score oscillated strongly from epoch to epoch.
-
-\begin{table}[t]
-\centering
-\caption{Hyperparameter tuning of the direction-aware model (4 epochs; TSS on the combined tune split
-at the last epoch, over four directions as scored when the choice was made).}
-\label{tab:tuning}
-\small
-\begin{tabular}{@{}lllll@{}}
-\toprule
-Run & $\lambda_c/\lambda_p/\lambda_d$, clip & Change & Tune TSS & TSS per epoch \\
-\midrule
-t1 & 1/1/1, 0.1 & -- & diverged & NaN in epoch 2, always \emph{go} \\
-t2 & 1/1/1, 1.0 & -- & 0.642 & \\
-t3 & 1/1/0.2, 0.1 & -- & 0.841 & 0.874, 0.707, 0.818, 0.841 \\
-\textbf{t4} & \textbf{1/1/0.2, 0.1} & \textbf{+ stage LayerNorm} & \textbf{0.901} & 0.881, 0.894, 0.895, 0.901 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\paragraph{The normalization problem.} A first full training run with the t3 settings failed: from
-epoch 14 on, fp16 overflows in the detector's cross-attention invalidated more than half of the batches,
-and the run stopped in epoch 16. Even before that, the validation TSS swung between 0.62 and 0.86 and one
-epoch collapsed to \emph{go} everywhere. Inspecting activations revealed the cause: the feature maps
-returned by timm's Swin implementation in \code{features_only} mode carry no final normalization, so
-their scale drifted during training, reaching about $10^5$ in the decoder, $6\cdot10^5$ at the ROI
-projection and $3\cdot10^6$ in the direction attention. Adding one LayerNorm per output stage (tune run
-t4) bounded the activations (peaks around 11 in the FPN, 2.5 in the decoder and 200 in the fp32 ROI and
-direction tokens) and made the training curve steady (\cref{tab:tuning}).
-
-\section{The structured baseline}
+\section{The structured model}
 \label{sec:method-rfdetr}
+
+The model follows the structured paradigm of \cref{sec:prob-paradigms}: a detector classifies every
+light by its color and by the ego maneuvers it controls, and an explicit rule turns the detections into
+per-maneuver decisions.
 
 \paragraph{Class encoding.} Every annotated light becomes one detection class \code{<moves>|<color>},
 where \code{<moves>} is the set of ego maneuvers the light controls according to the label builder
@@ -283,15 +156,16 @@ class-agnostic NMS (IoU 0.5) and their \code{<moves>} sets are passed to the sam
 used for the labels, with the highest score breaking ties between equally specific lights. The rule
 takes the traffic convention as a parameter (US \emph{dedicated} or German \emph{signal} right turns).
 Feeding ground-truth boxes through this rule reproduces every training label exactly (oracle TSS
-$=1.0000$ on OpenLane-V2 and on DTLD fit, tune and test), so the baseline's errors are entirely due to
+$=1.0000$ on OpenLane-V2 and on DTLD fit, tune and test), so the model's errors are entirely due to
 detection, classification and relevance.
 
 \paragraph{Detector and training.} RF-DETR Medium (34.6M parameters) is fine-tuned from its released
 detection-pretrained weights with the library's own recipe~\webcite{web:rfdetr} (optimizer, EMA, losses, schedule) except where it would corrupt
 the labels: horizontal flips and random crops are disabled (a crop can remove the light that sets a
 direction's label), multi-scale training is disabled in favor of a single square resolution of 1024
-pixels, and the same brightness and contrast jitter as for the direction-aware model is added. The batch
-size is 4 with 4 gradient-accumulation steps.
+pixels, and brightness and contrast jitter is added (hue shifts are excluded because they change light
+colors). The batch size is 4 with 4 gradient-accumulation steps. The complete settings are collected in
+\cref{app:hparams} (\cref{tab:hparams-rfdetr}).
 
 \paragraph{Tuning.} All model selection in this thesis (hyperparameters, epochs, score thresholds) was
 done with four-direction scores, before U-turn was dropped; the selections are kept as they were made,
@@ -299,8 +173,8 @@ and the tune scores quoted for them are four-direction scores. On the tune split
 the default learning rate (tune TSS 0.905)
 was better than Medium with half the learning rate (0.893) and than Large (0.896), and its tune TSS
 plateaued after two epochs with a best score threshold of 0.20. The final model was trained for four
-epochs on the full A+B training set with this threshold fixed; as for the direction-aware model, the
-last epoch is reported.
+epochs on the full A+B training set with this threshold fixed, and the last epoch is reported; its
+per-epoch results are listed in \cref{app:epochs} (\cref{tab:rfdetr-epochs}).
 
 \paragraph{DTLD model.} The same recipe was trained on DTLD's fit split for 15 epochs, with a per-epoch
 overfitting report: the eval-mode detection loss and the direction metrics on the held-out tune split
@@ -387,79 +261,52 @@ the ego vehicle are outlined in their signal color, all other lights with a thin
 \label{fig:examples}
 \end{figure}
 
-\section{Results: replication of the direction-aware model}
-\label{sec:res-replication}
+\section{Results: structured model on OpenLane-V2}
+\label{sec:res-openlane}
 
 \begin{table}[t]
 \centering
-\caption{Main replication result (epoch 14, last completed epoch; three directions). The paper's
-values are over four directions, U-turn included (\cref{sec:prob-def}).}
-\label{tab:replication}
+\caption{The structured model (RF-DETR-M, epoch 3, threshold 0.20) on OpenLane-V2 validation, over three
+directions. The published values of Zou et al.\ are given for orientation only: they are over four
+directions (U-turn included) and on the original, unreleased labels.}
+\label{tab:openlane}
 \small\setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{}lcccccc@{}}
 \toprule
  & $\acccolor\uparrow$ & $\accpass\uparrow$ & $\EM\uparrow$ & $\TSS\uparrow$ & $\FG\downarrow$ & $\FS\downarrow$ \\
 \midrule
-Zou et al.\ (Subset-A) & 0.9019 & 0.9356 & 0.8031 & 0.8802 & 0.1372 & 0.0416 \\
-\textbf{Ours, A val} & \textbf{0.9144} & \textbf{0.9422} & \textbf{0.8279} & \textbf{0.8948} & \textbf{0.1581} & \textbf{0.0316} \\
-$\Delta$ & +0.0125 & +0.0066 & +0.0248 & +0.0146 & +0.0209 & $-$0.0100 \\
+Subset A val & 0.9147 & 0.9474 & 0.8351 & 0.8991 & 0.1516 & 0.0267 \\
+Subset B val & 0.9306 & 0.9585 & 0.8569 & 0.9153 & 0.1118 & 0.0134 \\
+A+B val & 0.9213 & 0.9520 & 0.8441 & 0.9058 & 0.1319 & 0.0215 \\
 \midrule
-Ours, B val & 0.9316 & 0.9476 & 0.8543 & 0.9112 & 0.1334 & 0.0200 \\
-Ours, A+B val & 0.9215 & 0.9444 & 0.8388 & 0.9016 & 0.1459 & 0.0271 \\
+\emph{Zou et al., direction-aware model} & \emph{0.9019} & \emph{0.9356} & \emph{0.8031} & \emph{0.8802} & \emph{0.1372} & \emph{0.0416} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\Cref{tab:replication} answers the first research question. On subset A val the replication reaches a
-TSS of 0.895, against 0.880 reported by Zou et al., with higher color accuracy, passability accuracy and
-exact match. The one metric that is worse is False-Go (0.158 vs 0.137): the replicated model more often
-predicts \emph{go} for a maneuver whose signal is red. Part of the TSS margin comes from leaving out
-U-turn: over the paper's four directions the same predictions score 0.889.
+\Cref{tab:openlane} gives the overall result. On subset A val the structured model reaches a TSS of
+0.899, and 0.915 on subset B, which is easier on every metric. The numbers lie in the range that Zou et
+al.\ report for their direction-aware model (0.880 on their Subset-A), but the two are not directly
+comparable: the labels are reconstructed, the number of kept frames differs (\cref{tab:kept-frames}),
+and the paper's values include the U-turn. The per-epoch results (\cref{tab:rfdetr-epochs}) vary by about
+one TSS point.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\textwidth]{tss_per_epoch.pdf}
-\caption{TSS and False-Go on subset A val per epoch for the direction-aware model with Swin-T and
-ConvNeXtV2-T backbones and for the RF-DETR baseline (4 epochs), scored over four directions (U-turn
-included) as logged during training; only the final checkpoints of the direction-aware models were kept,
-so their curves cannot be re-scored over three directions. Dashed: values reported by Zou et al.}
-\label{fig:tss-epochs}
-\end{figure}
-
-The per-epoch record (\cref{fig:tss-epochs}) exists only as logged during training, over four
-directions. On that scale the TSS exceeded the published value in every epoch and stayed between 0.887
-and 0.908 from epoch 4 to 14 (mean 0.898). False-Go, however, fluctuates strongly between epochs (0.105
-to 0.212, mean 0.146), so the gap to the paper's 0.137 depends largely on where training stopped; the
-epoch-14 checkpoint happens to be one of the weaker ones. All per-epoch values are listed in
-\cref{app:epochs} (\cref{tab:epochs,tab:rfdetr-epochs}). Subset B is easier than subset A on every
-metric (TSS 0.911 vs 0.895).
-
-The numbers are close but not strictly comparable: the labels are reconstructed, the number of kept
-frames differs (\cref{tab:kept-frames}), and the paper's training hyperparameters are unknown.
-
-\section{Results: per-direction analysis}
-\label{sec:res-perdir}
-
-The original paper reports no per-direction results. \Cref{tab:perdir-A} and \cref{fig:perdir} break
-the subset A results down by maneuver.
+\paragraph{Per direction.} The original paper reports no per-direction results. \Cref{tab:perdir-A} and
+\cref{fig:perdir} break the subset A results down by maneuver.
 
 \begin{table}[t]
 \centering
-\caption{Per-direction results on subset A val (2,220 frames). GT mix lists none/red/yellow/green in \%.
-``Maj.'' is the color accuracy of always predicting the most frequent color.}
+\caption{Per-direction results of the structured model on subset A val (2,220 frames). GT mix lists
+none/red/yellow/green in \%. ``Maj.'' is the color accuracy of always predicting the most frequent color.}
 \label{tab:perdir-A}
 \small\setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}llccccrc@{}}
+\begin{tabular}{@{}lccccrc@{}}
 \toprule
-Model & Direction & GT mix (\%) & $\acccolor$ & $\accpass$ & $\FG$ & \#stop & Maj. \\
+Direction & GT mix (\%) & $\acccolor$ & $\accpass$ & $\FG$ & \#stop & Maj. \\
 \midrule
-\multirow{3}{*}{Swin-T} & straight & 3.9 / 28.6 / 5.0 / 62.5 & 0.865 & 0.921 & 0.132 & 636 & 0.625 \\
- & left & 0.9 / 32.8 / 4.1 / 62.2 & 0.900 & 0.910 & 0.172 & 729 & 0.622 \\
- & right & 97.7 / 0.6 / 0.1 / 1.5 & 0.978 & 0.996 & 0.643 & 14 & 0.977 \\
-\midrule
-\multirow{3}{*}{RF-DETR-M} & straight & & 0.873 & 0.929 & 0.129 & 636 & 0.625 \\
- & left & & 0.892 & 0.921 & 0.162 & 729 & 0.622 \\
- & right & & 0.979 & 0.992 & 0.643 & 14 & 0.977 \\
+straight & 3.9 / 28.6 / 5.0 / 62.5 & 0.873 & 0.929 & 0.129 & 636 & 0.625 \\
+left & 0.9 / 32.8 / 4.1 / 62.2 & 0.892 & 0.921 & 0.162 & 729 & 0.622 \\
+right & 97.7 / 0.6 / 0.1 / 1.5 & 0.979 & 0.992 & 0.643 & 14 & 0.977 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -472,127 +319,25 @@ Model & Direction & GT mix (\%) & $\acccolor$ & $\accpass$ & $\FG$ & \#stop & Ma
 \end{figure}
 
 \paragraph{Straight and left are learned well.} Their color accuracy is well above the majority
-baseline (24 and 28 points on subset A). Straight is the harder of the two on subset A (0.865). Its \emph{none} class---no light governs straight, as
-at T-junctions or in turn-only lanes---is rarely recognized: recall 0.20 on A (87 frames) and 0.19 on B
-(48 frames).
+baseline (25 and 27 points on subset A). Straight is the harder of the two on subset A (0.873). Its
+\emph{none} class---no light governs straight, as at T-junctions or in turn-only lanes---is rarely
+recognized: recall 0.17 on A (87 frames) and 0.46 on B (48 frames).
 
-\paragraph{The right turn is not learned.} Its color accuracy equals the majority baseline (A: 0.978 vs
-0.977; B: 0.953 vs 0.959): the model predicts \emph{none} almost always. The few red right-turn signals
-(14 frames in A val, 37 in B val) are mostly missed, giving a right-turn False-Go of 0.64 on A and 0.89
+\paragraph{The right turn is not learned.} Its color accuracy equals the majority baseline (A: 0.979 vs
+0.977; B: 0.950 vs 0.958): the model predicts \emph{none} almost always. The few red right-turn signals
+(14 frames in A val, 37 in B val) are mostly missed, giving a right-turn False-Go of 0.64 on A and 0.84
 on B. These cases are too few to affect the pooled False-Go, yet they are exactly the situations in
-which a right turn is forbidden. The structured baseline shows the same failure (False-Go 0.643 on A,
-0.838 on B), so it is a property of the data rather than of the architecture.
+which a right turn is forbidden. Zou et al.'s label distribution has the same imbalance (right
+\emph{none} 96.9\%), so this is a property of the data rather than of the model.
 
-\paragraph{Yellow is weak on subset A.} Straight yellow recall is 0.42 on A (110 frames) against 0.85 on
+\paragraph{Yellow is weak on subset A.} Straight yellow recall is 0.53 on A (110 frames) against 0.68 on
 B (34 frames); yellow is mostly confused with red or green. Since A has more yellow examples than B, this
 is not only a sample-size effect; the amber rendering of Argoverse~2's camera, which makes yellow lamps
 resemble red ones, is a likely contributor.
 
-\paragraph{Passability follows color.} Although color and passability come from separate heads, the
-predicted passability equals the rule applied to the predicted color in 99.4--99.9\% of the cases. All
-go/stop errors therefore stem from color errors, mainly red confused with green or yellow. The second
-head adds no information in practice.
-
-\section{Results: backbone ablation}
-\label{sec:res-backbone}
-
-To answer RQ2, the Swin-Tiny backbone was replaced by ConvNeXt V2-Tiny
-(\code{convnextv2_tiny.fcmae_ft_in1k}: FCMAE pretraining followed by ImageNet-1k fine-tuning, 83.0\%
-top-1). The two backbones have nearly the same size (27.9M vs 27.5M parameters), the same channels
-(96/192/384/768) and strides, and the same pretraining data (ImageNet-1k only; ImageNet-22k variants were
-avoided so that the data would not be a second variable). Everything else was kept identical, including
-the seed and the 24-epoch cosine schedule stopped after epoch 14, so both runs are compared at the same
-learning rate. A channels-first LayerNorm on each output stage plays the role of Swin's per-stage norm,
-matching ConvNeXt's official detection backbone, and drop-path is set to 0.1 for both. The recipe-specific
-settings of the official ConvNeXt training (layer-wise learning-rate decay, its own drop-path and weight
-decay) were deliberately not adopted, since they would change more than the backbone.
-
-The backbone reproduces the official ConvNeXt V2 implementation~\webcite{web:convnextv2} to numerical
-precision (identical weights, ImageNet logits within $3\cdot10^{-6}$).
-
-\begin{table}[t]
-\centering
-\caption{Backbone ablation on subset A val. Epoch 14 over three directions; means over epochs 4--14
-$\pm$ standard deviation across epochs (one seed per backbone) over four directions, as logged during
-training (\cref{tab:epochs}).}
-\label{tab:backbone}
-\begin{tabular}{@{}lccc@{}}
-\toprule
- & Swin-T & ConvNeXtV2-T & $\Delta$ \\
-\midrule
-TSS, epoch 14 & 0.895 & 0.906 & +0.012 \\
-$\FG$, epoch 14 & 0.158 & 0.172 & +0.014 \\
-\midrule
-\multicolumn{4}{@{}l}{\emph{Four directions, means over epochs 4--14}} \\
-$\acccolor$, mean & 0.917 & 0.911 & $-$0.006 \\
-$\accpass$, mean & 0.938 & 0.932 & $-$0.006 \\
-$\EM$, mean & 0.841 & 0.830 & $-$0.010 \\
-\textbf{TSS, mean} & $\mathbf{0.898\pm0.006}$ & $\mathbf{0.891\pm0.007}$ & $\mathbf{-0.007}$ \\
-$\FG$, mean & 0.146 & 0.191 & +0.046 \\
-$\FS$, mean & 0.036 & 0.029 & $-$0.007 \\
-Epochs with higher TSS & 12 / 15 & 3 / 15 & \\
-\midrule
-TSS subset B, mean & $0.921\pm0.013$ & $0.915\pm0.009$ & $-$0.005 \\
-TSS A+B, mean & $0.908\pm0.009$ & $0.901\pm0.007$ & $-$0.006 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\Cref{tab:backbone} shows no improvement from ConvNeXt V2. It is ahead at epoch 14 (by 0.012 over
-three directions, 0.006 over four), but that epoch was one of Swin's weakest; averaged over epochs 4--14
-(four directions, the only per-epoch record) it is slightly behind on A, B and A+B and has the higher
-subset A TSS in only 3 of 15 epochs. The gap is about one standard deviation of the
-epoch-to-epoch fluctuation, so the supported conclusion is ``no gain, possibly slightly worse'' rather
-than a clear loss. ConvNeXt V2 leans more towards \emph{go}: it makes more False-Go errors (0.191 vs
-0.146) and fewer False-Stop errors (0.029 vs 0.036), the less desirable trade-off from a safety point of
-view. It also costs about 1.5$\times$ the training time per epoch and about 30\% more GPU memory (9.5 vs
-7.3\,GB at batch 4).
-
-\section{Results: direction-aware model versus structured baseline}
-\label{sec:res-rfdetr}
-
-\begin{table}[t]
-\centering
-\caption{Direction-aware model (Swin-T, epoch 14) versus the structured RF-DETR-M baseline (epoch 3,
-threshold 0.20), with the paired segment-level bootstrap of the difference (Swin $-$ RF-DETR).}
-\label{tab:bootstrap}
-\small
-\begin{tabular}{@{}llcccc@{}}
-\toprule
-Set & Metric & Swin-T & RF-DETR-M & $\Delta$ [95\% CI] & $p$ \\
-\midrule
-\multirow{4}{*}{A val} & TSS & 0.8948 & 0.8991 & $-$0.0043 [$-$0.0254, 0.0172] & 0.70 \\
- & $\EM$ & 0.8279 & 0.8351 & $-$0.0072 [$-$0.0431, 0.0299] & 0.70 \\
- & $\FG$ & 0.1581 & 0.1516 & +0.0065 [$-$0.0411, 0.0552] & 0.79 \\
- & $\FS$ & 0.0316 & 0.0267 & +0.0049 [$-$0.0072, 0.0180] & 0.46 \\
-\midrule
-\multirow{3}{*}{B val} & TSS & 0.9112 & 0.9153 & $-$0.0041 [$-$0.0222, 0.0119] & 0.66 \\
- & $\accpass$ & 0.9476 & 0.9585 & $-$0.0109 [$-$0.0249, 0.0010] & 0.08 \\
- & $\FG$ & 0.1334 & 0.1118 & +0.0216 [$-$0.0098, 0.0600] & 0.24 \\
-\midrule
-\multirow{3}{*}{A+B val} & TSS & 0.9016 & 0.9058 & $-$0.0042 [$-$0.0187, 0.0099] & 0.57 \\
- & $\accpass$ & 0.9444 & 0.9520 & $-$0.0076 [$-$0.0178, 0.0022] & 0.14 \\
- & $\FG$ & 0.1459 & 0.1319 & +0.0140 [$-$0.0157, 0.0450] & 0.38 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\Cref{tab:bootstrap} addresses RQ3. The structured baseline scores slightly higher than the
-direction-aware model on every set (TSS 0.899 vs 0.895 on A, 0.915 vs 0.911 on B) and has slightly lower
-False-Go and False-Stop rates, with a third fewer parameters (34.6M vs 52.0M) and a fraction of the
-training time (4 epochs). None of the differences is statistically significant: every 95\% interval
-contains zero, and the smallest p-value (passability accuracy on B) is 0.08. The width of the intervals
-is itself informative: with about 180 validation segments, differences in TSS below about two points
-cannot be resolved on this benchmark.
-
-The per-direction results (\cref{tab:perdir-A}) are almost identical for the two designs, including the
-failure on right-turn red. Unlike the direction-aware model, the structured baseline's passability is
-consistent with its color by construction (100\%).
-
-In short, on this benchmark the end-to-end direction-query design brings no measurable advantage over a
-modern detector combined with explicit rules. Two caveats apply: the RF-DETR detector starts from
-detection-pretrained weights with a DINOv2-derived backbone, a stronger pretraining than the ImageNet-1k Swin-Tiny, and the structured
-pipeline relies on rules that exactly match how the labels were built.
+\paragraph{Passability follows color.} In the structured pipeline the passability is derived from the
+color by the rule, so the two are consistent by construction, and all go/stop errors stem from color
+errors, mainly red confused with green or yellow.
 
 \section{Results: training and testing on DTLD}
 \label{sec:res-dtld}
@@ -750,14 +495,12 @@ not reliably carry over pictogram recognition to a new camera setup.
 \toprule
 Model & Params & Epochs & Time / epoch & Peak mem. \\
 \midrule
-Direction-aware, Swin-T & 52.0M & 14 & $\approx$20 min$^a$ & 7.3 GB \\
-Direction-aware, ConvNeXtV2-T & 52.3M & 14 & $\approx$30 min$^a$ & 9.5 GB \\
-RF-DETR-M, OpenLane-V2 & 34.6M & 4 & $\approx$20 min$^b$ & 6.5 GiB \\
-RF-DETR-M, DTLD & 34.6M & 15 & $\approx$27 min$^b$ & 6.6 GiB \\
+RF-DETR-M, OpenLane-V2 & 34.6M & 4 & $\approx$20 min & 6.5 GiB \\
+RF-DETR-M, DTLD & 34.6M & 15 & $\approx$27 min & 6.6 GiB \\
 \bottomrule
-\multicolumn{5}{@{}l}{\footnotesize $^a$ training only; $^b$ including validation.} \\
+\multicolumn{5}{@{}l}{\footnotesize Time per epoch including validation.} \\
 \end{tabular}
 \end{table}
 
-The structured model is smaller and needs far fewer epochs; at inference it runs at 22\,ms per frame
-(\cref{sec:res-dtld}), comfortably within the frame rate of automotive cameras.
+A few epochs of fine-tuning suffice on both datasets, and at inference the model runs at 22\,ms per
+frame (\cref{sec:res-dtld}), comfortably within the frame rate of automotive cameras.

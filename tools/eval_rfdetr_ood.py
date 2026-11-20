@@ -28,9 +28,9 @@ from torch.utils.data import DataLoader, Dataset
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dtsu import DIRECTIONS  # noqa: E402
 from dtsu.data import load_records  # noqa: E402
-from dtsu.metrics import evaluate  # noqa: E402
+from dtsu.metrics import direction_stats, evaluate  # noqa: E402
 from dtsu.rfdetr_baseline import assign_scored, box_class, detect, frame_directions, load_image, parse_class, to_arrays  # noqa: E402
-from tools.eval_directions import direction_stats  # noqa: E402
+
 from tools.eval_rfdetr import MIN_SCORE, THRESHOLDS, load_model  # noqa: E402
 
 L, R = "data/labels", "data/OpenLane-V2"

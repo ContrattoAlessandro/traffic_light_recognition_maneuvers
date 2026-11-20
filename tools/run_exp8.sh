@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exp 8 (REPLICATION_PLAN.md): the Exp 7 data plus BDD100K train clean frames, for night and horizontal lights.
+# Exp 8 (EXPERIMENT_LOG.md): the Exp 7 data plus BDD100K train clean frames, for night and horizontal lights.
 set -u
 cd "$(dirname "$0")/.."
 export PYTHONUTF8=1 PYTHONIOENCODING=utf-8

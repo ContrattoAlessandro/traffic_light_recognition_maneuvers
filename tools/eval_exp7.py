@@ -1,4 +1,4 @@
-"""Exp 7 (REPLICATION_PLAN.md): select and score the multi-dataset factorized model F7, score the moves model M
+"""Exp 7 (EXPERIMENT_LOG.md): select and score the multi-dataset factorized model F7, score the moves model M
 (runs/rfdetr_m_mix, epoch 1, threshold 0.25) on the same cells, compare and apply the decision rule.
 
 1. F7 selection: every saved epoch on DTLD tune (junction rule), A tune and B tune (map-masked); the epoch and

@@ -1,4 +1,4 @@
-"""Exp 10 (REPLICATION_PLAN.md): WF at 1280 (arm R, runs/exp10_R) against WF at 1024 (Exp 9) and F8.
+"""Exp 10 (EXPERIMENT_LOG.md): WF at 1280 (arm R, runs/exp10_R) against WF at 1024 (Exp 9) and F8.
 
 Selection: the Exp 8 rule (tools/eval_exp9.select with tau 0). WF and F8 keep their Exp 9 / Exp 8 selections.
 Each model is decoded at its own training resolution (tools/eval_exp8.Model reads args.json).

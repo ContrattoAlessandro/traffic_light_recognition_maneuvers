@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exp 11 (REPLICATION_PLAN.md): the R recipe of Exp 10 at resolution 1536 (batch 2 x accum 8: batch 4 does not fit),
+# Exp 11 (EXPERIMENT_LOG.md): the R recipe of Exp 10 at resolution 1536 (batch 2 x accum 8: batch 4 does not fit),
 # first epoch only (5-epoch schedule, resumable from last.ckpt), then the evaluation.
 set -u
 cd "$(dirname "$0")/.."

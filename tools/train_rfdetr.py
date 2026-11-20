@@ -4,9 +4,8 @@ RF-DETR's own recipe (optimizer, lr, EMA, losses, schedule) is kept, except for 
 our labels or starve tiny lights:
 - no horizontal flip (it swaps left/right arrows and lanes) and no random crop (it can cut out the
   light that sets a direction's label): ``aug_config={}`` and ``scale_jitter=False``;
-- no multi-scale; one square resolution (default 1024, so lights keep at least the pixels the
-  direction-aware model sees at 1024x800 / 576x1024);
-- brightness/contrast jitter as in ``dtsu.data``, inserted into RF-DETR's torchvision train pipeline
+- no multi-scale; one square resolution (``--resolution``, default 1024);
+- brightness/contrast jitter (``dtsu.rfdetr_baseline.Photometric``), inserted into RF-DETR's torchvision train pipeline
   (the Albumentations route would resize train images with cv2 and val images with torchvision).
 The EMA weights are saved after every epoch (``epoch_<n>_ema.pth``) for ``tools/eval_rfdetr.py``.
 With ``--report`` (needs a dataset exported with ``--probe``) every epoch also prints an overfitting

@@ -1,4 +1,4 @@
-"""Exp 9 (REPLICATION_PLAN.md): class imbalance of the pictogram and color heads. Arms LA, W, WF against F8.
+"""Exp 9 (EXPERIMENT_LOG.md): class imbalance of the pictogram and color heads. Arms LA, W, WF against F8.
 
 - LA: F8 with post-hoc logit adjustment, argmax of log p - tau * log(prior) for the pictogram and the color, prior =
   the F8 training counts (tools/train_rfdetr.train_counts). "unknown" has no training box and takes the circle prior

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exp 10 (REPLICATION_PLAN.md): the WF recipe of Exp 9 (tools/run_exp9.sh) at resolution 1280, then the evaluation.
+# Exp 10 (EXPERIMENT_LOG.md): the WF recipe of Exp 9 (tools/run_exp9.sh) at resolution 1280, then the evaluation.
 set -u
 cd "$(dirname "$0")/.."
 export PYTHONUTF8=1 PYTHONIOENCODING=utf-8

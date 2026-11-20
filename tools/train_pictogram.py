@@ -1,4 +1,4 @@
-"""Train the pictogram classifier P (REPLICATION_PLAN.md, amendment 1) on data/pictogram_crops.
+"""Train the pictogram classifier P (EXPERIMENT_LOG.md, amendment 1) on data/pictogram_crops.
 
 Selection: the epoch with the best macro accuracy (mean per-class recall) on ``val`` (DTLD tune
 sessions + held-out ATLAS train sessions). Only that checkpoint is then scored on atlas_test, lisa_test

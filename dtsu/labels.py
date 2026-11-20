@@ -3,7 +3,7 @@
 For every frame we derive, for each ego maneuver d in DIRECTIONS, the color of
 the traffic signal controlling it (none/red/yellow/green) and the implied
 passability. The derivation follows the paper's data-construction section, with
-the details it leaves open filled in as documented in REPLICATION_PLAN.md:
+the details it leaves open filled in as documented in EXPERIMENT_LOG.md:
 
 1. Traffic lights are traffic elements whose attribute is a color. Each light is
    linked by ``topology_lcte`` to the lane centerlines that must obey it.

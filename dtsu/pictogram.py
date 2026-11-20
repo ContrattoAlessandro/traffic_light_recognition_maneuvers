@@ -1,4 +1,4 @@
-"""Pictogram classifier P of the two-stage arm J+P (REPLICATION_PLAN.md, amendment 1).
+"""Pictogram classifier P of the two-stage arm J+P (EXPERIMENT_LOG.md, amendment 1).
 
 A ResNet-18 (trained from scratch, small-input stem) reads a square crop around a light, together with
 the light's color (one-hot, appended to the pooled features: it picks the lamp when a head has two lit),

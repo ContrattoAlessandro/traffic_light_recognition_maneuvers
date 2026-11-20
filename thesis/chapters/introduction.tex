@@ -38,9 +38,9 @@ multimodal large language models on a benchmark derived from OpenLane-V2~\cite{w
 The proposal is attractive but leaves several questions open. The benchmark labels and the code are not
 released, so the reported numbers cannot be checked directly and the label semantics---which light
 governs a maneuver, how a turn without its own arrow is treated---have to be reconstructed from the
-paper. It is also unclear how much of the benefit comes from the end-to-end direction-query design and
-how much from the image backbone or from the detector: a well-tuned modern detector combined with a
-simple, explicit association rule might do as well. Finally, the evaluation is limited to OpenLane-V2,
+paper. It is also unclear whether the end-to-end direction-query design is needed at all: the structured
+pipelines it was compared with were designed for a different output, and a well-tuned modern detector
+combined with a simple, explicit association rule might do as well. Finally, the evaluation is limited to OpenLane-V2,
 which mixes US and Singapore driving under one set of rules. Traffic signals look different across
 countries, and the rules that link a lamp to a maneuver differ too: in Germany a right turn obeys the
 circular signal, while in the United States a right turn on red is generally permitted unless a
@@ -51,21 +51,21 @@ another is the question that matters most for deployment.
 
 The thesis pursues three objectives:
 \begin{enumerate}
-  \item to \textbf{replicate} the direction-aware model of Zou et al.\ in its best setting (Swin-Tiny
-        backbone) from public data only, documenting every assumption that the replication requires;
-  \item to \textbf{compare} it with a \textbf{structured baseline} built from a state-of-the-art
-        real-time detector and the same label rules, under a statistically sound protocol;
+  \item to \textbf{rebuild} the maneuver-level benchmark of Zou et al.\ from public data only,
+        documenting every assumption that the reconstruction requires;
+  \item to build and evaluate a \textbf{structured model} from a state-of-the-art real-time detector and
+        the same label rules, under a statistically sound protocol;
   \item to \textbf{measure robustness} across datasets, countries, traffic rules, illumination and
         cameras.
 \end{enumerate}
-These objectives translate into four research questions:
+These objectives translate into three research questions:
 \begin{description}[leftmargin=1.2cm,style=nextline]
-  \item[RQ1] Can the published results be reproduced when the benchmark labels are rebuilt from the
-             OpenLane-V2 annotations, and what are the decisive implementation choices?
-  \item[RQ2] Does a stronger or more modern backbone (ConvNeXt V2) improve the direction-aware model?
-  \item[RQ3] Does the end-to-end direction-query design outperform a structured pipeline in which a
-             detector predicts light classes that encode the controlled maneuvers?
-  \item[RQ4] How well does a model trained on one dataset transfer to others, and which conditions
+  \item[RQ1] Can the benchmark labels be rebuilt from the public OpenLane-V2 annotations, and does the
+             result match the published label distribution?
+  \item[RQ2] How well does a structured pipeline, in which a detector predicts light classes that encode
+             the controlled maneuvers and an explicit rule assigns them, solve the task, and where does
+             it fail?
+  \item[RQ3] How well does a model trained on one dataset transfer to others, and which conditions
              cause the largest degradation?
 \end{description}
 
@@ -80,7 +80,7 @@ trained on a single consumer GPU; all hyperparameters are tuned on a held-out pa
 scenes so that the evaluation split is never used for model selection. Metrics follow the original
 paper (color accuracy, passability accuracy, exact match, their mean TSS, and the False-Go and
 False-Stop rates), and are complemented with per-direction analyses and a segment-level paired
-bootstrap to decide whether differences between models are significant.
+bootstrap for comparisons between models.
 
 \section*{Contributions}
 
@@ -88,11 +88,9 @@ bootstrap to decide whether differences between models are significant.
   \item An open reconstruction of the maneuver-level benchmark from OpenLane-V2, with documented rules
         whose output reproduces the published label distribution, and evidence that the benchmark
         combines subsets A and B under US driving rules.
-  \item A replication of the direction-aware model that matches the published TSS, together with the
-        two changes without which training is unstable (a reduced detection-loss weight and a
-        normalization layer on the backbone outputs).
-  \item A backbone ablation and a structured RF-DETR baseline, compared under a common protocol with
-        confidence intervals.
+  \item A structured RF-DETR model whose classes encode the maneuvers each light controls, so that a
+        perfect detector reproduces every label, reaching a TSS of 0.899 on subset A and 0.915 on
+        subset B of the rebuilt benchmark.
   \item Label builders for DTLD and LISA that follow the same conventions, a model trained on DTLD and
         an out-of-distribution evaluation on LISA, OpenLane-V2 and ATLAS.
   \item A per-direction error analysis showing where aggregate scores hide safety-relevant failures.
@@ -102,9 +100,9 @@ bootstrap to decide whether differences between models are significant.
 
 \Cref{ch:background} reviews traffic light recognition, the map-based, map-free and topology-based
 approaches to deciding which lights are relevant, the maneuver-level formulation, the detection and
-backbone architectures used later, and the public traffic-light datasets. \Cref{ch:problem} analyses the maneuver-level task in depth: its formal definition,
+detection architectures used later, and the public traffic-light datasets. \Cref{ch:problem} analyses the maneuver-level task in depth: its formal definition,
 the traffic rules behind the labels, the metrics and their blind spots, and the two design paradigms
-compared later. \Cref{ch:method} describes the data, the label construction, the models, the training
+for solving it. \Cref{ch:method} describes the data, the label construction, the model, the training
 and evaluation protocol, and presents all results. \Cref{ch:discussion} discusses the findings against
 the original paper and the literature, the limitations of the work and directions for future research.
 The Conclusions summarize the answers to the research questions. The appendices collect the label

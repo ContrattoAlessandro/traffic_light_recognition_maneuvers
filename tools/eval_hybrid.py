@@ -1,4 +1,4 @@
-"""J vs J+P on the per-direction matrix (REPLICATION_PLAN.md, amendment 1).
+"""J vs J+P on the per-direction matrix (EXPERIMENT_LOG.md, amendment 1).
 
 For each J run (its epoch and score threshold: best source-tune TSS in its val_log.jsonl):
 1. detect on its source tune split(s) and on A val, B val and D*_US test (squeeze, as in training);

@@ -1,4 +1,4 @@
-"""H1 of the pre-registered protocol (REPLICATION_PLAN.md): the pictogram + rules oracle on OpenLane-V2 val.
+"""H1 of the pre-registered protocol (EXPERIMENT_LOG.md): the pictogram + rules oracle on OpenLane-V2 val.
 
 Written before any label existed. Reads the pool key (``make_pictogram_pool.py``) and the annotator's
 export, and reports per subset:

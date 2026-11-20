@@ -9,46 +9,34 @@ directions for future research (\cref{sec:disc-future}).
 \section{Comparison with previous work}
 \label{sec:disc-compare}
 
-\paragraph{Confirmations.} The central result of Zou et al.\ holds: a direction-aware model with a
-Swin-Tiny backbone reaches a TSS of about 0.88--0.90 on OpenLane-V2, and it does so with labels rebuilt
-independently from the public annotations. That the reconstructed label distribution matches the
-paper's Fig.~3 for almost every class suggests that the label semantics---specificity hierarchy, left
-inheriting straight, right governed only by dedicated signals---were recovered correctly. The replication
-also confirms, indirectly, that maneuver-level prediction from a single image is feasible without HD
-maps, which map-based systems~\cite{fairfield2011traffic,possatti2019traffic,polley2025atlas} rely on,
-and without the annotated lane metadata of earlier map-free work~\cite{langenberg2019deep}.
+\paragraph{Confirmations.} The label semantics of Zou et al.\ can be recovered from the public
+annotations. That the reconstructed label distribution matches the paper's Fig.~3 for almost every
+class suggests that the specificity hierarchy, left inheriting straight and right governed only by
+dedicated signals were rebuilt correctly. A model trained on these labels reaches a TSS of 0.899 on
+subset A val, in the range the paper reports for its direction-aware model (0.880). This confirms that
+maneuver-level prediction from a single image is feasible without HD maps, which map-based
+systems~\cite{fairfield2011traffic,possatti2019traffic,polley2025atlas} rely on, and without the
+annotated lane metadata of earlier map-free work~\cite{langenberg2019deep}.
 
-\paragraph{Differences.} Three discrepancies remain. The False-Go rate of the replication is higher
-than published (0.158 vs 0.137), although its mean over epochs (0.146, four directions) is close; the paper does not
-state how its checkpoint was selected, and the strong epoch-to-epoch variation observed here suggests
-that this choice alone can move False-Go by several points. The benchmark contains about 29\% fewer
-frames than the paper's, for reasons that cannot be determined without the original filtering rules.
-Finally, the paper describes its data as Subset-A, which its own frame counts contradict; the evidence
-collected here (frame counts, color mix, right-turn distribution under US rules) points to A+B.
-A further difference is deliberate: the results here are over three maneuvers, without the U-turn,
-which follows the left signal in 99.9\% of the labels. This raises the replication's TSS slightly
-(0.895 instead of 0.889 over four directions), so the margin over the published 0.880 should be read
-as about one point, not one and a half.
+\paragraph{Differences.} The rebuilt benchmark contains about 29\% fewer frames than the paper's, for
+reasons that cannot be determined without the original filtering rules. The paper describes its data as
+Subset-A, which its own frame counts contradict; the evidence collected here (frame counts, color mix,
+right-turn distribution under US rules) points to A+B. A further difference is deliberate: the results
+here are over three maneuvers, without the U-turn, which follows the left signal in 99.9\% of the labels.
+For these reasons the scores of this thesis and the published ones are close in scale but are not a
+head-to-head comparison.
 
-\paragraph{The value of the direction queries.} The most consequential finding concerns RQ3. The
-original paper reports that the direction-aware model outperforms structured pipelines. In this work, a
-structured pipeline built on a modern real-time detector~\cite{robinson2025rfdetr} performs at least as
-well, with no significant difference in any metric. The two findings are not necessarily in conflict. The
-strongest structured baseline in the paper is TLD-READY~\cite{polley2024tldready}, a pipeline designed
-for per-light relevance on German roads and adapted to the four-maneuver output with a fallback to the
-circular signal; it reaches a TSS of 0.842 and a False-Go rate of 0.302. The structured model used here
-reaches 0.899 and 0.152 on the same subset, because its classes encode the maneuvers each light
-controls and therefore mirror the label rules exactly, so that a perfect detector would be a perfect
-predictor.
-What the comparison does show is that, on this benchmark, the end-to-end design is not \emph{necessary}
-to reach the published accuracy, and that the benefit attributed to direction queries depends on how
-strong the structured alternative is. This is in line with the broader experience in detection that
-well-tuned, strongly pretrained detectors~\cite{zhao2024detrs,chen2024lwdetr} are hard to beat.
-
-\paragraph{Backbones.} Replacing Swin-Tiny with ConvNeXt V2-Tiny did not help, despite the latter's
-slightly higher ImageNet accuracy~\cite{woo2023convnext}. For this task, the backbone appears not to be the
-bottleneck: errors concentrate in a few hard cases (right-turn reds, yellow, straight \emph{none}) that
-are limited by data and label semantics rather than by feature quality.
+\paragraph{Structured pipelines.} The original paper reports that its direction-aware model clearly
+outperforms structured pipelines. Its strongest structured baseline, TLD-READY~\cite{polley2024tldready},
+was designed for per-light relevance on German roads and adapted to the four-maneuver output with a
+fallback to the circular signal; it reaches a TSS of 0.842 and a False-Go rate of 0.302. The structured
+model of this thesis reaches 0.899 and 0.152 on subset A val, because its classes encode the maneuvers
+each light controls and therefore mirror the label rules exactly, so that a perfect detector would be a
+perfect predictor. Allowing for the differences in labels and directions, this suggests that the gap
+reported in the paper reflects the design of the structured baselines it used rather than an inherent
+limit of the structured approach. This is in line with the broader experience in detection that
+well-tuned, strongly pretrained detectors~\cite{zhao2024detrs,chen2024lwdetr,robinson2025rfdetr} are hard
+to beat.
 
 \section{Theoretical and practical implications}
 \label{sec:disc-implications}
@@ -66,13 +54,6 @@ the US and Germany, and the choice of convention changes the right-turn distribu
 to 63\% green. An end-to-end model internalizes whichever convention it is trained on. A structured
 pipeline can change the rule at inference time, which is a practical argument for keeping the traffic
 rules explicit, especially for systems meant to operate in more than one country.
-
-\paragraph{Training stability matters as much as architecture.} Two implementation details not
-mentioned in the original paper---a reduced weight for the auxiliary detection loss and a normalization
-of the backbone outputs---decided whether the model trained at all. Without them, the same architecture
-oscillated between TSS values of 0.62 and 0.86 or diverged. This is a reminder that replication requires
-much more than the architectural description, and that reported results implicitly depend on such
-choices.
 
 \paragraph{Detection is the bottleneck out of distribution.} The ATLAS results show that most errors of a
 transferred model begin with lights that are not detected, and that detection depends steeply on light
@@ -100,16 +81,16 @@ monitoring and debugging, an important property for safety arguments.
         the published distribution and by spot-checking about 80 frames across datasets, but no full
         manual quality control was done. Some label noise certainly remains, and the left~$=$~none
         mismatch shows a systematic difference from the original.
-  \item \textbf{Single seeds and stopped schedules.} Each configuration was trained once. The
-        epoch-to-epoch variation of the direction-aware model (TSS standard deviation 0.006, False-Go range
-        0.105--0.212, over four directions) is of the same order as the differences between models, and the cosine schedule was
-        stopped at 14 of 24 epochs. Conclusions about small differences are therefore limited to ``no
-        significant difference''.
+  \item \textbf{Single seeds.} Each configuration was trained once. The epoch-to-epoch variation of the
+        OpenLane-V2 model (about one TSS point, \cref{tab:rfdetr-epochs}) is of the same order as the
+        differences one would want to resolve, so conclusions about small differences are limited.
   \item \textbf{Evaluation on the validation split.} OpenLane-V2's test split has no usable annotations,
         so, as in the original paper, the validation split is the evaluation set. Model selection was
         kept away from it, but it is still a split that has been looked at during development.
-  \item \textbf{Asymmetric comparison.} The RF-DETR baseline uses a stronger pretraining (DINOv2-derived backbone, detection pretraining)
-        than the ImageNet-1k Swin-Tiny, and its class encoding is tailored to the label rules.
+  \item \textbf{No head-to-head comparison with the original model.} Neither the original labels nor
+        its code are public, so the published numbers can only be set beside the results of this thesis
+        with the caveats of \cref{sec:disc-compare}. The structured model's class encoding is, moreover,
+        tailored to the label rules.
   \item \textbf{Size-based relevance on LISA.} LISA has no relevance labels, so the ego intersection's
         lights were identified by their size. Trinci et al.~\cite{trinci2026color} show that the
         largest light is a poor relevance cue in the United States; the LISA labels are therefore
@@ -119,8 +100,6 @@ monitoring and debugging, an important property for safety arguments.
         traffic scenes, which is semantically incorrect for those frames.
   \item \textbf{Single frames.} All models see one image. Flashing signals, occlusions and the short
         yellow phase cannot be resolved reliably without temporal context.
-  \item \textbf{Scope of the replication.} Only the paper's best configuration was replicated; its other
-        backbones, its structured baselines and its language-model baselines were not.
 \end{itemize}
 
 \section{Future research directions}

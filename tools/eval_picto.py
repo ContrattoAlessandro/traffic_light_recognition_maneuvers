@@ -1,4 +1,4 @@
-"""Score an Exp 6 run (REPLICATION_PLAN.md): joint (J) or factorized (F) pictogram / junction / color lights on DTLD.
+"""Score an Exp 6 run (EXPERIMENT_LOG.md): joint (J) or factorized (F) pictogram / junction / color lights on DTLD.
 
 1. Every saved epoch (epoch_<n>_ema.pth) runs on the tune split (valid/records.jsonl); the epoch and score
    threshold (0.05-0.95) with the best rule TSS on tune's scored frames are selected.

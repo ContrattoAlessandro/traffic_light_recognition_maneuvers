@@ -1,4 +1,4 @@
-"""Exp 8 (REPLICATION_PLAN.md): select and score F8 (Exp 7 data + BDD100K train) against F7 under the pre-registered rule.
+"""Exp 8 (EXPERIMENT_LOG.md): select and score F8 (Exp 7 data + BDD100K train) against F7 under the pre-registered rule.
 
 1. Selection, the same for both models: every saved epoch and threshold, best mean of DTLD tune (junction rule),
    A tune and B tune (US rule + lane topology mask; the Exp 7 label mask is not used).

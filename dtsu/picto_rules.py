@@ -1,4 +1,4 @@
-"""Exp 6 (REPLICATION_PLAN.md): DTLD lights with pictogram, junction relevance and color, and the junction rule.
+"""Exp 6 (EXPERIMENT_LOG.md): DTLD lights with pictogram, junction relevance and color, and the junction rule.
 
 Per box: pictogram (PICTOS), junction relevance (bool) and color (COLORS). The joint arm J learns one class
 per "<pictogram>|<J or N>|<color>"; the factorized arm F learns the three separately (dtsu/factorized.py).

@@ -1,6 +1,6 @@
 """Paired bootstrap of the metric differences between two runs on the same val frames.
 
-Reads ``<run>/val_preds.npz`` of both runs (written by ``tools/eval_directions.py`` /
+Reads ``<run>/val_preds.npz`` of both runs (written by
 ``tools/eval_rfdetr.py --per-direction``). Frames of one driving segment are strongly correlated,
 so whole segments are resampled (with replacement, separately per val set), and both runs are
 scored on the same resample. Reports each metric for both runs, the difference (a - b), its 95%
@@ -33,11 +33,11 @@ def metrics(pa, pb, idx):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--a", default="runs/swin_t_AB")
-    ap.add_argument("--b", default="runs/rfdetr_m_AB")
+    ap.add_argument("--a", required=True, help="run directory of model a")
+    ap.add_argument("--b", required=True, help="run directory of model b")
     ap.add_argument("--n", type=int, default=10000)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--out", default="runs/bootstrap_swin_vs_rfdetr.json")
+    ap.add_argument("--out", required=True)
     ap.add_argument("--a-preds", default="val_preds.npz", help="file name inside run a (e.g. val_preds_mix.npz)")
     ap.add_argument("--b-preds", default="val_preds.npz")
     ap.add_argument("--sets", nargs="+", default=["A", "B"], help="val sets in the npz files")

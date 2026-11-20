@@ -1,4 +1,4 @@
-"""Export the Exp 7 training set (REPLICATION_PLAN.md): DTLD + ATLAS + OpenLane-V2 with partial labels.
+"""Export the Exp 7 training set (EXPERIMENT_LOG.md): DTLD + ATLAS + OpenLane-V2 with partial labels.
 
 Classes are "<pictogram>|<J|N|?>|<color>" (dtsu.picto_rules.class_name); "?" marks an attribute the source
 does not label, which the factorized loss ignores:

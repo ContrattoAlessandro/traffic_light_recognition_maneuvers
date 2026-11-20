@@ -3,15 +3,14 @@
 For every ``epoch_<n>_ema.pth`` in the run (or only ``--epochs``):
 1. detect on the tune split (a held-out part of train) and on val A / val B;
 2. pick the score threshold that maximizes combined tune TSS (val is never used for this);
-3. write val metrics at that threshold to ``<run>/val_log.jsonl``, in the format of the
-   direction-aware model's log, plus val TSS over the whole threshold grid (diagnostic only).
+3. write val metrics at that threshold to ``<run>/val_log.jsonl``, plus val TSS over the whole
+   threshold grid (diagnostic only).
 ``--dataset openlane_A`` / ``openlane_B`` (single-subset runs) pick it on that subset's tune split only.
 ``--dataset dtld`` picks the threshold on the DTLD tune split and reports DTLD test.
 With ``--tune-only`` (tuning runs trained on the fit split) only the tune split is loaded and scored,
 and the log is ``<run>/tune_log.jsonl``.
-``--per-direction`` also writes ``<run>/per_direction.json`` for the last scored epoch, as
-``tools/eval_directions.py`` does for the direction-aware model, and its per-frame predictions
-to ``<run>/val_preds.npz`` (for ``tools/bootstrap_compare.py``).
+``--per-direction`` also writes ``<run>/per_direction.json`` for the last scored epoch, and its
+per-frame predictions to ``<run>/val_preds.npz`` (for ``tools/bootstrap_compare.py``).
 """
 import argparse
 import glob
@@ -27,9 +26,9 @@ from torch.utils.data import DataLoader, Dataset
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dtsu import DIRECTIONS  # noqa: E402
 from dtsu.data import load_records  # noqa: E402
-from dtsu.metrics import evaluate  # noqa: E402
+from dtsu.metrics import direction_stats, evaluate, save_preds  # noqa: E402
 from dtsu.rfdetr_baseline import detect, frame_directions, load_image, to_arrays  # noqa: E402
-from tools.eval_directions import direction_stats, save_preds  # noqa: E402
+
 
 L, R = "data/labels", "data/OpenLane-V2"
 DTLD = os.path.join(os.environ.get("DATASETS", "../traffic-light-detection/datasets"), "DTLD_jpg")

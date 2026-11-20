@@ -1,4 +1,4 @@
-"""Exp 9 (REPLICATION_PLAN.md): measurements taken before fixing the design. No training.
+"""Exp 9 (EXPERIMENT_LOG.md): measurements taken before fixing the design. No training.
 
 1. Pictogram and color counts of the F8 training set, the class weights (inverse frequency ** 0.5) with and
    without a horizontal flip that swaps left / right arrows.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exp 5 (REPLICATION_PLAN.md): mixed A+B+D*_US training, scored on A val, B val, D*_US test (US rules) and
+# Exp 5 (EXPERIMENT_LOG.md): mixed A+B+D*_US training, scored on A val, B val, D*_US test (US rules) and
 # DTLD test (German rules), then compared with A+B (r1) and the DTLD model on the same frames.
 set -u
 cd "$(dirname "$0")/.."

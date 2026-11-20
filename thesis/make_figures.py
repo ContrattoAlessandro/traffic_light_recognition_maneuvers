@@ -1,10 +1,10 @@
 """Thesis figures from the run outputs in runs/ (run from the repository root).
 
 python thesis/make_figures.py  ->  thesis/figures/*.pdf
+The two example frames (thesis/figures/example_*.jpg) are static images and are not regenerated here.
 """
 import json
 import os
-import shutil
 
 import matplotlib
 
@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 OUT = "thesis/figures"
-SWIN, CNX, RFD = "#2a78d6", "#eb6834", "#1baf7a"  # categorical slots 1-3
+C1, C2, C3 = "#2a78d6", "#eb6834", "#1baf7a"  # categorical slots 1-3
 INK, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"
 SIGNAL = {"none": "#a8a7a2", "red": "#d93a3a", "yellow": "#eda100", "green": "#1f9d55"}
 
@@ -36,7 +36,7 @@ def save(fig, name):
 
 
 def label_distribution():
-    """A+B kept frames, ours vs the paper's Fig. 3 (REPORT.md section 4.3)."""
+    """A+B kept frames, ours vs Fig. 3 of Zou et al."""
     dirs = ["straight", "left", "right"]
     ours = {"none": [6.5, 0.9, 96.6], "red": [36.9, 40.8, 1.8],
             "yellow": [2.7, 2.9, 0.1], "green": [53.9, 55.5, 1.5]}
@@ -62,33 +62,15 @@ def label_distribution():
     save(fig, "label_distribution.pdf")
 
 
-def tss_per_epoch():
-    swin = jsonl("runs/swin_t_AB/val_log.jsonl")
-    cnx = jsonl("runs/convnextv2_t_AB/val_log.jsonl")
-    rfd = jsonl("runs/rfdetr_m_AB/val_log.jsonl")
-    fig, axes = plt.subplots(1, 2, figsize=(6.4, 2.6))
-    for ax, key, paper, title in ((axes[0], "tss", 0.8802, "TSS (higher is better)"),
-                                  (axes[1], "false_go", 0.1372, "False-Go (lower is better)")):
-        for log, col, name in ((swin, SWIN, "Swin-T"), (cnx, CNX, "ConvNeXtV2-T"), (rfd, RFD, "RF-DETR-M")):
-            ax.plot([e["epoch"] for e in log], [e["A"][key] for e in log], "-o", color=col, label=name)
-        ax.axhline(paper, color=MUTED, linestyle="--", linewidth=1)
-        ax.text(15.0, paper, "paper", va="center", fontsize=7, color=MUTED)
-        ax.set_title(title, fontsize=9, color=INK)
-        ax.set_xlabel("epoch")
-        ax.set_xlim(-0.5, 17)
-    axes[0].legend(loc="lower right", fontsize=7)
-    save(fig, "tss_per_epoch.pdf")
-
-
 def dtld_overfitting():
     rep = jsonl("runs/rfdetr_m_dtld/epoch_report.jsonl")
     ep = [e["epoch"] for e in rep]
     fig, axes = plt.subplots(1, 2, figsize=(6.4, 2.5))
-    axes[0].plot(ep, [e["probe_loss"] for e in rep], "-o", color=SWIN, label="train probe")
-    axes[0].plot(ep, [e["val_loss"] for e in rep], "-o", color=CNX, label="held-out val")
+    axes[0].plot(ep, [e["probe_loss"] for e in rep], "-o", color=C1, label="train probe")
+    axes[0].plot(ep, [e["val_loss"] for e in rep], "-o", color=C2, label="held-out val")
     axes[0].set_title("detection loss (EMA, eval mode)", fontsize=9)
-    axes[1].plot(ep, [e["probe"]["tss"] for e in rep], "-o", color=SWIN, label="train probe")
-    axes[1].plot(ep, [e["val"]["tss"] for e in rep], "-o", color=CNX, label="held-out val")
+    axes[1].plot(ep, [e["probe"]["tss"] for e in rep], "-o", color=C1, label="train probe")
+    axes[1].plot(ep, [e["val"]["tss"] for e in rep], "-o", color=C2, label="held-out val")
     axes[1].set_title("TSS", fontsize=9)
     for ax in axes:
         ax.axvline(4, color=MUTED, linestyle=":", linewidth=1)
@@ -100,7 +82,7 @@ def dtld_overfitting():
 
 def atlas_recall():
     d = json.load(open("runs/rfdetr_m_dtld/ood_atlas/epoch4_iou0.5.json"))
-    cams = (("front_wide", SWIN, "wide"), ("front_medium", CNX, "medium"), ("front_tele", RFD, "tele"))
+    cams = (("front_wide", C1, "wide"), ("front_medium", C2, "medium"), ("front_tele", C3, "tele"))
     bins = list(d["front_wide"]["recall_by_height"])
     labels = ["<10", "10-20", "20-40", ">40"]
     fig, ax = plt.subplots(figsize=(4.6, 2.5))
@@ -118,33 +100,25 @@ def atlas_recall():
 
 
 def per_direction():
-    """subset_A val color accuracy per direction: both models vs the majority-color baseline."""
-    swin = json.load(open("runs/swin_t_AB/per_direction.json"))
-    rfd = json.load(open("runs/rfdetr_m_AB/per_direction.json"))
-    sw = swin["A"]["directions"] if "directions" in swin.get("A", {}) else swin["A"]
-    rf = rfd["A"]["directions"]
+    """subset_A val color accuracy per direction (three directions): the RF-DETR joint-class model vs the
+    majority-color baseline."""
+    rf = json.load(open("runs/rfdetr_m_AB/per_direction_3dir.json"))["A"]["directions"]
     dirs = ["straight", "left", "right"]
     fig, ax = plt.subplots(figsize=(5.6, 2.7))
-    w = 0.26
+    w = 0.36
     x = np.arange(len(dirs))
-    ax.bar(x - w - 0.02, [rf[d]["majority_acc_color"] for d in dirs], w, color="#c9c8c2", label="majority color")
-    ax.bar(x, [sw[d]["acc_color"] for d in dirs], w, color=SWIN, label="Swin-T (direction-aware)")
-    ax.bar(x + w + 0.02, [rf[d]["acc_color"] for d in dirs], w, color=RFD, label="RF-DETR-M (structured)")
-    ax.set_xticks(x, ["straight", "left", "right"])
+    ax.bar(x - w / 2 - 0.01, [rf[d]["majority_acc_color"] for d in dirs], w, color="#c9c8c2", label="majority color")
+    ax.bar(x + w / 2 + 0.01, [rf[d]["acc_color"] for d in dirs], w, color=C3, label="RF-DETR-M (joint classes)")
+    ax.set_xticks(x, dirs)
     ax.set_ylabel(r"Acc$_\mathrm{color}$, subset_A val")
     ax.set_ylim(0.5, 1.0)
     ax.grid(axis="x", visible=False)
-    ax.legend(fontsize=7, ncol=3, loc="upper center", bbox_to_anchor=(0.5, -0.12))
+    ax.legend(fontsize=7, ncol=2, loc="upper center", bbox_to_anchor=(0.5, -0.12))
     save(fig, "per_direction.pdf")
-
-
-def examples():
-    for name in ("A-0004.jpg", "B-0028.jpg"):
-        shutil.copy(os.path.join("runs/boss_deck/img", name), os.path.join(OUT, "example_" + name))
 
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    for f in (label_distribution, tss_per_epoch, dtld_overfitting, atlas_recall, per_direction, examples):
+    for f in (label_distribution, dtld_overfitting, atlas_recall, per_direction):
         f()
         print("done", f.__name__)

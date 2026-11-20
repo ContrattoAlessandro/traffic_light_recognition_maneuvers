@@ -1,4 +1,4 @@
-"""Exp 11 (REPLICATION_PLAN.md): R at 1536 after one epoch (arm S, runs/exp11_S) against R and WF at epoch 0.
+"""Exp 11 (EXPERIMENT_LOG.md): R at 1536 after one epoch (arm S, runs/exp11_S) against R and WF at epoch 0.
 
 Models: S (epoch 0), R0 / WF0 (R and WF at epoch 0), R / WF (the Exp 10 / Exp 9 selections).
 Each epoch-0 model gets its threshold from the Exp 8 rule with the epoch fixed at 0 (tools/eval_exp9.select).

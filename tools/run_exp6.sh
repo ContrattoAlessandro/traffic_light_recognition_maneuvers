@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exp 6 (REPLICATION_PLAN.md): DTLD pictogram / junction / color lights, joint classes (J) vs factorized head (F).
+# Exp 6 (EXPERIMENT_LOG.md): DTLD pictogram / junction / color lights, joint classes (J) vs factorized head (F).
 # Same export, recipe, epochs and seed; only the head differs. Then both are scored (tools/eval_picto.py:
 # epoch and threshold on tune, rule TSS and per-light metrics on DTLD test) and compared (tools/compare_picto.py).
 set -u

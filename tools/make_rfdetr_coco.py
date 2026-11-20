@@ -1,6 +1,6 @@
 """Export kept frames as an RF-DETR (Roboflow COCO) dataset with "<moves>|<color>" light classes.
 
-train/  = A+B train (the same frames the direction-aware model trains on)
+train/  = A+B train (kept frames)
 valid/  = A+B tune split (a subset of train; only feeds RF-DETR's own per-epoch mAP log, never val)
 With ``--fit`` (tuning runs, out dir data/rfdetr_coco_fit) train/ is the 90% fit split instead, so
 valid/ is held out. ``--dataset dtld`` exports DTLD the same way (fit / tune / official test).
