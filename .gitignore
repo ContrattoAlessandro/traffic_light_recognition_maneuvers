@@ -1,6 +1,9 @@
-# local data, training outputs and environments (large, and the dataset is non-commercial)
+# datasets, generated labels and exports, training outputs (large; the datasets are for non-commercial use)
+datasets/
 data/
 runs/
+
+# environments and caches
 .venv/
 __pycache__/
 *.pyc
@@ -8,3 +11,8 @@ __pycache__/
 *.pth
 *.pt
 *.ckpt
+
+# local tooling and documents kept outside the code repository
+.claude/
+thesis/
+thesis_overleaf.zip

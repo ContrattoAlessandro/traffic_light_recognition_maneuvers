@@ -1,0 +1,12 @@
+# Versions used for every reported result (Python 3.12, CUDA 13.0, one RTX 5070 with 12 GB).
+# Install PyTorch from its CUDA index first, e.g.
+#   pip install torch==2.14.1 torchvision==0.29.1 --index-url https://download.pytorch.org/whl/cu130
+torch==2.14.1
+torchvision==0.29.1
+rfdetr==1.11.2
+pytorch-lightning==2.6.6
+numpy==2.5.2
+pillow==12.3.0
+opencv-python-headless==5.0.0.93
+PyYAML==6.0.3
+pytest==9.1.1

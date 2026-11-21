@@ -1,0 +1,23 @@
+# Results
+
+Outputs of `scripts/evaluate.py`; the tables in the main README are generated from them by `scripts/make_tables.py`.
+
+| File | Model(s) | Run folder used |
+|---|---|---|
+| `R.json` | R, input 1280 (main model) | `runs/exp10_R`, epoch 2, threshold 0.35 |
+| `ablation_resolution/1024.json` | the same recipe at 1024 | `runs/exp9_WF`, epoch 4, threshold 0.35 |
+| `ablation_resolution/1536.json` | the same recipe at 1536 | `runs/exp11_S`, epoch 2, threshold 0.35 |
+| `ablation_resolution/R_vs_1024.json`, `R_vs_1536.json` | R ("a") paired with the other resolution ("b") | as above |
+
+The run folder names are those of the research log (`docs/EXPERIMENT_LOG.md`: Exp 9 WF, Exp 10 R, Exp 11 S).
+
+Layout of each file:
+- `selection`: epoch and threshold, with the tune scores and the whole selection grid;
+- `maneuver_metrics`: Acc_color, Acc_pass, EM, TSS, False-Go, False-Stop per test set (`*_camera_only`: US rule
+  without the lane-topology prior);
+- `maneuvers`: TSS and False-Go of "a" and "b" and their difference with a segment-bootstrap 95% CI (10,000 draws);
+- `attributes`: per test set, rates on the labelled lights both models detect (pictogram, color, yellow, junction,
+  false arrows on round lights), each with "a", "b", "d" and a cluster-bootstrap 95% CI of "d" (2,000 draws);
+- `detection`: per cell, center AP of both models with the CI of the difference, and recall, precision and color
+  accuracy at each model's threshold.
+In a single-model file ("a" = "b") read the "a" values; the differences are zero by construction.
