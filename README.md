@@ -120,6 +120,24 @@ Going from 1024 to 1280 raises pictogram recall (mostly right and straight arrow
 
 Earlier ablations at 1024 px (factorized vs. joint classes, class weights, label-swapping flip, logit adjustment) are documented in `docs/EXPERIMENT_LOG.md` (Exp 6 to Exp 9).
 
+## Baseline M
+
+**M** is the same RF-DETR Medium with its own detection head, trained on joint `<moves>|<color>` classes: each light
+is labelled with the set of ego maneuvers it controls (from OpenLane-V2's lane topology, or from the route a DTLD lamp
+serves) and its color, or as `irrelevant` (`dtsu/moves.py`). It predicts the maneuvers directly, where R reads the
+pictogram and the junction and lets a fixed rule assign them; its decoder (`assign_scored`) is the benchmark's own
+direction rule, so ground-truth boxes through it reproduce every label.
+- Data: OpenLane-V2 A + B fit (14,977 frames) plus an equal-size random sample of D*_US fit, DTLD under the
+  OpenLane-V2 protocol (`dtsu/labels_dtld.py`); 46 classes. No ATLAS, no BDD100K, no pictogram labels.
+- Recipe: 1024 px, 4 epochs, lr 1e-4 / 1.5e-4, batch 4 × accumulation 4, no flip.
+- Selection (Exp 5 rule): the mean of OpenLane-V2 tune TSS and D*_US tune TSS; the published run is epoch 1 at 0.25.
+- Evaluated by `scripts/evaluate_moves.py`: A val and B val camera only (its native output) and with the lane-topology
+  mask, DTLD test under the route labels (German rule) and D*_US test, and the perception cells of R. With
+  `--reference runs/R` it pairs R and M frame by frame on the cells of the publication protocol.
+
+`scripts/make_examples.py` draws R and M side by side on random frames in and out of distribution
+(`docs/examples/`).
+
 ## Reproducing
 
 **Environment.** Python 3.12, CUDA 13.0, one 12 GB GPU.
@@ -160,6 +178,17 @@ python scripts/run_video.py clip.mp4 --run runs/R --epoch 2 --threshold 0.35 --o
 `export_training_set.py --sources dtld atlas openlane bdd` selects the training sources, for studies of the
 training-data composition.
 
+The baseline M (`build_labels.py` also writes its DTLD route labels):
+
+```bash
+python scripts/export_moves_set.py --out data/train_moves
+python scripts/train.py --moves --dataset-dir data/train_moves --out-dir runs/M --resolution 1024 \
+    --epochs 4 --batch-size 4 --grad-accum 4
+python scripts/evaluate_moves.py --run runs/M --out results/M.json
+python scripts/evaluate_moves.py --run runs/M --selection results/M.json --reference runs/R \
+    --reference-selection results/R.json --no-detection --out results/R_vs_M.json
+```
+
 ## Repository
 
 | Path | Contents |
@@ -169,9 +198,10 @@ training-data composition.
 | `dtsu/sources.py` | readers for every dataset |
 | `dtsu/factorized.py` | the factorized head and its partial-label loss, class weights, the arrow-swapping flip |
 | `dtsu/model.py` | loading a run and detecting |
+| `dtsu/moves.py`, `dtsu/moves_evaluation.py`, `dtsu/labels_dtld.py` | the baseline M: joint classes, its decoder and evaluation, its DTLD route labels |
 | `dtsu/evaluation.py`, `dtsu/stats.py`, `dtsu/metrics.py`, `dtsu/topology.py` | selection, metrics, matching, bootstraps, the lane-topology prior |
 | `scripts/` | label building, export, training, evaluation, video |
-| `splits/` | the fixed tune / held-out splits (OpenLane-V2 segments, DTLD and ATLAS sessions) |
+| `splits/` | the fixed tune / held-out splits (OpenLane-V2 segments, DTLD and ATLAS sessions), and the DTLD frames the manual route review rejects |
 | `annotations/` | blind hand labels of the pictogram of 1,172 OpenLane-V2 val lights |
 | `results/` | evaluation outputs of R and of the ablations |
 | `docs/EXPERIMENT_LOG.md` | the dated research log: every experiment, its design written before its results, and every deviation |

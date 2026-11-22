@@ -40,8 +40,8 @@ def saved_epochs(run):
     return sorted(int(re.search(r"epoch_(\d+)_ema", p).group(1)) for p in glob.glob(os.path.join(run, "epoch_*_ema.pth")))
 
 
-def load_model(run, epoch):
-    """The EMA weights of one epoch (``<run>/epoch_<n>_ema.pth``) in the factorized model, on the GPU, in eval mode."""
+def load_model(run, epoch, device="cuda"):
+    """The EMA weights of one epoch (``<run>/epoch_<n>_ema.pth``) in the factorized model, on ``device``, in eval mode."""
     import rfdetr
 
     args = run_args(run)
@@ -49,7 +49,7 @@ def load_model(run, epoch):
     state = torch.load(os.path.join(run, f"epoch_{epoch}_ema.pth"), map_location="cpu", weights_only=False)["model"]
     factorized.factorize(net, factorized.n_picto_of(state))
     net.load_state_dict(state)
-    return net.cuda().eval()
+    return net.to(device).eval()
 
 
 class _Frames(Dataset):

@@ -1909,3 +1909,47 @@ use only existing runs and can be read at once.
 inference: F8 against F7, W against F8, WF against W (`results/ablation_recipe/`). R against WF and S against R were
 already in `results/ablation_resolution/`. The selection under the Exp 8 rule over three maneuvers gives the same
 epochs and thresholds as before: F7 epoch 3 at 0.25, F8 epoch 3 at 0.45, W epoch 1 at 0.25.
+
+## The baseline M back in the repository (2026-11-22)
+
+M, the protocol's baseline, is again part of the code, so every number of the R-against-M comparison comes from the
+public repository: `dtsu/moves.py` (joint classes, the decoder `assign_scored`, model loading and detection),
+`dtsu/labels_dtld.py` (DTLD route labels under German rules and D*_US), `dtsu/moves_evaluation.py` and
+`scripts/evaluate_moves.py` (the Exp 5 selection, M's maneuver cells, the perception cells of R, and the paired
+R-against-M cells of the protocol), `scripts/export_moves_set.py` (M's training set), `scripts/train.py --moves`
+(RF-DETR's own head) and `tests/test_moves.py`.
+- **No private file is needed any more.** The route labels used `route_frames.json` of a separate project only for its
+  `rule_ok` flag. The 701 frames where it is false (484 train, 217 test), the frames the manual route review rejects,
+  are now `splits/dtld_route_review.json`.
+- **Checks against the `pre-cleanup` code:**
+  - labels: DTLD route labels and D*_US are identical frame by frame on train and test (kept flag, colors, boxes,
+    session), as are the fit and tune splits;
+  - training set: `scripts/export_moves_set.py` writes the same 46 classes, 29,954 / 4,687 images, annotations, files
+    and image sizes as `data/rfdetr_coco_fit_mix`, the set M was trained on; the oracle TSS is 1 on both folders;
+  - decoding: on M's cached detections of Exp 7 (epoch 1, threshold 0.25), the per-maneuver colors of every A val and
+    B val frame equal those of the old decoder;
+  - detection cells: from the same caches, center AP 0.641 on BDD100K val, 0.818 on VZC-TLD and 0.642 on ATLAS test,
+    with recall, precision and color accuracy as in the Exp 7 and VZC sections.
+- The queue of the protocol still trains M's seeds with the `pre-cleanup` code (as the protocol says); the new
+  `scripts/train.py --moves` makes the same RF-DETR call and is the one documented in the README.
+- `dtsu.model.load_model` takes a `device` (default `cuda`, as before), for CPU inference while the GPU trains.
+- `scripts/make_examples.py` draws R and M side by side on frames drawn at random (seed 0) in and out of
+  distribution (`docs/examples/`). It is qualitative and was not used for any decision.
+
+### M on the AWSIM clip (2026-11-22)
+
+M (`runs/rfdetr_m_mix`, epoch 1, threshold 0.25, German right-turn convention to match R's junction rule) was run
+on the AWSIM camera-view crop (7,076 frames, CPU) with `scripts/run_video.py`. It was compared with R's existing
+output (`AWSIM_cam_picto_R`, epoch 2, threshold 0.35) by `scripts/compare_videos.py` (outputs `runs/awsim/AWSIM_cam_R_vs_M*`).
+Qualitative only: the clip has no labels.
+
+| | frames with a used light | straight green | straight red | straight yellow | straight none |
+|---|---|---|---|---|---|
+| R | 3,568 | 3,028 | 340 | 171 | 3,537 |
+| M | 2,798 | 2,578 | 105 | 86 | 4,307 |
+
+The straight decision differs on 1,388 frames. Most of them are M missing a light R finds (green->none 723,
+red->none 164, yellow->none 137): M finds fewer distant lights, which matches its lower input resolution (1024 vs 1280).
+The safety-relevant case is red->green on 58 frames, in two episodes (around t = 23-25 s and t = 96 s). In both, the
+crop shows a lit red circle and M gives the light a green "L+R+S" class (score 0.27-0.48), so the straight maneuver
+reads green: a False-Go that R does not make. The opposite case (R green, M red) occurs on 1 frame.

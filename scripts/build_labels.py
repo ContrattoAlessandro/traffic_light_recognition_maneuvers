@@ -5,6 +5,8 @@
    split (training) and a tune split (model selection) with ``splits/openlane_tune_segments.json``.
 2. DTLD junction-rule records (``dtsu.sources.dtld_records``): fit and tune from DTLD train, split by session with
    ``splits/dtld_tune_sessions.json``, and test.
+3. For the baseline M: DTLD route labels under German rules and D*_US, the same frames under the OpenLane-V2 protocol
+   (``dtsu.labels_dtld``), with the same fit / tune / test split.
 
 Usage (from the repository root): python scripts/build_labels.py [--skip-openlane] [--skip-dtld]
 """
@@ -15,7 +17,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from dtsu import sources  # noqa: E402
+from dtsu import labels_dtld, sources  # noqa: E402
 from dtsu.paths import LABELS, OPENLANE, SPLITS  # noqa: E402
 
 
@@ -51,16 +53,31 @@ def dtld():
     print(f"DTLD: {len(fit)} fit frames ({len(fit_sessions)} sessions), {len(train) - len(fit)} tune frames ({len(tune)} sessions)", flush=True)
 
 
+def dtld_routes():
+    tune = sources.dtld_tune_sessions()
+    train, test = labels_dtld.route_records("train"), labels_dtld.route_records("test")
+    parts = {"fit": [r for r in train if r["segment_id"] not in tune], "tune": [r for r in train if r["segment_id"] in tune], "test": test}
+    for part, recs in parts.items():
+        sources.write_jsonl(labels_dtld.label_path("route", part), recs)
+        us = [labels_dtld.to_openlane_protocol(r) for r in recs]
+        sources.write_jsonl(labels_dtld.label_path("us", part), us)
+        print(f"DTLD routes {part}: {len(recs)} frames, kept {sum(r['kept'] for r in recs)} (German rules), "
+              f"{sum(r['kept'] for r in us)} (D*_US)", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--skip-openlane", action="store_true")
     ap.add_argument("--skip-dtld", action="store_true")
+    ap.add_argument("--skip-dtld-routes", action="store_true", help="skip the route labels of the baseline M")
     args = ap.parse_args()
     os.makedirs(LABELS, exist_ok=True)
     if not args.skip_openlane:
         openlane()
     if not args.skip_dtld:
         dtld()
+    if not args.skip_dtld_routes:
+        dtld_routes()
 
 
 if __name__ == "__main__":
