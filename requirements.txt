@@ -10,3 +10,6 @@ pillow==12.3.0
 opencv-python-headless==5.0.0.93
 PyYAML==6.0.3
 pytest==9.1.1
+# ONNX export only (scripts/export_onnx.py)
+onnx==1.23.2
+onnxruntime==1.32.0

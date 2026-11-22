@@ -189,6 +189,18 @@ python scripts/evaluate_moves.py --run runs/M --selection results/M.json --refer
     --reference-selection results/R.json --no-detection --out results/R_vs_M.json
 ```
 
+## Deployment (ONNX)
+
+```bash
+python scripts/export_onnx.py --out runs/onnx_R
+```
+
+This writes R as a float32 ONNX graph (opset 17, input 1x3x1280x1280, 300 queries without threshold or NMS). It also
+writes the I/O contract (`model_config.json`) and `deploy/reference_infer.py`, a numpy + onnxruntime reference of the
+pre-processing, post-processing and junction rule. Golden frames and a parity report against the evaluated PyTorch
+model complete the package. `deploy/README.md` describes the package and what an Autoware / AWSIM integration still
+has to provide.
+
 ## Repository
 
 | Path | Contents |
@@ -200,7 +212,8 @@ python scripts/evaluate_moves.py --run runs/M --selection results/M.json --refer
 | `dtsu/model.py` | loading a run and detecting |
 | `dtsu/moves.py`, `dtsu/moves_evaluation.py`, `dtsu/labels_dtld.py` | the baseline M: joint classes, its decoder and evaluation, its DTLD route labels |
 | `dtsu/evaluation.py`, `dtsu/stats.py`, `dtsu/metrics.py`, `dtsu/topology.py` | selection, metrics, matching, bootstraps, the lane-topology prior |
-| `scripts/` | label building, export, training, evaluation, video |
+| `scripts/` | label building, export, training, evaluation, video, ONNX export |
+| `deploy/` | the torch-free reference pipeline and the notes of the ONNX hand-off package |
 | `splits/` | the fixed tune / held-out splits (OpenLane-V2 segments, DTLD and ATLAS sessions), and the DTLD frames the manual route review rejects |
 | `annotations/` | blind hand labels of the pictogram of 1,172 OpenLane-V2 val lights |
 | `results/` | evaluation outputs of R and of the ablations |
