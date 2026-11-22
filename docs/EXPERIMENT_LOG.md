@@ -1810,3 +1810,102 @@ original dataset files, instead of the intermediate files of a separate project.
 - Evaluation: R against WF, scored from the same cached detections by the code of tag `pre-cleanup` and by
   `scripts/evaluate.py`, over three maneuvers: all 803 values agree exactly. These include the selection grid
   optimum, TSS and False-Go with their CIs, every attribute metric and every detection cell.
+
+## Publication protocol: seeds of R and M, R against M, camera-only headline (2026-11-22, written before any seed run or R-against-M evaluation)
+
+**Purpose.** This section fixes what the paper reports and how. It was written before any of the runs or
+evaluations below existed. R is fixed as the main model (see the section above); nothing below can change that
+choice. Every result is reported whatever its direction.
+
+**Decisions taken for the paper (2026-11-22).**
+- The paper is a method paper on R. Its baseline is **M**, the mixed moves model of Exp 5 (`runs/rfdetr_m_mix`: joint
+  `<moves>|<color>` classes, OpenLane-V2 A + B fit plus an equal-size D*_US fit sample, 1024 px, 4 epochs).
+- Zou et al. enter only through the numbers in their paper. Their benchmark is not public, has about 1.4× our
+  frames and scores four maneuvers, so that comparison is indicative and untested.
+- **Headline OpenLane-V2 decoding is camera only**: the US rule without the lane-topology mask, for R and for M.
+  The topology-masked scores are reported as a secondary "with map prior" variant.
+- The resolution ablation (1024 / 1280 / 1536) and the recipe steps before it (F7, F8, W) stay single seed and
+  are labelled as such.
+
+**Seeds.**
+- **R:** two more runs, seeds 1 and 2, with exactly R's command (`scripts/reproduce_R.sh`: `scripts/train.py`,
+  `data/train_full`, 1280, 5 epochs, batch 4 × accumulation 4, lr 1e-4 / 1.5e-4, class weights 0.5,
+  `--flip-swap`). R itself is seed 0. Outputs `runs/R_seed1`, `runs/R_seed2`.
+- **M:** two more runs, seeds 1 and 2, with M's command and data (`tools/run_rfdetr_mix.sh` at tag `pre-cleanup`,
+  `data/rfdetr_coco_fit_mix`). The original M was trained without a seed (`seed: null`); it counts as the first of
+  the three M runs. Outputs `runs/M_seed1`, `runs/M_seed2`.
+- **Selection, per run, never on a test set.** Each R run: the rule that selected R (the Exp 8 rule over three
+  maneuvers: the epoch and threshold that maximise the mean of DTLD tune TSS with the junction rule and A / B tune
+  TSS with the US rule and the topology mask). The mask is used here only on the tune splits, which are part of the
+  training data. Each M run: the Exp 5 rule over three maneuvers (the mean of OpenLane tune TSS and D*_US tune TSS).
+- If a run crashes it is resumed from its `last.ckpt` with the same settings, and the restart is logged. A run is
+  not replaced by another seed because of its result.
+
+**Primary comparison: R against M, in domain.** Per frame, each model's scores are averaged over its three runs.
+Differences R − M are paired on the same frames, with a cluster bootstrap 95% CI (10,000 draws, seed 0):
+segments on OpenLane-V2, sessions on DTLD.
+
+| Cell | Frames | R decoding | M decoding |
+|---|---|---|---|
+| A val | 2,220 | US rule, camera only | its own decoder (`assign_scored`, US rule) |
+| B val | 1,565 | US rule, camera only | the same |
+| DTLD test, route labels, German rule | the frames in both the route labels and R's junction-scored set (11,126 in Exp 7) | junction rule | its own decoder, German rule |
+
+- Metrics: TSS (primary) and False-Go, with Acc_color, Acc_pass, EM and False-Stop beside them. Three maneuvers.
+- DTLD route labels are the target M was trained on. This cell was chosen because R's own junction labels favour
+  R (Exp 7 checks); the junction-label cell is reported as secondary.
+- The topology-masked OpenLane-V2 cells are reported for both models as secondary.
+- Each model is also reported as the mean and standard deviation over its three runs.
+
+**Secondary comparison: perception out of domain.** Center AP (as in the Exp 8 cells), recall and precision at each
+run's threshold, and color accuracy on matched lights.
+- Out of domain for both models: LISA test (day, night), S2TLD (720p, 1080p, 1080p horizontal), VZC-TLD (all,
+  horizontal).
+- In R's training domain, reported and marked as such, never used for a claim: BDD100K val (R trained on BDD100K
+  train) and ATLAS test (R trained on ATLAS train).
+- AP of a model = the mean of its three runs' APs. The CI of the R − M difference comes from a cluster bootstrap
+  (2,000 draws) that recomputes every run's AP in each draw: blocks of 100 consecutive frames on LISA and S2TLD,
+  sessions on VZC-TLD.
+- VZC-TLD image decision (accuracy, False-Go, False-Stop), as in the VZC section, per model averaged over runs.
+
+**Claims the paper may make**, each only if its condition holds:
+- **"R is non-inferior to M in domain":** the lower CI bound of ΔTSS is above −0.01 on A val, B val and the DTLD
+  route-label cell. **"R is better in domain"** on a cell: the lower bound is above 0 there.
+- **"R has lower False-Go"** on a cell: the upper CI bound of ΔFalse-Go is below 0 there.
+- **"R detects lights better out of domain":** the lower CI bound of the R − M difference of the mean center AP
+  over LISA test, S2TLD and VZC-TLD (all lights) is above 0.
+- Anything else is described as a point estimate with its CI, without a claim.
+
+**Comparison with Zou et al.** R and M (run-averaged) are also scored over four maneuvers, with U-turn taking left as
+in the original labels, on A val and on A + B val. These rows sit next to the paper's reported numbers, with no
+test.
+
+**Paper ablation table (single seed, existing runs, re-scored with the code of the reorganised repository).**
+F7 (`runs/exp7_multi_F`), F8 (`runs/exp8_bdd_F`), W (`runs/exp9_W`), WF (`runs/exp9_WF`), R (`runs/exp10_R`),
+S (`runs/exp11_S`), each at its selection under the Exp 8 rule over three maneuvers: camera-only and topology-masked
+TSS and False-Go on A val and B val, DTLD test TSS, DTLD test pictogram macro recall, mean out-of-domain center AP,
+latency. Each step is compared with the one before it (paired CIs as above), as a description, not a test.
+
+**Error analysis** (exploratory): the False-Go cause breakdown of the Exp 7 checks (light missed, called not
+relevant, wrong color, outvoted by another light) for R seed 0 and M on A val, B val and the DTLD route-label cell.
+
+**Order.** Train R seeds 1 and 2, then M seeds 1 and 2 (about 45 h in all, in one queue). The new runs are
+evaluated as they finish, but their scores are not read until all six runs exist. Meanwhile, the code for the
+multi-run comparison and for M's evaluation in the reorganised repository is written and checked against the
+`pre-cleanup` code on M's existing run (both must give the same numbers, as for R). The re-scored ablation rows
+use only existing runs and can be read at once.
+
+**Launch notes (2026-11-22).**
+- The first launch (10:34) failed before the first step: `data/train_full` had been exported while `DATASETS` was a
+  relative path, so its 18,851 BDD100K file names were relative and did not resolve from RF-DETR's image root. The
+  queue then started seed 2, which failed the same way. Neither run trained; their logs are in
+  `runs/failed_launch_2026-11-22/`.
+- `scripts/export_training_set.py` was re-run (the current `dtsu/paths.py` makes `DATASETS` absolute). The new export
+  has the same annotations, categories and image sizes, and every file name resolves to the same file as before. The
+  old export is kept as `data/train_full_relpaths`. Seed 1 started at 10:38 from this export, and the queue
+  (`runs/seeds_queue.sh`) now stops when a training run fails.
+
+**Ablation rows re-scored (2026-11-22).** `scripts/evaluate.py` from the existing detection caches, with no new
+inference: F8 against F7, W against F8, WF against W (`results/ablation_recipe/`). R against WF and S against R were
+already in `results/ablation_resolution/`. The selection under the Exp 8 rule over three maneuvers gives the same
+epochs and thresholds as before: F7 epoch 3 at 0.25, F8 epoch 3 at 0.45, W epoch 1 at 0.25.
