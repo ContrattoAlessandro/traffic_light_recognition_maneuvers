@@ -21,3 +21,13 @@ Layout of each file:
 - `detection`: per cell, center AP of both models with the CI of the difference, and recall, precision and color
   accuracy at each model's threshold.
 In a single-model file ("a" = "b") read the "a" values; the differences are zero by construction.
+
+Recipe ablation (`ablation_recipe/`, single seed, re-scored from the existing detection caches):
+
+| File | "a" | "b" |
+|---|---|---|
+| `F8_vs_F7.json` | F8, + BDD100K train (`runs/exp8_bdd_F`, epoch 3, threshold 0.45) | F7 (`runs/exp7_multi_F`, epoch 3, threshold 0.25) |
+| `W_vs_F8.json` | W, + class weights (`runs/exp9_W`, epoch 1, threshold 0.25) | F8 |
+| `WF_vs_W.json` | WF, + label-swapping flip (`runs/exp9_WF`, epoch 4, threshold 0.35) | W |
+
+Seed runs of the publication protocol (`docs/EXPERIMENT_LOG.md`, 2026-11-22) will be written to `seeds/`.
