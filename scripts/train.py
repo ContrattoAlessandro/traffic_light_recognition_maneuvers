@@ -1,4 +1,4 @@
-"""Train the factorized RF-DETR (one light class + pictogram / color / junction heads, ``dtsu.factorized``).
+"""Train the factorized RF-DETR R (one light class + pictogram / color / junction heads, ``dtsu.factorized``), or the baseline M.
 
 RF-DETR's own recipe (optimizer, lr schedule, EMA, losses) is kept, except:
 - no random crop and no multi-scale: a crop can cut out the light that sets a maneuver's label; one square input
@@ -11,8 +11,13 @@ RF-DETR's own recipe (optimizer, lr schedule, EMA, losses) is kept, except:
 The EMA weights are saved after every epoch (``<out-dir>/epoch_<n>_ema.pth``); ``<out-dir>/last.ckpt`` holds the full
 state for ``--resume``. ``<out-dir>/args.json`` records every setting, the class counts and the weights.
 
+``--moves`` trains the baseline M instead: RF-DETR's own head on the joint "<moves>|<color>" classes of
+``scripts/export_moves_set.py`` (no factorized head, no class weights, no flip).
+
 The main model R: python scripts/train.py --dataset-dir data/train_full --out-dir runs/R --resolution 1280 \
     --epochs 5 --batch-size 4 --grad-accum 4 --class-weights 0.5 --flip-swap --seed 0
+The baseline M: python scripts/train.py --moves --dataset-dir data/train_moves --out-dir runs/M --resolution 1024 \
+    --epochs 4 --batch-size 4 --grad-accum 4
 """
 import argparse
 import collections
@@ -129,7 +134,8 @@ def patch_rfdetr(out_dir, class_names, class_weights=None, flip_perm=None, stop_
 
     def build_trainer_with_callbacks(*args, **kwargs):
         trainer = build_trainer(*args, **kwargs)
-        trainer.callbacks.insert(0, Factorize(class_names, class_weights))
+        if class_names is not None:  # None: the baseline M keeps RF-DETR's own head
+            trainer.callbacks.insert(0, Factorize(class_names, class_weights))
         trainer.callbacks.append(SaveEMAEachEpoch(out_dir, stop_after))
         return trainer
 
@@ -175,13 +181,16 @@ def main():
     ap.add_argument("--class-weights", type=float, metavar="POWER", help="weight the pictogram / color cross-entropy by n_c ** -POWER")
     ap.add_argument("--flip-swap", action="store_true", help="horizontal flip p = 0.5 that swaps the left / right arrow labels")
     ap.add_argument("--seed", type=int, help="RF-DETR training seed")
+    ap.add_argument("--moves", action="store_true", help="train the baseline M (joint classes, RF-DETR's own head)")
     args = ap.parse_args()
 
     os.makedirs(args.out_dir, exist_ok=True)
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
-    classes = json.load(open(os.path.join(args.dataset_dir, "class_names.json")))
-    weights, perm, info = None, None, {"factorized": True}
+    if args.moves and (args.flip_swap or args.class_weights is not None):
+        ap.error("--moves takes neither --flip-swap nor --class-weights")
+    classes = None if args.moves else json.load(open(os.path.join(args.dataset_dir, "class_names.json")))
+    weights, perm, info = None, None, {"factorized": not args.moves}
     if args.flip_swap:
         classes, perm = factorized.mirror_classes(classes)
         info["attribute_classes"] = classes

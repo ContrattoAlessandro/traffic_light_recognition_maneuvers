@@ -6,7 +6,12 @@ Nothing is smoothed over time. Junction lights get a box in their color, labelle
 other lights (another junction, pedestrian / bicycle / tram signals) a thin grey box. A side panel shows the
 per-maneuver colors and zooms on up to 6 junction lights. Also writes <out>.jsonl with every frame's detections.
 
+For the baseline M (a run trained with ``--moves``) each light is labelled with the maneuvers M assigns it (S, L, R,
+G = generic, U = U-turn), "relevant" plays the role of "junction", and M's own decoder (``dtsu.moves.assign_scored``)
+gives the per-maneuver colors: German convention for the right turn under ``--rule junction``, US under ``--rule us``.
+
 Example: python scripts/run_video.py clip.mp4 --run runs/R --epoch 2 --threshold 0.35 --out runs/R/clip.mp4
+         python scripts/run_video.py clip.mp4 --run runs/M --epoch 1 --threshold 0.25 --device cpu --out runs/M/clip.mp4
 """
 import argparse
 import json
@@ -20,7 +25,7 @@ import torchvision.transforms.v2.functional as TF
 from torchvision.ops import box_convert, nms
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from dtsu import DIRECTIONS, factorized  # noqa: E402
+from dtsu import DIRECTIONS, factorized, moves  # noqa: E402
 from dtsu.model import MEAN, NMS_IOU, STD, load_model, run_args  # noqa: E402
 from dtsu.rules import LAMP_COLORS, PICTOGRAMS, junction_rule, us_rule  # noqa: E402
 
@@ -28,6 +33,7 @@ BGR = {"red": (60, 60, 235), "yellow": (0, 200, 245), "green": (80, 200, 40), "n
 SHORT = {"circle": "circle", "arrow_left": "left arrow", "arrow_right": "right arrow", "arrow_straight": "straight arrow",
          "arrow_straight_left": "straight+left arrow", "arrow_straight_right": "straight+right arrow", "unknown": "unknown",
          "other": "ped/bike/tram"}
+MOVE_SHORT = {"straight": "S", "left": "L", "right": "R", "generic": "G", "uturn": "U"}
 PANEL, ZOOM = 300, 132
 
 
@@ -47,7 +53,7 @@ def text(img, s, org, color, scale=0.5, thick=1):
 
 
 def draw(frame, dets, dirs, t, caption):
-    """dets: (pictogram, junction, color, score, xyxy box)."""
+    """dets: (label, junction or relevant, color, score, xyxy box)."""
     h, w = frame.shape[:2]
     img = frame.copy()
     for picto, junction, color, score, (x1, y1, x2, y2) in sorted(dets, key=lambda d: d[1]):
@@ -56,7 +62,7 @@ def draw(frame, dets, dirs, t, caption):
             cv2.rectangle(img, p1, p2, (170, 170, 170), 1)
             continue
         cv2.rectangle(img, (p1[0] - 2, p1[1] - 2), (p2[0] + 2, p2[1] + 2), BGR[color], 2)
-        text(img, f"{SHORT[picto]} | {color} {score:.2f}", (p1[0], max(p1[1] - 6, 14)), BGR[color], 0.42)
+        text(img, f"{picto} | {color} {score:.2f}", (p1[0], max(p1[1] - 6, 14)), BGR[color], 0.42)
     panel = np.full((h, PANEL, 3), 24, np.uint8)
     cv2.putText(panel, f"t = {t:6.2f} s", (12, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (220, 220, 220), 1, cv2.LINE_AA)
     cv2.putText(panel, caption, (12, 48), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (160, 160, 160), 1, cv2.LINE_AA)
@@ -80,7 +86,7 @@ def draw(frame, dets, dirs, t, caption):
         if py + ZOOM + 20 > h:
             break
         panel[py:py + ZOOM, px:px + ZOOM] = crop
-        cv2.putText(panel, SHORT[picto], (px, py + ZOOM + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (220, 220, 220), 1, cv2.LINE_AA)
+        cv2.putText(panel, picto, (px, py + ZOOM + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (220, 220, 220), 1, cv2.LINE_AA)
     return np.hstack([img, panel])
 
 
@@ -93,10 +99,16 @@ def main():
     ap.add_argument("--rule", choices=("junction", "us"), default="junction")
     ap.add_argument("--out", required=True)
     ap.add_argument("--batch", type=int, default=8)
+    ap.add_argument("--device", default="cuda")
     args = ap.parse_args()
 
     res = run_args(args.run)["resolution"]
-    net = load_model(args.run, args.epoch)
+    is_m = moves.is_moves_run(args.run)
+    if is_m:
+        names = moves.class_names(args.run)
+        net = moves.load_model(args.run, args.epoch, args.device)
+    else:
+        net = load_model(args.run, args.epoch, args.device)
     cap = cv2.VideoCapture(args.video)
     fps, w, h, total = cap.get(5), int(cap.get(3)), int(cap.get(4)), int(cap.get(7))
     for codec in ("avc1", "mp4v"):
@@ -116,21 +128,35 @@ def main():
             frames.append(f)
         if not frames:
             break
-        score, probs, boxes = factorized.detect(net, preprocess(frames, res).cuda())
-        p, c, j = probs["picto"].argmax(-1), probs["color"].argmax(-1), probs["junction"] > 0.5
+        x = preprocess(frames, res).to(args.device)
+        if is_m:
+            cls, score, boxes = moves.detect(net, x, len(names))
+        else:
+            score, probs, boxes = factorized.detect(net, x, amp=x.is_cuda)
+            p, c, j = probs["picto"].argmax(-1), probs["color"].argmax(-1), probs["junction"] > 0.5
         for i, f in enumerate(frames):
             k = score[i] > args.threshold
             s = score[i][k]
             b = box_convert(boxes[i][k], "cxcywh", "xyxy") * torch.tensor([w, h, w, h])
             keep = nms(b, s, NMS_IOU) if len(s) else torch.zeros(0, dtype=torch.long)
-            dets = [(PICTOGRAMS[int(a)], bool(jj), LAMP_COLORS[int(cc)], float(ss), [round(v, 1) for v in bb])
-                    for a, cc, jj, ss, bb in zip(p[i][k][keep], c[i][k][keep], j[i][k][keep], s[keep], b[keep].tolist())]
-            lights = [(pi, ci, si) for pi, ji, ci, si, _ in dets if ji]
-            dirs = junction_rule(lights) if args.rule == "junction" else us_rule(lights)
+            if is_m:
+                parsed = [moves.parse_class(names[int(q)]) for q in cls[i][k][keep]]
+                raw = [(m, col, float(ss), [round(v, 1) for v in bb]) for (m, col), ss, bb in zip(parsed, s[keep], b[keep].tolist())]
+                dirs = moves.assign_scored([(m, col, ss) for m, col, ss, _ in raw if m is not None],
+                                           "right", "signal" if args.rule == "junction" else "dedicated")
+                dets = [("+".join(MOVE_SHORT.get(v, v) for v in sorted(m)) if m is not None else "irrelevant", m is not None, col, ss, bb)
+                        for m, col, ss, bb in raw]
+                record = [{"moves": None if m is None else sorted(m), "relevant": m is not None, "color": col, "score": round(ss, 3), "box": bb}
+                          for m, col, ss, bb in raw]
+            else:
+                raw = [(PICTOGRAMS[int(a)], bool(jj), LAMP_COLORS[int(cc)], float(ss), [round(v, 1) for v in bb])
+                       for a, cc, jj, ss, bb in zip(p[i][k][keep], c[i][k][keep], j[i][k][keep], s[keep], b[keep].tolist())]
+                lights = [(pi, ci, si) for pi, ji, ci, si, _ in raw if ji]
+                dirs = junction_rule(lights) if args.rule == "junction" else us_rule(lights)
+                dets = [(SHORT[pi], ji, ci, si, bb) for pi, ji, ci, si, bb in raw]
+                record = [{"picto": pi, "junction": ji, "color": ci, "score": round(si, 3), "box": bb} for pi, ji, ci, si, bb in raw]
             writer.write(draw(f, dets, dirs, n / fps, caption))
-            log.write(json.dumps({"frame": n, "t": round(n / fps, 3), "directions": dirs,
-                                  "detections": [{"picto": pi, "junction": ji, "color": ci, "score": round(si, 3), "box": bb}
-                                                 for pi, ji, ci, si, bb in dets]}) + "\n")
+            log.write(json.dumps({"frame": n, "t": round(n / fps, 3), "directions": dirs, "detections": record}) + "\n")
             n += 1
         if n % 600 < args.batch:
             print(f"{n}/{total}", flush=True)
