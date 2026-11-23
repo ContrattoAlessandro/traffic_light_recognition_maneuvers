@@ -1953,3 +1953,36 @@ red->none 164, yellow->none 137): M finds fewer distant lights, which matches it
 The safety-relevant case is red->green on 58 frames, in two episodes (around t = 23-25 s and t = 96 s). In both, the
 crop shows a lit red circle and M gives the light a green "L+R+S" class (score 0.27-0.48), so the straight maneuver
 reads green: a False-Go that R does not make. The opposite case (R green, M red) occurs on 1 frame.
+
+**Seed queue paused (2026-11-22).** R seed 1 finished epoch 0 (10,751 s including validation, peak 9.09 GiB) and
+stopped at step 6,799 of epoch 1 at about 14:24, with no traceback in its log; the queue's shell was gone too, as in
+the Exp 11 resume attempts. The user then postponed the seed runs, so that the AWSIM/Autoware work and the other
+thesis activities come first. Nothing was relaunched. When the seeds resume, `bash runs/seeds_queue.sh` continues
+R seed 1 from the end-of-epoch-0 `last.ckpt` with unchanged settings. The protocol above is unchanged; no seed
+result exists yet.
+
+## ONNX export of R for Autoware / AWSIM (2026-11-22, no training)
+
+`scripts/export_onnx.py` → `runs/onnx_R/` (not tracked; 150 MB): R at epoch 2 as a float32 ONNX graph, opset 17,
+static input 1x3x1280x1280, outputs per query (300) of box, light score, pictogram, color and junction
+probabilities, with no threshold and no NMS. It also writes the I/O contract (`model_config.json`), the torch-free
+reference pipeline (`deploy/reference_infer.py`: preprocessing, threshold 0.35, NMS 0.5, junction > 0.5, junction
+rule), 7 golden frames (5 AWSIM, 1 DTLD test, 1 OpenLane-V2 A val) with their input tensors and raw outputs,
+`parity.json` and `SHA256SUMS.txt`. The ROS 2 node is not part of it.
+- **Graph.** On the same input tensor, ONNX (onnxruntime, CPU) matches float32 PyTorch on the CPU within 4e-6 in
+  score, box and junction on every golden frame. PyTorch on the GPU differs by up to 0.08 in score, because of TF32
+  convolutions, so the reference is taken on the CPU.
+- **Whole pipeline against the evaluated model** (PyTorch bf16 with the repository decoder): agreement of the
+  per-maneuver colors, by the resize used before the ONNX graph.
+
+  | Resize | AWSIM_cam.mp4, every 16th frame (443) | DTLD test, every 24th image (519) |
+  |---|---|---|
+  | Pillow bilinear (antialias) | 99.3-99.5%, 3 frames differ | 99.8-100%, 1 frame |
+  | `cv2.INTER_LINEAR` | 98.6-98.9%, 6 frames | 99.6-99.8%, 2 frames |
+  | `cv2.INTER_AREA` | 97.5-97.7%, 13 frames | 99.0-99.2%, 6 frames |
+
+- `tests/test_deploy.py` checks that the reference decoder's rule and NMS equal `dtsu.rules.junction_rule` and
+  torchvision's NMS.
+- The package's own check (`reference_infer.py --check golden`, run in isolated mode outside the repository) passes on
+  every golden frame.
+- Not measured: TensorRT (fp32 / fp16) and latency on the Autoware machine.
