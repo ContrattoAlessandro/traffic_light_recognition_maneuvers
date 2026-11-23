@@ -155,10 +155,14 @@ direction rule, so ground-truth boxes through it reproduce every label.
 - Data: OpenLane-V2 A + B fit (14,977 frames) plus an equal-size random sample of D*_US fit, DTLD under the
   OpenLane-V2 protocol (`dtsu/labels_dtld.py`); 46 classes. No ATLAS, no BDD100K, no pictogram labels.
 - Recipe: 1024 px, 4 epochs, lr 1e-4 / 1.5e-4, batch 4 × accumulation 4, no flip.
-- Selection (Exp 5 rule): the mean of OpenLane-V2 tune TSS and D*_US tune TSS; the published run is epoch 1 at 0.25.
+- Selection (Exp 5 rule): the mean of OpenLane-V2 tune TSS and D*_US tune TSS; the published run is epoch 1 at 0.25
+  (also over three maneuvers, `results/M.json`).
 - Evaluated by `scripts/evaluate_moves.py`: A val and B val camera only (its native output) and with the lane-topology
   mask, DTLD test under the route labels (German rule) and D*_US test, and the perception cells of R. With
   `--reference runs/R` it pairs R and M frame by frame on the cells of the publication protocol.
+- Several runs of each model (the publication protocol trains R and M with three seeds each) are compared by
+  `scripts/compare_runs.py`: per frame each model is averaged over its runs, R − M is paired on the same frames with
+  a cluster-bootstrap 95% CI, and each model is also reported as the mean and standard deviation over its runs.
 
 `scripts/make_examples.py` draws R and M side by side on random frames in and out of distribution
 (`docs/examples/`).
@@ -214,6 +218,14 @@ python scripts/evaluate_moves.py --run runs/M --selection results/M.json --refer
     --reference-selection results/R.json --no-detection --out results/R_vs_M.json
 ```
 
+R against M over three runs of each (every run first through `evaluate.py` or `evaluate_moves.py`, which select it on
+the tune splits):
+
+```bash
+python scripts/compare_runs.py --r results/R.json results/seeds/R_seed1.json results/seeds/R_seed2.json \
+    --m results/M.json results/seeds/M_seed1.json results/seeds/M_seed2.json --out results/seeds/R_vs_M.json
+```
+
 ## Deployment (ONNX)
 
 ```bash
@@ -235,7 +247,7 @@ has to provide.
 | `dtsu/sources.py` | readers for every dataset |
 | `dtsu/factorized.py` | the factorized head and its partial-label loss, class weights, the arrow-swapping flip |
 | `dtsu/model.py` | loading a run and detecting |
-| `dtsu/moves.py`, `dtsu/moves_evaluation.py`, `dtsu/labels_dtld.py` | the baseline M: joint classes, its decoder and evaluation, its DTLD route labels |
+| `dtsu/moves.py`, `dtsu/moves_evaluation.py`, `dtsu/labels_dtld.py` | the baseline M: joint classes, its decoder and evaluation, its DTLD route labels; R against M over several runs |
 | `dtsu/evaluation.py`, `dtsu/stats.py`, `dtsu/metrics.py`, `dtsu/topology.py` | selection, metrics, matching, bootstraps, the lane-topology prior |
 | `scripts/` | label building, export, training, evaluation, video, ONNX export |
 | `deploy/` | the torch-free reference pipeline and the notes of the ONNX hand-off package |

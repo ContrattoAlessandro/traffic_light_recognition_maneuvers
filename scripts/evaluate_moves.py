@@ -46,8 +46,8 @@ def main():
     ol, dt, route_all = me.evaluation_sets()
     run = me.MovesRun("M", args.run, args.cache, args.workers, args.device)
     sel = given_selection(args.selection, args.epoch, args.threshold) or me.select(run, ol, dt)
-    out = {"run": args.run, "resolution": run.res, "selection": sel}
-    out.update(me.report(run, sel, ol, dt, detection=not args.no_detection))
+    out = {"run": args.run, "cache": run.cache, "resolution": run.res, "selection": sel}
+    out.update(me.report(run, sel, ol, dt, route_all, detection=not args.no_detection))
     if args.reference:
         ref = evaluation.Run("a", args.reference, args.reference_cache, args.workers)
         sets, dtld_tune, dtld_test = evaluation.evaluation_sets()

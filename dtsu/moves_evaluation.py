@@ -113,7 +113,7 @@ def select(run, ol, dt):
 
 
 # ------------------------------------------------------------------ maneuvers
-def maneuver_stats(run, sel, ol, dt):
+def maneuver_stats(run, sel, ol, dt, route_all):
     """Per set: (frame_stats, cluster ids) of M at its selection."""
     e, t = sel["epoch"], sel["threshold"]
     out = {}
@@ -123,41 +123,79 @@ def maneuver_stats(run, sel, ol, dt):
         seg = np.array([r["segment_id"] for r in recs])
         out[name + "_camera_only"] = (frame_stats(*to_arrays(colors), gc, gp), seg)
         out[name] = (frame_stats(*to_arrays([apply_topology(c, m) for c, m in zip(colors, masks)]), gc, gp), seg)
-    for name in ("DTLD_route_test", "DTLD_US_test"):
-        recs = dt[name]
-        colors = colors_of(run, e, name, recs, t)
-        out[name] = (frame_stats(*to_arrays(colors), *to_arrays([r["color"] for r in recs])), np.array([r["segment_id"] for r in recs]))
+    recs = dt["DTLD_US_test"]
+    colors = colors_of(run, e, "DTLD_US_test", recs, t)
+    out["DTLD_US_test"] = (frame_stats(*to_arrays(colors), *to_arrays([r["color"] for r in recs])), np.array([r["segment_id"] for r in recs]))
+    # route test: the kept frames, decoded from the cache of all route test frames (shared with the paired cells)
+    md = run.frames(e, "DTLD_route_test_all", route_all)
+    idx = [i for i, r in enumerate(route_all) if r["kept"]]
+    recs = [route_all[i] for i in idx]
+    colors = [frame_colors(md[i], run.names, t, "right", "signal") for i in idx]
+    out["DTLD_route_test"] = (frame_stats(*to_arrays(colors), *to_arrays([r["color"] for r in recs])), np.array([r["segment_id"] for r in recs]))
     return out
 
 
-def paired_cells(m_run, m_sel, f_run, f_sel, ol, dt, route_all, dtld_junction_test):
-    """The publication cells, M ("b") against a factorized run ("a"), frame by frame. Returns (a stats, b stats)."""
-    a, b = {}, {}
-    for name in ("A_val", "B_val"):
-        recs, masks, (gc, gp) = ol[name]
-        fd = f_run.frames(f_sel["epoch"], name, recs)
-        a[name + "_camera_only"] = frame_stats(*to_arrays([us_rule(junction_lights(kept(d, f_sel["threshold"])), r["traffic_side"])
-                                                          for d, r in zip(fd, recs)]), gc, gp)
-        b[name + "_camera_only"] = frame_stats(*to_arrays(colors_of(m_run, m_sel["epoch"], name, recs, m_sel["threshold"])), gc, gp)
-    # DTLD test: route-label ground truth on the frames both labelings score; the factorized run's detections come from
-    # its junction-record cache (same frames, same order as route_all)
+def common_dtld_frames(route_all, dtld_junction_test):
+    """Indices of the DTLD test frames that both the route labels (kept) and the junction rule (not excluded) score.
+    ``route_all`` and ``dtld_junction_test`` hold every DTLD test frame in the same order."""
     assert len(route_all) == len(dtld_junction_test)
     idx = [i for i, (r, j) in enumerate(zip(route_all, dtld_junction_test)) if r["kept"] and j["excluded"] is None]
     assert all(os.path.basename(route_all[i]["image"]) == os.path.basename(dtld_junction_test[i]["image"]) for i in idx)
-    fd = f_run.frames(f_sel["epoch"], "dtld_test", dtld_junction_test)
-    recs = [route_all[i] for i in idx]
-    gc, gp = to_arrays([r["color"] for r in recs])
-    a["DTLD_route_test_common"] = frame_stats(*to_arrays([junction_rule(junction_lights(kept(fd[i], f_sel["threshold"]))) for i in idx]), gc, gp)
-    md = m_run.frames(m_sel["epoch"], "DTLD_route_test_all", route_all)
-    b["DTLD_route_test_common"] = frame_stats(*to_arrays([frame_colors(md[i], m_run.names, m_sel["threshold"], "right", "signal") for i in idx]), gc, gp)
+    return idx
+
+
+def factorized_cells(f_run, f_sel, ol, route_all, dtld_junction_test):
+    """Publication cells of a factorized run (R) at its selection -> {cell: frame_stats}.
+    A val and B val with the US rule, camera only (primary) and with the lane-topology mask (secondary); DTLD test with
+    the junction rule against the route labels, on the common frames. The DTLD detections come from the run's
+    junction-record cache (same frames, same order as ``route_all``)."""
+    e, t = f_sel["epoch"], f_sel["threshold"]
+    out = {}
+    for name in ("A_val", "B_val"):
+        recs, masks, (gc, gp) = ol[name]
+        colors = [us_rule(junction_lights(kept(d, t)), r["traffic_side"]) for d, r in zip(f_run.frames(e, name, recs), recs)]
+        out[name + "_camera_only"] = frame_stats(*to_arrays(colors), gc, gp)
+        out[name] = frame_stats(*to_arrays([apply_topology(c, m) for c, m in zip(colors, masks)]), gc, gp)
+    idx = common_dtld_frames(route_all, dtld_junction_test)
+    fd = f_run.frames(e, "dtld_test", dtld_junction_test)
+    gc, gp = to_arrays([route_all[i]["color"] for i in idx])
+    out["DTLD_route_test_common"] = frame_stats(*to_arrays([junction_rule(junction_lights(kept(fd[i], t))) for i in idx]), gc, gp)
+    return out
+
+
+def moves_cells(m_run, m_sel, ol, route_all, dtld_junction_test):
+    """The same cells for an M run, with its own decoder (US rule on OpenLane-V2, German rule on DTLD)."""
+    e, t = m_sel["epoch"], m_sel["threshold"]
+    out = {}
+    for name in ("A_val", "B_val"):
+        recs, masks, (gc, gp) = ol[name]
+        colors = colors_of(m_run, e, name, recs, t)
+        out[name + "_camera_only"] = frame_stats(*to_arrays(colors), gc, gp)
+        out[name] = frame_stats(*to_arrays([apply_topology(c, m) for c, m in zip(colors, masks)]), gc, gp)
+    idx = common_dtld_frames(route_all, dtld_junction_test)
+    md = m_run.frames(e, "DTLD_route_test_all", route_all)
+    gc, gp = to_arrays([route_all[i]["color"] for i in idx])
+    out["DTLD_route_test_common"] = frame_stats(*to_arrays([frame_colors(md[i], m_run.names, t, "right", "signal") for i in idx]), gc, gp)
+    return out
+
+
+def cell_clusters(ol, route_all, dtld_junction_test):
+    """Cluster ids of the publication cells: OpenLane-V2 segments, DTLD sessions."""
     seg = {n: np.array([r["segment_id"] for r in ol[n][0]]) for n in ("A_val", "B_val")}
-    seg["DTLD"] = np.array([r["segment_id"] for r in recs])
-    clusters = {"A_val_camera_only": seg["A_val"], "B_val_camera_only": seg["B_val"], "DTLD_route_test_common": seg["DTLD"]}
-    return a, b, clusters
+    dtld = np.array([route_all[i]["segment_id"] for i in common_dtld_frames(route_all, dtld_junction_test)])
+    return {"A_val_camera_only": seg["A_val"], "B_val_camera_only": seg["B_val"], "A_val": seg["A_val"],
+            "B_val": seg["B_val"], "DTLD_route_test_common": dtld}
 
 
-def report(run, sel, ol, dt, detection=True):
-    st = maneuver_stats(run, sel, ol, dt)
+def paired_cells(m_run, m_sel, f_run, f_sel, ol, dt, route_all, dtld_junction_test):
+    """The publication cells, M ("b") against a factorized run ("a"), frame by frame. Returns (a stats, b stats, clusters)."""
+    a = factorized_cells(f_run, f_sel, ol, route_all, dtld_junction_test)
+    b = moves_cells(m_run, m_sel, ol, route_all, dtld_junction_test)
+    return a, b, cell_clusters(ol, route_all, dtld_junction_test)
+
+
+def report(run, sel, ol, dt, route_all, detection=True):
+    st = maneuver_stats(run, sel, ol, dt, route_all)
     out = {"maneuver_metrics": {k: v[0][3] for k, v in st.items()},
            "frames": {k: int(len(v[1])) for k, v in st.items()}}
     if detection:
@@ -167,3 +205,50 @@ def report(run, sel, ol, dt, detection=True):
 
 def compare(a_stats, b_stats, clusters):
     return {k: paired_frames(a_stats[k][:3], b_stats[k][:3], clusters[k]) for k in a_stats}
+
+
+# ------------------------------------------------------------------ several runs of each model (publication protocol)
+PRIMARY = ("A_val_camera_only", "B_val_camera_only", "DTLD_route_test_common")
+SECONDARY = ("A_val", "B_val")  # with the lane-topology mask ("with map prior")
+METRICS = ("tss", "false_go", "acc_color", "acc_pass", "em", "false_stop")
+
+
+def average_runs(stats):
+    """``frame_stats`` of several runs of one model on the same frames -> those of the run-averaged model: per frame
+    the mean TSS contribution and the mean False-Go numerator (the denominator is the ground truth's, shared by all
+    runs), and the mean of each pooled metric. Every metric is a mean over frames or over stop / go states, so the
+    mean over runs is the run-averaged model's value."""
+    den = stats[0][2]
+    assert all(np.array_equal(x[2], den) for x in stats), "the runs are not scored on the same frames"
+    return (np.mean([x[0] for x in stats], 0), np.mean([x[1] for x in stats], 0), den,
+            {k: float(np.mean([x[3][k] for x in stats])) for k in stats[0][3]})
+
+
+def spread(stats):
+    """Per metric: each run's value, their mean and their sample standard deviation (ddof 1; 0 with a single run)."""
+    out = {}
+    for k in METRICS:
+        v = [float(x[3][k]) for x in stats]
+        out[k] = {"runs": v, "mean": float(np.mean(v)), "std": float(np.std(v, ddof=1)) if len(v) > 1 else 0.0}
+    return out
+
+
+def compare_runs(a_runs, b_runs, clusters, draws=10000, seed=0):
+    """a_runs, b_runs: per run of each model, {cell: frame_stats}. Per cell: the run-averaged models paired frame by
+    frame (a - b with a cluster-bootstrap 95% CI, ``stats.paired_frames``), the averaged models' metrics and the
+    spread over runs. The runs are fixed: the CI covers the sampling of frames, not the choice of seeds."""
+    out = {}
+    for cell in a_runs[0]:
+        a, b = average_runs([r[cell] for r in a_runs]), average_runs([r[cell] for r in b_runs])
+        assert np.array_equal(a[2], b[2]), cell
+        out[cell] = {"paired": paired_frames(a[:3], b[:3], clusters[cell], draws, seed), "a_metrics": a[3], "b_metrics": b[3],
+                     "a_runs": spread([r[cell] for r in a_runs]), "b_runs": spread([r[cell] for r in b_runs])}
+    return out
+
+
+def claims(cells):
+    """The claims of the publication protocol, from the paired cells ("a" = R, "b" = M)."""
+    p = {c: cells[c]["paired"] for c in PRIMARY}
+    return {"non_inferior_in_domain": all(p[c]["d_tss_ci95"][0] > -0.01 for c in PRIMARY),
+            "better_in_domain": {c: p[c]["d_tss_ci95"][0] > 0 for c in PRIMARY},
+            "lower_false_go": {c: p[c]["d_false_go_ci95"][1] < 0 for c in PRIMARY}}

@@ -46,7 +46,7 @@ def main():
     sets, dtld_tune, dtld_test = evaluation.evaluation_sets()
     ra = evaluation.Run("a", args.run, args.cache, args.workers)
     sa = selection(ra, sets, dtld_tune, args.selection, args.epoch, args.threshold)
-    out = {"run": args.run, "resolution": ra.res, "selection": sa}
+    out = {"run": args.run, "cache": ra.cache, "resolution": ra.res, "selection": sa}
     rb = sb = None
     if args.reference:
         rb = evaluation.Run("b", args.reference, args.reference_cache, args.workers)

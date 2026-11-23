@@ -1986,3 +1986,60 @@ rule), 7 golden frames (5 AWSIM, 1 DTLD test, 1 OpenLane-V2 A val) with their in
 - The package's own check (`reference_infer.py --check golden`, run in isolated mode outside the repository) passes on
   every golden frame.
 - Not measured: TensorRT (fp32 / fp16) and latency on the Autoware machine.
+
+## Multi-run comparison code, checked on M's existing run (2026-11-23, no training)
+
+The code of the protocol's primary comparison is written, and its M side is checked against the `pre-cleanup` code
+on M's existing run (`runs/rfdetr_m_mix`), as the protocol requires before any seed result is read.
+
+**Code.**
+- `dtsu/moves_evaluation.py`: `factorized_cells` and `moves_cells` give each model's per-frame scores on the cells
+  of the protocol (A val and B val camera only, DTLD test against the route labels on the common frames, and the
+  topology-masked A val and B val as secondary). `average_runs` averages a model's runs per frame (TSS contribution
+  and False-Go numerator; the denominator is the ground truth's). `compare_runs` pairs the two run-averaged models
+  with the existing cluster bootstrap (`stats.paired_frames`: 10,000 draws, seed 0, segments on OpenLane-V2,
+  sessions on DTLD) and adds each model's mean and sample standard deviation over its runs. `claims` applies the
+  protocol's three bounds. `paired_cells` (used by `evaluate_moves.py --reference`) is now these two functions.
+- `scripts/compare_runs.py` reads the result file of every run (run folder, cache, selection). It refuses fewer
+  than three runs per model unless `--min-runs` is lowered for a check, so no R-against-M score is computed by
+  accident before all six runs exist.
+- `evaluate.py` and `evaluate_moves.py` also write the run's detection cache to their result file.
+  `evaluate_moves.py` decodes the DTLD route cell from the same all-frames cache as the paired cells, so the route
+  test is inferred once.
+- `tests/test_runs.py` checks the algebra: one run per model gives exactly the single-run comparison; the averaged
+  model's metrics, ΔTSS and ΔFalse-Go are the means over runs; runs on different frames are refused; and the claims
+  follow the protocol's bounds.
+
+**M, evaluated with the new code** (`results/M.json`, `--no-detection`). The Exp 5 rule over three maneuvers
+selects **epoch 1 at 0.25**, the selection M was published with (tune mean 0.9356; epochs 0, 2 and 3: 0.9271, 0.9335,
+0.9308). These are M's own scores, known since Exp 5 and Exp 7. No R-against-M cell was computed.
+
+| Cell (three maneuvers) | Frames | TSS | False-Go |
+|---|---|---|---|
+| A val, camera only | 2,220 | 0.920 | 0.137 |
+| A val, topology mask | 2,220 | 0.927 | 0.139 |
+| B val, camera only | 1,565 | 0.921 | 0.104 |
+| B val, topology mask | 1,565 | 0.920 | 0.104 |
+| D*_US test | 11,501 | 0.953 | 0.050 |
+| DTLD test, route labels | 11,347 | 0.949 | 0.040 |
+
+**Check against the `pre-cleanup` code** (`runs/M_eval/check/`, untracked). The tree of tag `pre-cleanup`
+(`runs/pre_cleanup_code`) scored the detections cached by the new code, with the label files of that time
+(`data/labels_pre_cleanup`), matched frame by frame by image path:
+- M's selection with `tools/eval_rfdetr.py` (preset `mixed`), M's metrics on every cell above, and the Exp 7
+  paired cells of `tools/eval_exp7.py` / `tools/exp7_checks.py`. To pair them with a factorized model without
+  reading R against M, the reference is F7 (epoch 4, threshold 0.20, its Exp 7 caches), with the US rule camera
+  only and with the topology mask on A val and B val, and the junction rule against the route labels on DTLD test
+  (11,126 common frames).
+- New: `scripts/compare_runs.py --min-runs 1` with F7 as "R" and M.
+- **All 229 values agree exactly**: the whole selection grid (4 epochs × 19 thresholds), the selected epoch and
+  threshold, the six metrics of M on the six cells, and per paired cell both models' metrics, ΔTSS and ΔFalse-Go
+  with their CIs and the frame counts.
+- Inference: the new loader's detections of M at epoch 1 equal the Exp 7 caches of M exactly on A val and B val
+  (every frame, score and box difference 0). On the 11,494 DTLD test frames of the Exp 7 cache, 11,488 are
+  bit-identical. The other 6 differ by at most 0.0023 in score, because bf16 inference ran in different batches
+  (the Exp 7 cache was inferred on the junction-scored frames only). No maneuver color changes on any frame at 0.25.
+
+**Not covered.** The R side of the comparison uses the decoders checked on R in the reorganisation entry, but R and
+M were not paired here. The out-of-domain perception comparison over runs (AP recomputed per run in each bootstrap
+draw) and the four-maneuver rows for Zou et al. are separate steps and not written yet.
