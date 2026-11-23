@@ -3,7 +3,7 @@
 This package holds the traffic-light model R as ONNX, the exact pre- and post-processing it needs, and test data to
 check an integration against. It is built by `scripts/export_onnx.py` in the
 [repository](https://github.com/ContrattoAlessandro/traffic_light_recognition_maneuvers). The ROS 2 node and the
-Autoware wiring are not part of it (section 5).
+Autoware wiring are not part of it: they are in `deploy/autoware/` of the repository (section 5).
 
 ## 1. What R does
 
@@ -88,6 +88,9 @@ R is stateless: every frame is decoded on its own. Any temporal smoothing is par
 
 ## 5. What this package does not do (the Autoware side)
 
+All of this is done by the ROS 2 node in `deploy/autoware/` of the repository (package `tl_maneuver_perception`,
+first written for F8), with its install scripts, its README and the test protocol `KPI.md`.
+
 - **The ROS 2 node.** It subscribes to the traffic-light camera
   (`/sensing/camera/traffic_light/image_raw` in the AWSIM sample setup) and runs sections 4.1-4.4. It then publishes
   `autoware_perception_msgs/msg/TrafficLightGroupArray` on `/perception/traffic_light_recognition/traffic_signals`.
@@ -97,14 +100,14 @@ R is stateless: every frame is decoded on its own. Any temporal smoothing is par
   id. The map is used only for this lookup, never to find or select lights.
 - **U-turn.** R has no U-turn output: in the training labels U-turn followed left in 99.9% of frames. Use the left
   color if a route needs one.
-- **`none`.** Decide whether a maneuver with no junction light is published as `UNKNOWN` (Autoware stops) or left
-  out of the message. A light that is never received may be treated as passable, so this is a safety choice that
-  must be stated.
+- **`none`.** A maneuver with no junction light is published as `UNKNOWN` (Autoware stops), and so are the next
+  signals of the route. Leaving them out of the message is not safe: a light that is never received may be treated
+  as passable.
 - **Native recognition.** Switch off Autoware's map-based traffic-light pipeline so only this node publishes on
   the topic.
 
-The architecture, topics and the four test phases are described in `autoware_awsim_integration_guide.md` (written
-before U-turn was dropped: use three maneuvers).
+`autoware_awsim_integration_guide.md` describes the same architecture; its node design, its options and its four
+phases are superseded by `deploy/autoware/README.md` and `deploy/autoware/KPI.md`.
 
 ## 6. Facts to keep in mind
 

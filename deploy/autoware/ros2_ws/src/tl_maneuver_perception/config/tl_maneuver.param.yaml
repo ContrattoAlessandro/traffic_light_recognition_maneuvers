@@ -1,0 +1,18 @@
+/**:
+  ros__parameters:
+    # -1.0 keeps the threshold selected for R on the tune splits (0.35, model/model_config.json). Do not tune it on AWSIM
+    threshold: -1.0
+    use_gpu: true
+    gpu_id: 0
+    image_topic: /sensing/camera/traffic_light/image_raw
+    route_topic: /planning/mission_planning/route
+    odometry_topic: /localization/kinematic_state
+    # The model is run only within this distance (m) of the next stop line on the route
+    activation_distance: 120.0
+    # A stop line counts as passed this far (m) behind the vehicle reference point
+    passed_margin: 0.5
+    # Consecutive green frames needed to publish green. Red and yellow act at once
+    go_confirm_frames: 3
+    # Frames without a light during which a confirmed green is kept
+    # go_confirm_frames: 1 with miss_hold_frames: 0 publishes the raw per-frame output
+    miss_hold_frames: 5

@@ -1,0 +1,7 @@
+onnxruntime-gpu==1.23.2
+numpy==1.26.4
+pillow==11.3.0
+nvidia-cuda-runtime-cu12
+nvidia-cuda-nvrtc-cu12
+nvidia-cublas-cu12
+nvidia-cudnn-cu12
