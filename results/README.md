@@ -5,6 +5,7 @@ Outputs of `scripts/evaluate.py`; the tables in the main README are generated fr
 | File | Model(s) | Run folder used |
 |---|---|---|
 | `R.json` | R, input 1280 (main model) | `runs/exp10_R`, epoch 2, threshold 0.35 |
+| `M.json` | the baseline M (`scripts/evaluate_moves.py`, no detection cells) | `runs/rfdetr_m_mix`, epoch 1, threshold 0.25 |
 | `ablation_resolution/1024.json` | the same recipe at 1024 | `runs/exp9_WF`, epoch 4, threshold 0.35 |
 | `ablation_resolution/1536.json` | the same recipe at 1536 | `runs/exp11_S`, epoch 2, threshold 0.35 |
 | `ablation_resolution/R_vs_1024.json`, `R_vs_1536.json` | R ("a") paired with the other resolution ("b") | as above |
@@ -30,4 +31,7 @@ Recipe ablation (`ablation_recipe/`, single seed, re-scored from the existing de
 | `W_vs_F8.json` | W, + class weights (`runs/exp9_W`, epoch 1, threshold 0.25) | F8 |
 | `WF_vs_W.json` | WF, + label-swapping flip (`runs/exp9_WF`, epoch 4, threshold 0.35) | W |
 
-Seed runs of the publication protocol (`docs/EXPERIMENT_LOG.md`, 2026-11-22) will be written to `seeds/`.
+Seed runs of the publication protocol (`docs/EXPERIMENT_LOG.md`, 2026-11-22) will be written to `seeds/`, one result
+file per run, and `seeds/R_vs_M.json` by `scripts/compare_runs.py` once the three runs of each model exist: per cell,
+`paired` (R as "a", M as "b", the run-averaged models, 10,000-draw cluster bootstrap), `a_metrics` / `b_metrics`,
+`a_runs` / `b_runs` (each run's value, mean and standard deviation), and the protocol's `claims`.
